@@ -1,0 +1,64 @@
+{
+    "user_log": "user_log.json",
+    "white_listed": [],
+    "html_header": {
+        "XSS": "Secured",
+        "mimetype": "text/html",
+        "Content-Type": "text/html",
+        "server": "Confidential"
+    },
+    "webconfig": {
+        "host": "0.0.0.0",
+        "ServerHeaders": {
+            "CSRF": "Blocked",
+            "Server": "Private Server",
+            "XSS-protection": "True"
+        },
+        "debug": "False",
+        "port": 5000
+    },
+    "mongoconfig": {
+        "database_name": "identexdb",
+        "tables": {
+            "buyer_table": "buyers",
+            "buser_table": "b_users",
+            "supplier_table": "suppliers",
+            "suser_table": "s_users",
+            "buyer_teams_table": "buyer_teams",
+            "authorization_table": "authorizations",
+            "constants_table": "constants",
+            "log_table": "logs"
+        },
+        "debug": "False"
+    },
+    "booking_id": 1164,
+    "redis": {
+        "host": "redis_db",
+        "debug": "False",
+        "port": 6379
+    },
+    "json_header": {
+        "mimetype": "application/json",
+        "Content-Type": "application/json",
+        "server": "Confidential"
+    },
+    "jwt": {
+        "expire_after": 259200
+    },
+    "customer_no": 100007,
+    "const": {
+        "max": 100000000000000000000,
+        "api_dir": "api/",
+        "base_url": "https://exportify.in/",
+        "TAG_FORGOT_PASSWORD": "FORGOT_PASSWORD",
+        "base_aws_bucket_folder": "documentation/",
+        "email_template": {},
+        "filenames": {
+            "conf": "conf.json",
+            "classes": {},
+            "text_files": {
+                "mail_providers": "mail_providers.txt"
+            }
+        }
+    }
+}
