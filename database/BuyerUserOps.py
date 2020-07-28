@@ -24,6 +24,7 @@ class BUser:
         self.__buser['password'] = password
         self.__buser['role'] = role
         self.__buser['status'] = status
+        self.__buser['tokens'] = []
         timestamp = GenericOps.get_current_timestamp()
         self.__buser['created_at'] = timestamp
         self.__buser['updated_at'] = timestamp
@@ -34,7 +35,7 @@ class BUser:
             if self.__buser['password'] == password:
                 if self.__buser['status']:
                     auth_id = self.encode_auth_token() + ":" + GenericOps.generate_token_for_login()
-                    auth = Authorization().login_user(auth_id=auth_id, logged_in=GenericOps.get_current_timestamp(), buyer_id=self.get_buyer_id(),
+                    auth = Authorization().login_user(auth_id=auth_id, logged_in=GenericOps.get_current_timestamp(), entity_id=self.get_buyer_id(),
                                                       email=self.__id, device_name=device_name)
                     return auth
                 raise exceptions.InvalidLoginCredentials('Please verify your email and then try logging in')
@@ -61,6 +62,24 @@ class BUser:
             {'_id': {'$regex': company_domain}}) if DBConnectivity.create_mongo_connection()[
                                                         conf.mongoconfig.get('tables').get('buser_table')].find_one(
             {'_id': {'$regex': company_domain}}) is not None else False
+
+    def verify_auth_token(self, token_name='', token_value =''):
+        for index in range(0, len(self.__buser['tokens'])):
+            if self.__buser['tokens'][index]['token_name'] == token_name and self.__buser['tokens'][index]['token_value'] == token_value:
+                self.__buser['status'] = True
+                del self.__buser['tokens'][index]
+                return self.save()
+        return False
+
+    def add_auth_token(self, token_value='', token_name='forgot_password'):
+        if len(self.__buser['tokens']) > 0:
+            for index in range(0, len(self.__buser['tokens'])):
+                if token_value == self.__buser['tokens'][index]['token_value']:
+                    return True
+            self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
+            return self.save()
+        self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
+        return self.save()
 
     def get_buyer_id(self):
         return self.__buser['buyer_id']
@@ -112,6 +131,9 @@ class BUser:
     def is_admin(self):
         return True if self.__buser['role'].lower() == "admin" else False
 
+    def set_password(self, password):
+        self.__buser['password'] = password
+        return self.save()
 
 # buser = BUser("anujpanchal57@gmail.com")
 # pprint(buser.encode_auth_token())

@@ -9,7 +9,6 @@ def create_mongo_connection():
     return mongo[conf.mongoconfig.get('database_name')]
 
 def create_redis_connection():
-    # return StrictRedis.from_url('redis://'+str(conf.redisconfig.get('host'))+':'+str(conf.redisconfig.get('port')))
     return StrictRedis(host=conf.redisconfig.get('host'), port=conf.redisconfig.get('port'))
 
 def get_redis_key(key):
@@ -27,5 +26,8 @@ def delete_redis_key(key):
     redis = create_redis_connection()
     return redis.delete(key)
 
+# pprint(delete_redis_key("sample"))
+# pprint(set_redis_key("as", "we", 10))
+# pprint(get_redis_key("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1OTYyMTUxODIsInVzZXIiOiJhbnVqcGFuY2hhbDU3QGdtYWlsLmNvbSJ9.gelgJLuNswaUonEuCITuvsdhDcqLclkEbGlljqD_WHc:8cb8b19057a2401ab300108c41d03aef"))
 # mongo = create_mongo_connection()
 # pprint(mongo['user'].find_one({"_id": {'$regex': "gmail.com"}}))

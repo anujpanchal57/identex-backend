@@ -20,9 +20,13 @@ from utility import conf
 def get_current_timestamp(rounded=True):
     return math.ceil(time.time()) if rounded else time.time()
 
-def generate_forgot_password_link():
-    link = ''.join(str(uuid.uuid4()).split('-'))
-    return link
+def generate_forgot_password_token():
+    token = ''.join(str(uuid.uuid4()).split('-'))
+    return token
+
+def generate_email_verification_token():
+    token = ''.join(str(uuid.uuid4()).split('-'))
+    return token
 
 def generate_token_for_login():
     link = ''.join(str(uuid.uuid4()).split('-'))

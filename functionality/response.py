@@ -21,3 +21,6 @@ def errorResponse(e,status=400):
 
 def unknownuser():
     return jsonify({"response": "User not present"}), 400
+
+def emailNotFound():
+    return jsonify({"response": "We cannot find an account with this email address"}), 400

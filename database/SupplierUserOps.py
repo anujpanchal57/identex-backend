@@ -16,14 +16,15 @@ class SUser:
             self.__suser = self.__mongo[conf.mongoconfig.get('tables').get('suser_table')].find_one({"_id": self.__id})
 
     # Adding a new user for a buyer company
-    def add_suser(self, email, name, buyer_id, mobile_no, password, role="admin", status=False):
+    def add_suser(self, email, name, supplier_id, password, mobile_no="", role="admin", status=True):
         self.__suser['_id'] = email
         self.__suser['name'] = name
         self.__suser['mobile_no'] = mobile_no
-        self.__suser['buyer_id'] = buyer_id
+        self.__suser['supplier_id'] = supplier_id
         self.__suser['password'] = password
         self.__suser['role'] = role
         self.__suser['status'] = status
+        self.__suser['tokens'] = []
         timestamp = GenericOps.get_current_timestamp()
         self.__suser['created_at'] = timestamp
         self.__suser['updated_at'] = timestamp
@@ -33,6 +34,31 @@ class SUser:
     def is_suser(email):
         return DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('suser_table')].find_one(
             {"_id": email}) if DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('suser_table')].find_one({"_id": email}) is not None else False
+
+    def verify_auth_token(self, token_name='', token_value =''):
+        for index in range(0, len(self.__suser['tokens'])):
+            if self.__suser['tokens'][index]['token_name'] == token_name and self.__suser['tokens'][index]['token_value'] == token_value:
+                self.__suser['status'] = True
+                del self.__suser['tokens'][index]
+                return self.save()
+        return False
+
+    def add_auth_token(self, token_value='', token_name='forgot_password'):
+        if len(self.__suser['tokens']) > 0:
+            for index in range(0, len(self.__suser['tokens'])):
+                if token_value == self.__suser['tokens'][index]['token_value']:
+                    return True
+            self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
+            return self.save()
+        self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
+        return self.save()
+
+    def delete_auth_token(self, token_name='', token_value=''):
+        for index in range(0, len(self.__suser['tokens'])):
+            if self.__suser['tokens'][index]['token_name'] == token_name and self.__suser['tokens'][index]['token_value'] == token_value:
+                del self.__suser['tokens'][index]
+                return self.save()
+        return False
 
     def get_name(self):
         return self.__suser['name']
@@ -57,6 +83,13 @@ class SUser:
 
     def get_updated_at(self):
         return self.__suser['updated_at']
+
+    def set_password(self, password):
+        self.__suser['password'] = password
+        return self.save()
+
+    def get_supplier_id(self):
+        return self.__suser['supplier_id']
 
     @staticmethod
     def is_suser(email):
@@ -85,6 +118,8 @@ class SUser:
                                                                                   upsert=True)
         return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': obj['_id']}, {"$set": obj},
                                                                               upsert=True)
+
+
 
 # suser = SUser("anujpanchal57@gmail.com")
 # pprint(suser.encode_auth_token())

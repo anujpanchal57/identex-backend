@@ -33,7 +33,7 @@
     },
     "booking_id": 1164,
     "redis": {
-        "host": "redis_db",
+        "host": "localhost",
         "debug": "False",
         "port": 6379
     },
