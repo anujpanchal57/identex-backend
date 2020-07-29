@@ -81,7 +81,7 @@ def validate_supplier_access_token(f):
             suser = SUser(data['_id'])
             if not suser.is_suser(data['_id']):
                 return response.unknownuser()
-            auth = suser.decode_auth_toke(token)
+            auth = suser.decode_auth_toke(token.split(":")[0])
             # Check if the token has expired or not
             if isinstance(auth, dict):
                 # check whether the email ID is same
