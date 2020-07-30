@@ -1,3 +1,3 @@
-# Identex authentication microservice
+# Identex backend application
 
-Authentication microservice
+All the APIs are included in this application.
