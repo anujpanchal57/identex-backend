@@ -1,19 +1,29 @@
+import traceback
 from pprint import pprint
 
 import jwt
-
+import mysql.connector
 from functionality import GenericOps
-from utility import DBConnectivity, conf
+from utility import DBConnectivity, conf, Implementations
+from functionality.Logger import Logger
 from exceptions import exceptions
 from database.AuthorizationOps import Authorization
 
 class BUser:
     def __init__(self, _id=""):
         self.__id = _id
-        self.__mongo = DBConnectivity.create_mongo_connection()
+        self.__sql = DBConnectivity.create_sql_connection()
+        self.__cursor = self.__sql.cursor(dictionary=True)
         self.__buser = {}
         if self.__id != "":
-            self.__buser = self.__mongo[conf.mongoconfig.get('tables').get('buser_table')].find_one({"_id": self.__id})
+            self.__cursor.execute("""select * from b_users where _id = %s""", (self.__id,))
+            self.__buser = self.__cursor.fetchone()
+
+    # For closing the connection
+    def __del__(self):
+        if self.__sql.is_connected():
+            self.__cursor.close()
+            self.__sql.close()
 
     # Adding a new user for a buyer company
     def add_buser(self, email, name, buyer_id, mobile_no, password, role, status=False):
@@ -24,62 +34,68 @@ class BUser:
         self.__buser['password'] = password
         self.__buser['role'] = role
         self.__buser['status'] = status
-        self.__buser['tokens'] = []
         timestamp = GenericOps.get_current_timestamp()
         self.__buser['created_at'] = timestamp
         self.__buser['updated_at'] = timestamp
-        return self.save()
+        return self.insert(self.__buser)
 
-    def login(self, password, device_name):
-        if self.__buser is not None:
-            if self.__buser['password'] == password:
-                if self.__buser['status']:
-                    auth_id = self.encode_auth_token() + ":" + GenericOps.generate_token_for_login()
-                    auth = Authorization().login_user(auth_id=auth_id, logged_in=GenericOps.get_current_timestamp(), entity_id=self.get_buyer_id(),
-                                                      email=self.__id, device_name=device_name)
-                    return auth
-                raise exceptions.InvalidLoginCredentials('Please verify your email and then try logging in')
-            raise exceptions.InvalidLoginCredentials('You have entered incorrect password')
-        raise exceptions.InvalidLoginCredentials('We cannot find an account with this email address')
-
-    def logout(self, token):
-        for i in range(len(self.__buser['authorization'])):
-            if self.__buser['authorization'][i]['token'] == token:
-                self.__buser['authorization'][i]['logged_in'] = False
-                self.__buser['authorization'][i]['timestamp'] = GenericOps.get_current_timestamp()
-                return self.save()
+    def insert(self, values, table="buser_table"):
+        try:
+            # Checking whether the table exists or not
+            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+            # Create a table if not exists
+            if self.__cursor.fetchone() is None:
+                self.__cursor.execute(Implementations.buser_create_table)
+            # Inserting the record in the table
+            self.__cursor.execute("""INSERT INTO b_users (_id, buyer_id, name, mobile_no, password, 
+                        role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                  (values['_id'], values['buyer_id'], values['name'],
+                                   values['mobile_no'], values['password'], values['role'], values['status'],
+                                   values['created_at'], values['updated_at']))
+            self.__sql.commit()
             return True
 
-    @staticmethod
-    def is_buser(email):
-        return DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('buser_table')].find_one(
-            {"_id": email}) if DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('buser_table')].find_one({"_id": email}) is not None else False
+        except mysql.connector.Error as error:
+            log = Logger(module_name='BuyerUserOps', function_name='insert()')
+            log.log(error, priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='BuyerUserOps', function_name='insert()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
 
     @staticmethod
-    def is_buser_domain_registered(email):
-        company_domain = '@' + email.split('@')[1]
-        return DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('buser_table')].find_one(
-            {'_id': {'$regex': company_domain}}) if DBConnectivity.create_mongo_connection()[
-                                                        conf.mongoconfig.get('tables').get('buser_table')].find_one(
-            {'_id': {'$regex': company_domain}}) is not None else False
+    def is_buser(email, table="buser_table"):
+        sql = DBConnectivity.create_sql_connection()
+        cursor = sql.cursor(dictionary=True)
+        cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
+                       (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+        # Create a table if not exists
+        if cursor.fetchone() is None:
+            return False
+        cursor.execute("""select _id from b_users where _id = %s""", (email, ))
+        res = True if len(cursor.fetchall()) > 0 else False
+        cursor.close()
+        sql.close()
+        return res
 
-    def verify_auth_token(self, token_name='', token_value =''):
-        for index in range(0, len(self.__buser['tokens'])):
-            if self.__buser['tokens'][index]['token_name'] == token_name and self.__buser['tokens'][index]['token_value'] == token_value:
-                self.__buser['status'] = True
-                del self.__buser['tokens'][index]
-                return self.save()
-        return False
-
-    def add_auth_token(self, token_value='', token_name='forgot_password'):
-        if len(self.__buser['tokens']) > 0:
-            for index in range(0, len(self.__buser['tokens'])):
-                if token_value == self.__buser['tokens'][index]['token_value']:
-                    return True
-            self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
-            return self.save()
-        self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
-        return self.save()
+    # def verify_auth_token(self, token_name='', token_value =''):
+    #     for index in range(0, len(self.__buser['tokens'])):
+    #         if self.__buser['tokens'][index]['token_name'] == token_name and self.__buser['tokens'][index]['token_value'] == token_value:
+    #             self.__buser['status'] = True
+    #             del self.__buser['tokens'][index]
+    #             return self.save()
+    #     return False
+    #
+    # def add_auth_token(self, token_value='', token_name='forgot_password'):
+    #     if len(self.__buser['tokens']) > 0:
+    #         for index in range(0, len(self.__buser['tokens'])):
+    #             if token_value == self.__buser['tokens'][index]['token_value']:
+    #                 return True
+    #         self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
+    #         return self.save()
+    #     self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
+    #     return self.save()
 
     def get_buyer_id(self):
         return self.__buser['buyer_id']
@@ -96,9 +112,6 @@ class BUser:
     def get_mobile_no(self):
         return self.__buser['mobile_no']
 
-    def get_status(self):
-        return self.__buser['status']
-
     def get_password(self):
         return self.__buser['password']
 
@@ -113,28 +126,30 @@ class BUser:
         return (jwt.encode({"user": self.get_email(), "exp": GenericOps.get_current_timestamp() + conf.jwt_expiration}, conf.JWT_SECRET_KEY, algorithm="HS256")).decode('UTF-8')
 
     # Decoding a JWT token
-    def decode_auth_toke(self, token):
+    def decode_auth_token(self, token):
         try:
             decode = jwt.decode(token, conf.JWT_SECRET_KEY, algorithms=['HS256'])
             return decode
         except jwt.ExpiredSignatureError as e:
             return str(e)
 
-    def save(self, obj='', table='buser_table'):
-        if obj == '':
-            return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': self.__buser['_id']},
-                                                                                  {"$set": self.__buser},
-                                                                                  upsert=True)
-        return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': obj['_id']}, {"$set": obj},
-                                                                              upsert=True)
-
     def is_admin(self):
         return True if self.__buser['role'].lower() == "admin" else False
 
     def set_password(self, password):
         self.__buser['password'] = password
-        return self.save()
+        self.__cursor.execute("update b_users set password = %s where _id = %s", (password, self.__id))
+        self.__sql.commit()
+        return True
+
+    def set_status(self, status):
+        self.__buser['status'] = status
+        self.__cursor.execute("update b_users set status = %s where _id = %s", (status, self.__id))
+        self.__sql.commit()
+        return True
 
 # buser = BUser("anujpanchal57@gmail.com")
+# pprint(BUser.is_buser("anuj.panchal@exportify.in"))
+# pprint(BUser("").add_buser("utkarsh.dhawan@exportify.in", "Utkarsh", 1000, "", "cbdbe4936ce8be63184d9f2e13fc249234371b9a", "admin"))
 # pprint(buser.encode_auth_token())
 # pprint(buser.decode_auth_toke())

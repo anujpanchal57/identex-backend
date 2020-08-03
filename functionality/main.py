@@ -31,9 +31,10 @@ from database.BuyerOps import Buyer
 from database.BuyerUserOps import BUser
 from database.SupplierOps import Supplier
 from database.SupplierUserOps import SUser
-from database.BuyerTeamOps import BuyerTeam
 from database.AuthorizationOps import Authorization
 from multiprocessing import Process
+from database.VerificationOps import Verification
+from database.SupplierRelationshipOps import SupplierRelationship
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -47,7 +48,7 @@ def validate_buyer_access_token(f):
             buser = BUser(data['_id'])
             if not buser.is_buser(data['_id']):
                 return response.unknownuser()
-            auth = buser.decode_auth_toke(token.split(":")[0])
+            auth = buser.decode_auth_token(token.split(":")[0])
             # Check if the token has expired or not
             if isinstance(auth, dict):
                 # check whether the email ID is same
@@ -81,7 +82,7 @@ def validate_supplier_access_token(f):
             suser = SUser(data['_id'])
             if not suser.is_suser(data['_id']):
                 return response.unknownuser()
-            auth = suser.decode_auth_toke(token.split(":")[0])
+            auth = suser.decode_auth_token(token.split(":")[0])
             # Check if the token has expired or not
             if isinstance(auth, dict):
                 # check whether the email ID is same
@@ -114,38 +115,31 @@ def buyer_signup_auth():
         is_buser = BUser.is_buser(data['_id'])
         if not is_buser:
             if domain_name not in Generics().mail_providers:
-                existing_domain = BUser.is_buser_domain_registered(data['_id'])
+                existing_domain = Buyer.is_buyer_domain_registered(data['_id'])
 
                 if not existing_domain:
                     buyer_id = Buyer().add_buyer(company_name=data['company_name'], domain_name=domain_name)
                     BUser().add_buser(email=data['_id'], name=data['name'], buyer_id=buyer_id, mobile_no=data['mobile_no'], password=data['password'], role="admin")
-                    BuyerTeam().create_team(team_name=Implementations.default_bteam_name, buyer_id=buyer_id, members=[data['_id']])
                     # Send verification email
                     token = GenericOps.generate_email_verification_token()
-                    buser = BUser(data['_id'])
-                    if buser.add_auth_token(token_name="verify_email", token_value=token):
+                    if Verification(name="verify_email").add_auth_token(token_id=token, user_id=data['_id'], user_type="buyer"):
                         link = conf.email_endpoints[conf.environ_name]['verify_email'] + "?id=" + data['_id'] + "&token=" + token
-                        p = Process()
                         return response.customResponse({"response": "Thank you for signing up with Identex. We have sent you a verification link on your email"})
                 else:
                     buyer_id = existing_domain['buyer_id']
                     BUser().add_buser(email=data['_id'], name=data['name'], buyer_id=buyer_id, mobile_no=data['mobile_no'], password=data['password'], role="employee")
-                    first_team_id = BuyerTeam.generate_team_id(buyer_id, Implementations.default_bteam_name)
-                    BuyerTeam(first_team_id).add_member(data['_id'])
                     # Send verification email
                     token = GenericOps.generate_email_verification_token()
-                    buser = BUser(data['_id'])
-                    if buser.add_auth_token(token_name="verify_email", token_value=token):
+                    if Verification(name="verify_email").add_auth_token(token_id=token, user_id=data['_id'], user_type="buyer"):
                         link = conf.email_endpoints[conf.environ_name]['verify_email'] + "?id=" + data['_id'] + "&token=" + token
                         return response.customResponse({"response": "Thank you for signing up with Identex. We have sent you a verification link on your email"})
             else:
                 buyer_id = Buyer().add_buyer(company_name=data['company_name'], domain_name=domain_name)
+                pprint(buyer_id)
                 BUser().add_buser(email=data['_id'], name=data['name'], buyer_id=buyer_id, mobile_no=data['mobile_no'], password=data['password'], role="admin")
-                BuyerTeam().create_team(team_name=Implementations.default_bteam_name, buyer_id=buyer_id, members=[data['_id']])
                 # Send verification email
                 token = GenericOps.generate_email_verification_token()
-                buser = BUser(data['_id'])
-                if buser.add_auth_token(token_name="verify_email", token_value=token):
+                if Verification(name="verify_email").add_auth_token(token_id=token, user_id=data['_id'], user_type="buyer"):
                     link = conf.email_endpoints[conf.environ_name]['verify_email'] + "?id=" + data['_id'] + "&token=" + token
                     return response.customResponse({"response": "Thank you for signing up with Identex. We have sent you a verification link on your email"})
         return response.errorResponse("User already exists. Try logging in instead")
@@ -172,7 +166,8 @@ def buyer_login_verify():
         if not buser.get_status():
             return response.errorResponse("Please verify your email and then try logging in")
         auth_id = buser.encode_auth_token() + ":" + GenericOps.generate_token_for_login()
-        auth = Authorization().login_user(auth_id=auth_id, entity_id=buser.get_buyer_id(), logged_in=GenericOps.get_current_timestamp(), email=data['_id'], device_name=request.headers.get('device-name'))
+        auth = Authorization().login_user(auth_id=auth_id, entity_id=buser.get_buyer_id(), logged_in=GenericOps.get_current_timestamp(),
+                                          email=data['_id'], device_name=request.headers.get('device-name'), type="buyer")
         if auth:
             # Set the access token in redis
             DBConnectivity.set_redis_key(auth_id, str(True), conf.jwt_expiration)
@@ -207,8 +202,8 @@ def buyer_verify_email():
         data['_id'] = data['_id'].lower()
         is_buser = BUser.is_buser(data['_id'])
         if is_buser:
-            buser = BUser(data['_id'])
-            if buser.verify_auth_token(token_name="verify_email", token_value=data['token']):
+            if Verification(_id=data['token'], name="verify_email").verify_auth_token(user_type="buyer"):
+                BUser(data['_id']).set_status(status=True)
                 return response.customResponse({"response": "Your email has been verified successfully"})
             return response.errorResponse("Link seems to be broken")
         return response.emailNotFound()
@@ -226,9 +221,8 @@ def buyer_forgot_password_auth():
         data['_id'] = data['_id'].lower()
         if not BUser.is_buser(data['_id']):
             return response.emailNotFound()
-        buser = BUser(data['_id'])
         token = GenericOps.generate_forgot_password_token()
-        if buser.add_auth_token(token_name="forgot_password", token_value=token):
+        if Verification(_id="", name="forgot_password").add_auth_token(token_id=token, user_id=data['_id'], user_type="buyer"):
             DBConnectivity.set_redis_key(data['_id'] + "forgot_password", token, timeout=86400)
             # send an email
             return response.customResponse({"response": "We have sent a link on your registered email. You can click on the link to reset password"})
@@ -252,11 +246,11 @@ def buyer_forgot_password_verify():
         if len(data['password']) == 0:
             return response.errorResponse("Password cannot be left as blank")
         buser = BUser(data['_id'])
-        if buser.verify_auth_token(token_name="forgot_password", token_value=data['token']):
+        if Verification(_id=data['token'], name="forgot_password").verify_auth_token(user_type="buyer"):
             buser.set_password(data['password'])
             DBConnectivity.delete_redis_key(data['_id'] + "forgot_password")
             # Delete all the active login sessions from redis
-            active_tokens = Authorization.get_active_tokens(email=data['_id'])
+            active_tokens = Authorization.get_active_tokens(email=data['_id'], type="buyer")
             for token in active_tokens:
                 Authorization(token['_id']).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="password_reset")
                 DBConnectivity.delete_redis_key(token['_id'])
@@ -276,9 +270,8 @@ def supplier_forgot_password_auth():
         data['_id'] = data['_id'].lower()
         if not SUser.is_suser(data['_id']):
             return response.emailNotFound()
-        suser = SUser(data['_id'])
         token = GenericOps.generate_forgot_password_token()
-        if suser.add_auth_token(token_name="forgot_password", token_value=token):
+        if Verification(name="forgot_password").add_auth_token(token_id=token, user_id=data['_id'], user_type="supplier"):
             DBConnectivity.set_redis_key(data['_id'] + "forgot_password", token, timeout=86400)
             # send an email
             return response.customResponse({"response": "We have sent a link on your registered email. You can click on the link to reset password"})
@@ -302,14 +295,13 @@ def supplier_forgot_password_verify():
         if len(data['password']) == 0:
             return response.errorResponse("Password cannot be left as blank")
         suser = SUser(data['_id'])
-        if suser.verify_auth_token(token_name="forgot_password", token_value=data['token']):
+        if Verification(_id=data['token'], name="forgot_password").verify_auth_token(user_type="supplier"):
             suser.set_password(data['password'])
             DBConnectivity.delete_redis_key(data['_id'] + "forgot_password")
             # Delete all the active login sessions from redis
-            active_tokens = Authorization.get_active_tokens(email=data['_id'])
+            active_tokens = Authorization.get_active_tokens(email=data['_id'], type="supplier")
             for token in active_tokens:
-                Authorization(token['_id']).logout_user(logged_out=GenericOps.get_current_timestamp(),
-                                                 action_type="password_reset")
+                Authorization(token['_id']).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="password_reset")
                 DBConnectivity.delete_redis_key(token['_id'])
             return response.customResponse({"response": "Your password has been updated. You have been logged out of the other devices"})
         return response.errorResponse("Link seems to be broken")
@@ -336,7 +328,7 @@ def supplier_login_verify():
         auth_id = suser.encode_auth_token() + ":" + GenericOps.generate_token_for_login()
         auth = Authorization().login_user(auth_id=auth_id, entity_id=suser.get_supplier_id(),
                                           logged_in=GenericOps.get_current_timestamp(), email=data['_id'],
-                                          device_name=request.headers.get('device-name'))
+                                          device_name=request.headers.get('device-name'), type="supplier")
         if auth:
             # Set the access token in redis
             DBConnectivity.set_redis_key(auth_id, str(True), conf.jwt_expiration)
@@ -410,15 +402,15 @@ def buyer_supplier_add():
             # If supplier is present
             if SUser.is_suser(supp['email']):
                 suser = SUser(supp['email'])
-                Supplier(suser.get_supplier_id()).add_buyer(buyer_id)
+                SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id())
                 # Send an email to supplier
 
             # If supplier is not present
             else:
                 supplier_id = Supplier().add_supplier(company_name=supp['company_name'])
-                Supplier(supplier_id).add_buyer(buyer_id)
                 password = GenericOps.generate_user_password()
                 SUser().add_suser(email=supp['email'], name=supp['name'], supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
+                SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
                 # Send an email to supplier
 
         # Have to decide whether to send the list of suppliers or not in response

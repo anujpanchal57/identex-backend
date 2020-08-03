@@ -23,9 +23,7 @@ redisconfig = conf.get("redis")
 
 user_log = conf.get("user_log")
 
-mongoconfig = conf.get("mongoconfig")
-
-mongoconfig['connection_url'] = conf_settings.get('mongo').get('connection_url')
+sqlconfig = conf.get("sqlconfig")
 
 jwt_expiration = conf.get("jwt").get('expire_after')
 

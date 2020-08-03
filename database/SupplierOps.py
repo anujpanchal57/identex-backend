@@ -1,32 +1,36 @@
-from functionality import GenericOps
-from utility import DBConnectivity, conf
+import traceback
+
+import mysql.connector
+from functionality import GenericOps, response
+from functionality.Logger import Logger
+from utility import DBConnectivity, conf, Implementations
+from pprint import pprint
 
 class Supplier:
     def __init__(self, _id=""):
         self.__id = _id
-        self.__mongo = DBConnectivity.create_mongo_connection()
+        self.__sql = DBConnectivity.create_sql_connection()
+        self.__cursor = self.__sql.cursor(dictionary=True)
         self.__supplier = {}
         if self.__id != "":
-            self.__supplier = self.__mongo[conf.mongoconfig.get('tables').get("supplier_table")].find_one({"_id": self.__id})
+            self.__cursor.execute("""select * from suppliers where _id = %s""", (self.__id, ))
+            self.__supplier = self.__cursor.fetchone()
 
-    # For autoincrementing and generating the buyer id
-    def __generate_supplier_id(self):
-        obj = self.__mongo[conf.mongoconfig.get('tables').get('constants_table')].find_one()
-        supplier_id = "IDNTXS" + str(obj['supplier_id_counter'])
-        obj['supplier_id_counter'] += 1
-        self.save(obj, table="constants_table")
-        return supplier_id
+    # For closing the connection
+    def __del__(self):
+        if self.__sql.is_connected():
+            self.__cursor.close()
+            self.__sql.close()
 
     # Adding a new supplier
     def add_supplier(self, company_name, activation_status=True, company_logo=""):
-        self.__supplier['_id'] = self.__generate_supplier_id()
         self.__supplier['company_name'] = company_name
         self.__supplier['activation_status'] = activation_status
         self.__supplier['company_logo'] = company_logo
         timestamp = GenericOps.get_current_timestamp()
         self.__supplier['created_at'] = timestamp
         self.__supplier['updated_at'] = timestamp
-        self.save()
+        self.__supplier['_id'] = self.insert(self.__supplier)
         return self.__supplier['_id']
 
     def get_company_logo(self):
@@ -38,20 +42,39 @@ class Supplier:
     def get_activation_status(self):
         return self.__supplier['activation_status']
 
-    def save(self, obj='', table='supplier_table'):
-        if obj == '':
-            return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': self.__supplier['_id']},
-                                                                                  {"$set": self.__supplier},
-                                                                                  upsert=True)
-        return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': obj['_id']}, {"$set": obj},
-                                                                              upsert=True)
+    def insert(self, values, table="supplier_table"):
+        try:
+            # Checking whether the table exists or not
+            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+            # Create a table if not exists
+            if self.__cursor.fetchone() is None:
+                self.__cursor.execute(Implementations.supplier_create_table)
+            # Inserting the record in the table
+            self.__cursor.execute("""INSERT INTO suppliers (company_name, company_logo, activation_status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s)""",
+                                  (values['company_name'], values['company_logo'], values['activation_status'],
+                                   values['created_at'], values['updated_at']))
+            self.__sql.commit()
+            return self.__cursor.lastrowid
 
-    def add_buyer(self, buyer_id):
-        if 'buyer_id' not in self.__supplier:
-            self.__supplier['buyer_id'] = []
-            self.__supplier['buyer_id'].append(buyer_id)
-            return self.save()
-        if buyer_id not in self.__supplier['buyer_id']:
-            self.__supplier['buyer_id'].append(buyer_id)
-            return self.save()
-        return True
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierOps', function_name='insert()')
+            log.log(error, priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='SupplierOps', function_name='insert()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+    # Make this method insert buyer ids in supplier_relationship table
+    # def add_buyer(self, buyer_id):
+    #     if 'buyer_id' not in self.__supplier:
+    #         self.__supplier['buyer_id'] = []
+    #         self.__supplier['buyer_id'].append(buyer_id)
+    #         return self.save()
+    #     if buyer_id not in self.__supplier['buyer_id']:
+    #         self.__supplier['buyer_id'].append(buyer_id)
+    #         return self.save()
+    #     return True
+
+# pprint(Supplier(1000))
+# pprint(Supplier("").add_supplier("Bhavani"))

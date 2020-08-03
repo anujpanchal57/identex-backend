@@ -17,15 +17,22 @@
         "debug": "False",
         "port": 5000
     },
-    "mongoconfig": {
+    "sqlconfig": {
         "database_name": "identexdb",
+        "host": "localhost",
+        "user": "root",
+        "password": "root",
         "tables": {
             "buyer_table": "buyers",
             "buser_table": "b_users",
             "supplier_table": "suppliers",
             "suser_table": "s_users",
-            "buyer_teams_table": "buyer_teams",
             "authorization_table": "authorizations",
+            "rfq_table": "rfq",
+            "reqn_history_table": "requisition_history",
+            "supplier_relationship_table": "supplier_relationships",
+            "verification_tokens_table": "verification_tokens",
+            "products_table": "products",
             "constants_table": "constants",
             "log_table": "logs"
         },

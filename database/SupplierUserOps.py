@@ -1,19 +1,29 @@
+import traceback
 from pprint import pprint
 
 import jwt
-
-from functionality import GenericOps
-from utility import DBConnectivity, conf
+import mysql.connector
+from functionality import GenericOps, response
+from functionality.Logger import Logger
+from utility import DBConnectivity, conf, Implementations
 from exceptions import exceptions
 from database.AuthorizationOps import Authorization
 
 class SUser:
     def __init__(self, _id=""):
         self.__id = _id
-        self.__mongo = DBConnectivity.create_mongo_connection()
+        self.__sql = DBConnectivity.create_sql_connection()
+        self.__cursor = self.__sql.cursor(dictionary=True)
         self.__suser = {}
         if self.__id != "":
-            self.__suser = self.__mongo[conf.mongoconfig.get('tables').get('suser_table')].find_one({"_id": self.__id})
+            self.__cursor.execute("""select * from s_users where _id = %s""", (self.__id,))
+            self.__suser = self.__cursor.fetchone()
+
+    # For closing the connection
+    def __del__(self):
+        if self.__sql.is_connected():
+            self.__cursor.close()
+            self.__sql.close()
 
     # Adding a new user for a buyer company
     def add_suser(self, email, name, supplier_id, password, mobile_no="", role="admin", status=True):
@@ -24,41 +34,67 @@ class SUser:
         self.__suser['password'] = password
         self.__suser['role'] = role
         self.__suser['status'] = status
-        self.__suser['tokens'] = []
         timestamp = GenericOps.get_current_timestamp()
         self.__suser['created_at'] = timestamp
         self.__suser['updated_at'] = timestamp
-        return self.save()
+        return self.insert(self.__suser)
+
+    def insert(self, values, table="suser_table"):
+        try:
+            # Checking whether the table exists or not
+            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+            # Create a table if not exists
+            if self.__cursor.fetchone() is None:
+                self.__cursor.execute(Implementations.suser_create_table)
+            # Inserting the record in the table
+            self.__cursor.execute("""INSERT INTO s_users (_id, supplier_id, name, mobile_no, password, 
+                        role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                  (values['_id'], values['supplier_id'], values['name'],
+                                   values['mobile_no'], values['password'], values['role'],
+                                   values['status'], values['created_at'], values['updated_at']))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierUserOps', function_name='insert()')
+            log.log(error, priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='SupplierUserOps', function_name='insert()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
 
     @staticmethod
-    def is_suser(email):
-        return DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('suser_table')].find_one(
-            {"_id": email}) if DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('suser_table')].find_one({"_id": email}) is not None else False
+    def is_suser(email, table="suser_table"):
+        sql = DBConnectivity.create_sql_connection()
+        cursor = sql.cursor(dictionary=True)
+        cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
+                       (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+        if cursor.fetchone() is None:
+            return False
+        cursor.execute("""select _id from s_users where _id = %s""", (email,))
+        res = True if len(cursor.fetchall()) > 0 else False
+        cursor.close()
+        sql.close()
+        return res
 
-    def verify_auth_token(self, token_name='', token_value =''):
-        for index in range(0, len(self.__suser['tokens'])):
-            if self.__suser['tokens'][index]['token_name'] == token_name and self.__suser['tokens'][index]['token_value'] == token_value:
-                self.__suser['status'] = True
-                del self.__suser['tokens'][index]
-                return self.save()
-        return False
-
-    def add_auth_token(self, token_value='', token_name='forgot_password'):
-        if len(self.__suser['tokens']) > 0:
-            for index in range(0, len(self.__suser['tokens'])):
-                if token_value == self.__suser['tokens'][index]['token_value']:
-                    return True
-            self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
-            return self.save()
-        self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
-        return self.save()
-
-    def delete_auth_token(self, token_name='', token_value=''):
-        for index in range(0, len(self.__suser['tokens'])):
-            if self.__suser['tokens'][index]['token_name'] == token_name and self.__suser['tokens'][index]['token_value'] == token_value:
-                del self.__suser['tokens'][index]
-                return self.save()
-        return False
+    # def verify_auth_token(self, token_name='', token_value =''):
+    #     for index in range(0, len(self.__suser['tokens'])):
+    #         if self.__suser['tokens'][index]['token_name'] == token_name and self.__suser['tokens'][index]['token_value'] == token_value:
+    #             self.__suser['status'] = True
+    #             del self.__suser['tokens'][index]
+    #             return self.save()
+    #     return False
+    #
+    # def add_auth_token(self, token_value='', token_name='forgot_password'):
+    #     if len(self.__suser['tokens']) > 0:
+    #         for index in range(0, len(self.__suser['tokens'])):
+    #             if token_value == self.__suser['tokens'][index]['token_value']:
+    #                 return True
+    #         self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
+    #         return self.save()
+    #     self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
+    #     return self.save()
 
     def get_name(self):
         return self.__suser['name']
@@ -86,15 +122,12 @@ class SUser:
 
     def set_password(self, password):
         self.__suser['password'] = password
-        return self.save()
+        self.__cursor.execute("update s_users set password = %s where _id = %s", (password, self.__id))
+        self.__sql.commit()
+        return True
 
     def get_supplier_id(self):
         return self.__suser['supplier_id']
-
-    @staticmethod
-    def is_suser(email):
-        return DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('suser_table')].find_one(
-            {"_id": email}) if DBConnectivity.create_mongo_connection()[conf.mongoconfig.get('tables').get('suser_table')].find_one({"_id": email}) is not None else False
 
     def get_email(self):
         return self.__suser['_id']
@@ -104,23 +137,16 @@ class SUser:
         return (jwt.encode({"user": self.get_email(), "exp": GenericOps.get_current_timestamp() + conf.jwt_expiration}, conf.JWT_SECRET_KEY, algorithm="HS256")).decode('UTF-8')
 
     # Decoding a JWT token
-    def decode_auth_toke(self, token):
+    def decode_auth_token(self, token):
         try:
             decode = jwt.decode(token, conf.JWT_SECRET_KEY, algorithms=['HS256'])
             return decode
         except jwt.ExpiredSignatureError as e:
             return str(e)
 
-    def save(self, obj='', table='suser_table'):
-        if obj == '':
-            return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': self.__suser['_id']},
-                                                                                  {"$set": self.__suser},
-                                                                                  upsert=True)
-        return self.__mongo[conf.mongoconfig.get('tables').get(table)].update({'_id': obj['_id']}, {"$set": obj},
-                                                                              upsert=True)
-
-
 
 # suser = SUser("anujpanchal57@gmail.com")
+# pprint(SUser("").add_suser("avinash.kothari@exportify.in", "Avinash", 1000, "cbdbe4936ce8be63184d9f2e13fc249234371b9a"))
+# pprint(SUser.is_suser("avinash.kothari@exportify.in"))
 # pprint(suser.encode_auth_token())
 # pprint(suser.decode_auth_toke())

@@ -1,12 +1,22 @@
 from pprint import pprint
-
+import mysql.connector
+from mysql.connector import Error
 from pymongo import MongoClient
 from utility import conf
 from redis import StrictRedis
 
-def create_mongo_connection():
-    mongo = MongoClient(conf.mongoconfig.get('connection_url'))
-    return mongo[conf.mongoconfig.get('database_name')]
+def create_sql_connection():
+    try:
+        connection = mysql.connector.connect(host=conf.sqlconfig.get('host'),
+                                             database=conf.sqlconfig.get('database_name'),
+                                             user=conf.sqlconfig.get('user'),
+                                             password=conf.sqlconfig.get('password'))
+        if connection.is_connected():
+            return connection
+
+    except Error as e:
+        # Shift this with error logs
+        print("Error while connecting to MySQL", e)
 
 def create_redis_connection():
     return StrictRedis(host=conf.redisconfig.get('host'), port=conf.redisconfig.get('port'))
@@ -26,8 +36,7 @@ def delete_redis_key(key):
     redis = create_redis_connection()
     return redis.delete(key)
 
+# pprint(create_sql_connection())
 # pprint(delete_redis_key("sample"))
 # pprint(set_redis_key("as", "we", 10))
 # pprint(get_redis_key("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1OTYyMTUxODIsInVzZXIiOiJhbnVqcGFuY2hhbDU3QGdtYWlsLmNvbSJ9.gelgJLuNswaUonEuCITuvsdhDcqLclkEbGlljqD_WHc:8cb8b19057a2401ab300108c41d03aef"))
-# mongo = create_mongo_connection()
-# pprint(mongo['user'].find_one({"_id": {'$regex': "gmail.com"}}))
