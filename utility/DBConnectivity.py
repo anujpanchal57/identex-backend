@@ -7,10 +7,10 @@ from redis import StrictRedis
 
 def create_sql_connection():
     try:
-        connection = mysql.connector.connect(host=conf.sqlconfig.get('host'),
+        connection = mysql.connector.connect(host=conf.SQL_CONNECTION_URL,
                                              database=conf.sqlconfig.get('database_name'),
-                                             user=conf.sqlconfig.get('user'),
-                                             password=conf.sqlconfig.get('password'))
+                                             user=conf.SQL_CONNECTION_USER,
+                                             password=conf.SQL_CONNECTION_PASSWORD)
         if connection.is_connected():
             return connection
 

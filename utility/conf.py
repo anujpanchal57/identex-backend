@@ -27,6 +27,12 @@ sqlconfig = conf.get("sqlconfig")
 
 jwt_expiration = conf.get("jwt").get('expire_after')
 
+SQL_CONNECTION_URL = conf_settings.get('sql').get('connection_url')
+
+SQL_CONNECTION_USER = conf_settings.get('sql').get('user')
+
+SQL_CONNECTION_PASSWORD = conf_settings.get('sql').get('password')
+
 JWT_SECRET_KEY = conf_settings.get('secret').get('jwt')
 
 PEPIPOST_API_KEY = conf_settings.get('api_keys').get('pepipost')

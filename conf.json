@@ -19,9 +19,6 @@
     },
     "sqlconfig": {
         "database_name": "identexdb",
-        "host": "localhost",
-        "user": "root",
-        "password": "root",
         "tables": {
             "buyer_table": "buyers",
             "buser_table": "b_users",
