@@ -29,13 +29,9 @@ class Verification:
         self.__verification['user_type'] = user_type
         return self.insert(self.__verification)
 
-    def insert(self, values, table="verification_tokens_table"):
+    def insert(self, values):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.verification_tokens_create_table)
+            self.__cursor.execute(Implementations.verification_tokens_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO verification_tokens (_id, token_name, user_id, user_type) VALUES (%s, %s, %s, %s)""",
                                   (values['_id'], values['token_name'], values['user_id'], values['user_type']))

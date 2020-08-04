@@ -47,15 +47,9 @@ class Authorization:
         sql.close()
         return res
 
-    def insert(self, values, table="authorization_table"):
+    def insert(self, values):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute(
-                """SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
-                (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.authorizations_create_table)
+            self.__cursor.execute(Implementations.authorizations_create_table)
             # Inserting the record in the table
             self.__cursor.execute(
                 """INSERT INTO authorizations (_id, email, type, entity_id, device_name, logged_in) VALUES (%s, %s, %s, %s, %s, %s)""",
@@ -64,12 +58,11 @@ class Authorization:
             return True
 
         except mysql.connector.Error as error:
-            log = Logger(module_name='BuyerOps', function_name='insert()')
+            log = Logger(module_name='AuthorizationOps', function_name='insert()')
             log.log(error, priority='highest')
             return False
-
         except Exception as e:
-            log = Logger(module_name='BuyerOps', function_name='insert()')
+            log = Logger(module_name='AuthorizationOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
             return False
 

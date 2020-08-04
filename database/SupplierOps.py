@@ -42,13 +42,9 @@ class Supplier:
     def get_activation_status(self):
         return self.__supplier['activation_status']
 
-    def insert(self, values, table="supplier_table"):
+    def insert(self, values):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.supplier_create_table)
+            self.__cursor.execute(Implementations.supplier_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO suppliers (company_name, company_logo, activation_status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s)""",
                                   (values['company_name'], values['company_logo'], values['activation_status'],
@@ -64,17 +60,6 @@ class Supplier:
             log = Logger(module_name='SupplierOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
             return False
-
-    # Make this method insert buyer ids in supplier_relationship table
-    # def add_buyer(self, buyer_id):
-    #     if 'buyer_id' not in self.__supplier:
-    #         self.__supplier['buyer_id'] = []
-    #         self.__supplier['buyer_id'].append(buyer_id)
-    #         return self.save()
-    #     if buyer_id not in self.__supplier['buyer_id']:
-    #         self.__supplier['buyer_id'].append(buyer_id)
-    #         return self.save()
-    #     return True
 
 # pprint(Supplier(1000))
 # pprint(Supplier("").add_supplier("Bhavani"))

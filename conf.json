@@ -30,6 +30,7 @@
             "supplier_relationship_table": "supplier_relationships",
             "verification_tokens_table": "verification_tokens",
             "products_table": "products",
+            "requisition_history_table": "requisition_history",
             "constants_table": "constants",
             "log_table": "logs"
         },

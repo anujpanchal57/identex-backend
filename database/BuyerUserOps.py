@@ -39,13 +39,9 @@ class BUser:
         self.__buser['updated_at'] = timestamp
         return self.insert(self.__buser)
 
-    def insert(self, values, table="buser_table"):
+    def insert(self, values):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.buser_create_table)
+            self.__cursor.execute(Implementations.buser_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO b_users (_id, buyer_id, name, mobile_no, password, 
                         role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
@@ -78,24 +74,6 @@ class BUser:
         cursor.close()
         sql.close()
         return res
-
-    # def verify_auth_token(self, token_name='', token_value =''):
-    #     for index in range(0, len(self.__buser['tokens'])):
-    #         if self.__buser['tokens'][index]['token_name'] == token_name and self.__buser['tokens'][index]['token_value'] == token_value:
-    #             self.__buser['status'] = True
-    #             del self.__buser['tokens'][index]
-    #             return self.save()
-    #     return False
-    #
-    # def add_auth_token(self, token_value='', token_name='forgot_password'):
-    #     if len(self.__buser['tokens']) > 0:
-    #         for index in range(0, len(self.__buser['tokens'])):
-    #             if token_value == self.__buser['tokens'][index]['token_value']:
-    #                 return True
-    #         self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
-    #         return self.save()
-    #     self.__buser['tokens'].append({"token_name": token_name, "token_value": token_value})
-    #     return self.save()
 
     def get_buyer_id(self):
         return self.__buser['buyer_id']

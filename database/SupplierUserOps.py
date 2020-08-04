@@ -39,13 +39,9 @@ class SUser:
         self.__suser['updated_at'] = timestamp
         return self.insert(self.__suser)
 
-    def insert(self, values, table="suser_table"):
+    def insert(self, values):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.suser_create_table)
+            self.__cursor.execute(Implementations.suser_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO s_users (_id, supplier_id, name, mobile_no, password, 
                         role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
@@ -77,24 +73,6 @@ class SUser:
         cursor.close()
         sql.close()
         return res
-
-    # def verify_auth_token(self, token_name='', token_value =''):
-    #     for index in range(0, len(self.__suser['tokens'])):
-    #         if self.__suser['tokens'][index]['token_name'] == token_name and self.__suser['tokens'][index]['token_value'] == token_value:
-    #             self.__suser['status'] = True
-    #             del self.__suser['tokens'][index]
-    #             return self.save()
-    #     return False
-    #
-    # def add_auth_token(self, token_value='', token_name='forgot_password'):
-    #     if len(self.__suser['tokens']) > 0:
-    #         for index in range(0, len(self.__suser['tokens'])):
-    #             if token_value == self.__suser['tokens'][index]['token_value']:
-    #                 return True
-    #         self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
-    #         return self.save()
-    #     self.__suser['tokens'].append({"token_name": token_name, "token_value": token_value})
-    #     return self.save()
 
     def get_name(self):
         return self.__suser['name']

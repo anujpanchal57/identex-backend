@@ -26,13 +26,9 @@ class SupplierRelationship:
         self.__s_relations['buyer_id'] = buyer_id
         return self.insert(self.__s_relations)
 
-    def insert(self, values, table="supplier_relationship_table"):
+    def insert(self, values):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.supplier_relationship_create_table)
+            self.__cursor.execute(Implementations.supplier_relationship_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO supplier_relationships (buyer_id, supplier_id) VALUES (%s, %s)""",
                                   (values['buyer_id'], values['supplier_id']))

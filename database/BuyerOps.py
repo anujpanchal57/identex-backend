@@ -23,7 +23,7 @@ class Buyer:
             self.__sql.close()
 
     # Adding a new buyer
-    def add_buyer(self, company_name, domain_name, auto_join=True, default_currency="inr", subscription_plan="start", activation_status=False, company_logo=""):
+    def add_buyer(self, company_name, domain_name, auto_join=True, default_currency="inr", subscription_plan="", activation_status=False, company_logo=""):
         self.__buyer['company_name'] = company_name
         self.__buyer['domain_name'] = domain_name
         self.__buyer['activation_status'] = activation_status
@@ -39,11 +39,11 @@ class Buyer:
 
     def insert(self, values, table="buyer_table"):
         try:
-            # Checking whether the table exists or not
-            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.buyer_create_table)
+            # # Checking whether the table exists or not
+            # self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""", (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+            # # Create a table if not exists
+            # if self.__cursor.fetchone() is None:
+            self.__cursor.execute(Implementations.buyer_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO buyers (company_name, auto_join, domain_name, company_logo, default_currency, 
                         subscription_plan, activation_status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
