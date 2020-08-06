@@ -13,7 +13,7 @@ class Buyer:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__buyer = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from buyers where _id = %s""", (self.__id, ))
+            self.__cursor.execute("""select * from buyers where buyer_id = %s""", (self.__id, ))
             self.__buyer = self.__cursor.fetchone()
 
     # For closing the connection
@@ -34,8 +34,8 @@ class Buyer:
         timestamp = GenericOps.get_current_timestamp()
         self.__buyer['created_at'] = timestamp
         self.__buyer['updated_at'] = timestamp
-        self.__buyer['_id'] = self.insert(self.__buyer)
-        return self.__buyer['_id']
+        self.__buyer['buyer_id'] = self.insert(self.__buyer)
+        return self.__buyer['buyer_id']
 
     def insert(self, values, table="buyer_table"):
         try:
@@ -73,7 +73,7 @@ class Buyer:
         # Create a table if not exists
         if cursor.fetchone() is None:
             return False
-        cursor.execute("""select _id from buyers where domain_name=%s""", (company_domain, ))
+        cursor.execute("""select buyer_id from buyers where domain_name=%s""", (company_domain, ))
         res = True if len(cursor.fetchall()) > 0 else False
         cursor.close()
         sql.close()

@@ -12,7 +12,7 @@ class RequisitionHistory:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__reqn = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from requisition_history where _id = %s""", (self.__id, ))
+            self.__cursor.execute("""select * from requisition_history where reqn_id = %s""", (self.__id, ))
             self.__reqn = self.__cursor.fetchone()
 
     # For closing the connection
@@ -29,8 +29,8 @@ class RequisitionHistory:
         self.__reqn['quantity'] = quantity
         self.__reqn['quantity_basis'] = quantity_basis
         self.__reqn['created_at'] = GenericOps.get_current_timestamp()
-        self.__reqn['_id'] = self.insert(self.__reqn)
-        return self.__reqn['_id']
+        self.__reqn['reqn_id'] = self.insert(self.__reqn)
+        return self.__reqn['reqn_id']
 
     def insert(self, values, table="requisition_history_table"):
         try:
@@ -53,7 +53,7 @@ class RequisitionHistory:
             return False
 
     def get_reqn_id(self):
-        return self.__reqn['_id']
+        return self.__reqn['reqn_id']
 
     def get_product_name(self):
         return self.__reqn['product_name']

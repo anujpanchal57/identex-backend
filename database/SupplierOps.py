@@ -13,7 +13,7 @@ class Supplier:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__supplier = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from suppliers where _id = %s""", (self.__id, ))
+            self.__cursor.execute("""select * from suppliers where supplier_id = %s""", (self.__id, ))
             self.__supplier = self.__cursor.fetchone()
 
     # For closing the connection
@@ -30,8 +30,8 @@ class Supplier:
         timestamp = GenericOps.get_current_timestamp()
         self.__supplier['created_at'] = timestamp
         self.__supplier['updated_at'] = timestamp
-        self.__supplier['_id'] = self.insert(self.__supplier)
-        return self.__supplier['_id']
+        self.__supplier['supplier_id'] = self.insert(self.__supplier)
+        return self.__supplier['supplier_id']
 
     def get_company_logo(self):
         return self.__supplier['company_logo']

@@ -11,7 +11,6 @@ from flask_cors import CORS
 import platform
 import jwt
 
-
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
 sys.path.append(app_name)
@@ -35,6 +34,7 @@ from database.AuthorizationOps import Authorization
 from multiprocessing import Process
 from database.VerificationOps import Verification
 from database.SupplierRelationshipOps import SupplierRelationship
+from Integrations.AWSOps import AWS
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -45,6 +45,7 @@ def validate_buyer_access_token(f):
         try:
             token = request.headers.get('X-HTTP-ACCESS-TOKEN')
             data = DictionaryOps.set_primary_key(request.json, 'email')
+            data['_id'] = data['_id'].lower()
             buser = BUser(data['_id'])
             if not buser.is_buser(data['_id']):
                 return response.unknownuser()
@@ -79,10 +80,55 @@ def validate_supplier_access_token(f):
         try:
             token = request.headers.get('X-HTTP-ACCESS-TOKEN')
             data = DictionaryOps.set_primary_key(request.json, 'email')
+            data['_id'] = data['_id'].lower()
             suser = SUser(data['_id'])
             if not suser.is_suser(data['_id']):
                 return response.unknownuser()
             auth = suser.decode_auth_token(token.split(":")[0])
+            # Check if the token has expired or not
+            if isinstance(auth, dict):
+                # check whether the email ID is same
+                if auth['user'] == data['_id']:
+                    # Check for the token in redis
+                    if DBConnectivity.get_redis_key(token) is not None:
+                        return f(*args, **kwargs)
+                    else:
+                        Authorization(token).logout_user(logged_out=GenericOps.get_current_timestamp(),
+                                                         action_type="expired")
+                        return response.tokenExpiredResponse()
+                return response.forbiddenResponse()
+            # write logout logic for the buser
+            if Authorization(token).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="expired"):
+                return response.tokenExpiredResponse()
+        except TypeError as e:
+            return response.incompleteResponse(str(e))
+        except Exception as e:
+            return response.errorResponse(e)
+    return wrapped
+
+# Validates access token for supplier/buyer
+def validate_access_token(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+        try:
+            token = request.headers.get('X-HTTP-ACCESS-TOKEN')
+            client_type = request.json['client_type']
+            data = DictionaryOps.set_primary_key(request.json, 'email')
+            data['_id'] = data['_id'].lower()
+            if client_type.lower() == "supplier":
+                if not SUser.is_suser(data['_id']):
+                    return response.unknownuser()
+                else:
+                    suser = SUser(data['_id'])
+                    auth = suser.decode_auth_token(token.split(":")[0])
+            else:
+                if not BUser.is_buser(data['_id']):
+                    return response.unknownuser()
+                else:
+                    buser = BUser(data['_id'])
+                    auth = buser.decode_auth_token(token.split(":")[0])
             # Check if the token has expired or not
             if isinstance(auth, dict):
                 # check whether the email ID is same
@@ -420,6 +466,28 @@ def buyer_supplier_add():
         log = Logger(module_name='/buyer/supplier/add', function_name='buyer_supplier_add()')
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
+
+# POST request uploading documents
+@app.route('/documents/upload', methods=['POST'])
+def upload_documents():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, 'email')
+        cloud = AWS('s3')
+        result = []
+        for document in data['documents']:
+            upload_file_name = GenericOps.generate_aws_file_path(client_type=data['uploader'], client_id=data['uploaded_by'], document_type=document['document_type'])
+            uploaded = cloud.upload_file_from_base64(base64_string=document['base64'], path=upload_file_name)
+            document['document_name'] = document['document_name'].split(".")[0]
+            document['document_url'] = uploaded
+            document['uploaded_on'] = GenericOps.get_current_timestamp()
+            del document['base64']
+            result.append(document)
+        return response.customResponse({"documents": result, "message": "Document(s) uploaded successfully!"})
+
+    except Exception as e:
+        log = Logger(module_name="/documents/upload", function_name="upload_documents()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 
 if __name__ == '__main__':

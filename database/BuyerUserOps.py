@@ -16,7 +16,7 @@ class BUser:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__buser = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from b_users where _id = %s""", (self.__id,))
+            self.__cursor.execute("""select * from b_users where email = %s""", (self.__id,))
             self.__buser = self.__cursor.fetchone()
 
     # For closing the connection
@@ -27,7 +27,7 @@ class BUser:
 
     # Adding a new user for a buyer company
     def add_buser(self, email, name, buyer_id, mobile_no, password, role, status=False):
-        self.__buser['_id'] = email
+        self.__buser['email'] = email
         self.__buser['name'] = name
         self.__buser['mobile_no'] = mobile_no
         self.__buser['buyer_id'] = buyer_id
@@ -43,9 +43,9 @@ class BUser:
         try:
             self.__cursor.execute(Implementations.buser_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO b_users (_id, buyer_id, name, mobile_no, password, 
+            self.__cursor.execute("""INSERT INTO b_users (email, buyer_id, name, mobile_no, password, 
                         role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['_id'], values['buyer_id'], values['name'],
+                                  (values['email'], values['buyer_id'], values['name'],
                                    values['mobile_no'], values['password'], values['role'], values['status'],
                                    values['created_at'], values['updated_at']))
             self.__sql.commit()
@@ -69,7 +69,7 @@ class BUser:
         # Create a table if not exists
         if cursor.fetchone() is None:
             return False
-        cursor.execute("""select _id from b_users where _id = %s""", (email, ))
+        cursor.execute("""select _id from b_users where email = %s""", (email, ))
         res = True if len(cursor.fetchall()) > 0 else False
         cursor.close()
         sql.close()
@@ -82,7 +82,7 @@ class BUser:
         return self.__buser['status']
 
     def get_email(self):
-        return self.__buser['_id']
+        return self.__buser['email']
 
     def get_name(self):
         return self.__buser['name']
@@ -116,13 +116,13 @@ class BUser:
 
     def set_password(self, password):
         self.__buser['password'] = password
-        self.__cursor.execute("update b_users set password = %s where _id = %s", (password, self.__id))
+        self.__cursor.execute("update b_users set password = %s where email = %s", (password, self.__id))
         self.__sql.commit()
         return True
 
     def set_status(self, status):
         self.__buser['status'] = status
-        self.__cursor.execute("update b_users set status = %s where _id = %s", (status, self.__id))
+        self.__cursor.execute("update b_users set status = %s where email = %s", (status, self.__id))
         self.__sql.commit()
         return True
 

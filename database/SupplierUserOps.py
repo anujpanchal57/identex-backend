@@ -16,7 +16,7 @@ class SUser:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__suser = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from s_users where _id = %s""", (self.__id,))
+            self.__cursor.execute("""select * from s_users where email = %s""", (self.__id,))
             self.__suser = self.__cursor.fetchone()
 
     # For closing the connection
@@ -27,7 +27,7 @@ class SUser:
 
     # Adding a new user for a buyer company
     def add_suser(self, email, name, supplier_id, password, mobile_no="", role="admin", status=True):
-        self.__suser['_id'] = email
+        self.__suser['email'] = email
         self.__suser['name'] = name
         self.__suser['mobile_no'] = mobile_no
         self.__suser['supplier_id'] = supplier_id
@@ -43,9 +43,9 @@ class SUser:
         try:
             self.__cursor.execute(Implementations.suser_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO s_users (_id, supplier_id, name, mobile_no, password, 
+            self.__cursor.execute("""INSERT INTO s_users (email, supplier_id, name, mobile_no, password, 
                         role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['_id'], values['supplier_id'], values['name'],
+                                  (values['email'], values['supplier_id'], values['name'],
                                    values['mobile_no'], values['password'], values['role'],
                                    values['status'], values['created_at'], values['updated_at']))
             self.__sql.commit()
@@ -68,7 +68,7 @@ class SUser:
                        (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
         if cursor.fetchone() is None:
             return False
-        cursor.execute("""select _id from s_users where _id = %s""", (email,))
+        cursor.execute("""select _id from s_users where email = %s""", (email,))
         res = True if len(cursor.fetchall()) > 0 else False
         cursor.close()
         sql.close()
@@ -100,7 +100,7 @@ class SUser:
 
     def set_password(self, password):
         self.__suser['password'] = password
-        self.__cursor.execute("update s_users set password = %s where _id = %s", (password, self.__id))
+        self.__cursor.execute("update s_users set password = %s where email = %s", (password, self.__id))
         self.__sql.commit()
         return True
 
@@ -108,7 +108,7 @@ class SUser:
         return self.__suser['supplier_id']
 
     def get_email(self):
-        return self.__suser['_id']
+        return self.__suser['email']
 
     # Encoding JWT token with an expiration time of 3 days
     def encode_auth_token(self):

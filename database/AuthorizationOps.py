@@ -12,7 +12,7 @@ class Authorization:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__auth = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from authorizations where _id = %s""", (self.__id, ))
+            self.__cursor.execute("""select * from authorizations where auth_id = %s""", (self.__id, ))
             self.__auth = self.__cursor.fetchone()
 
     # For closing the connection
@@ -22,7 +22,7 @@ class Authorization:
             self.__sql.close()
 
     def login_user(self, auth_id, logged_in, entity_id, email, device_name, type):
-        self.__auth['_id'] = auth_id
+        self.__auth['auth_id'] = auth_id
         self.__auth['logged_in'] = logged_in
         self.__auth['entity_id'] = entity_id
         self.__auth['email'] = email
@@ -33,7 +33,7 @@ class Authorization:
     def logout_user(self, logged_out, action_type):
         self.__auth['logged_out'] = logged_out
         self.__auth['action_type'] = action_type
-        self.__cursor.execute("""update authorizations set logged_out = %s, action_type = %s where _id = %s""", (self.__auth['logged_out'], self.__auth['action_type'], self.__id))
+        self.__cursor.execute("""update authorizations set logged_out = %s, action_type = %s where auth_id = %s""", (self.__auth['logged_out'], self.__auth['action_type'], self.__id))
         self.__sql.commit()
         return True
 
@@ -52,8 +52,8 @@ class Authorization:
             self.__cursor.execute(Implementations.authorizations_create_table)
             # Inserting the record in the table
             self.__cursor.execute(
-                """INSERT INTO authorizations (_id, email, type, entity_id, device_name, logged_in) VALUES (%s, %s, %s, %s, %s, %s)""",
-                (values['_id'], values['email'], values['type'], values['entity_id'], values['device_name'], values['logged_in']))
+                """INSERT INTO authorizations (auth_id, email, type, entity_id, device_name, logged_in) VALUES (%s, %s, %s, %s, %s, %s)""",
+                (values['auth_id'], values['email'], values['type'], values['entity_id'], values['device_name'], values['logged_in']))
             self.__sql.commit()
             return True
 

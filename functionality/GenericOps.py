@@ -32,10 +32,14 @@ def generate_token_for_login():
     link = ''.join(str(uuid.uuid4()).split('-'))
     return link
 
+def generate_aws_file_path(client_type, client_id, document_type):
+    if client_type.lower() == "buyer":
+        return "B" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+    return "S" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+
 def is_url(url):
     return 'http://' in url or 'https://' in url
 
 def generate_user_password(length=7):
     password_characters = string.ascii_letters + string.digits
     return ''.join(random.choice(password_characters) for i in range(length))
-

@@ -3,7 +3,7 @@ default_bteam_name = "All Users"
 default_bteam_id = "All_Users"
 
 buyer_create_table = """create table if not exists buyers (
-                _id int primary key not null auto_increment,
+                buyer_id int primary key not null auto_increment,
                 company_name varchar(50) not null,
                 auto_join bool not null,
                 domain_name varchar(20) not null,
@@ -16,7 +16,7 @@ buyer_create_table = """create table if not exists buyers (
             ) ENGINE=InnoDB auto_increment=1000"""
 
 supplier_create_table = """create table if not exists suppliers (
-                _id int primary key not null auto_increment,
+                supplier_id int primary key not null auto_increment,
                 company_name varchar(50) not null,
                 company_logo varchar(100) not null,
                 activation_status bool not null, 
@@ -25,7 +25,7 @@ supplier_create_table = """create table if not exists suppliers (
             ) ENGINE=InnoDB auto_increment=1000"""
 
 buser_create_table = """create table if not exists b_users (
-                _id varchar(60) primary key not null,
+                email varchar(60) primary key not null,
                 buyer_id int not null, 
                 name char(60) not null, 
                 mobile_no varchar(20) not null,
@@ -38,7 +38,7 @@ buser_create_table = """create table if not exists b_users (
             )"""
 
 suser_create_table = """create table if not exists s_users (
-                _id varchar(60) primary key not null,
+                email varchar(60) primary key not null,
                 supplier_id int not null,
                 name char(60) not null, 
                 mobile_no varchar(20) not null,
@@ -51,7 +51,7 @@ suser_create_table = """create table if not exists s_users (
             )"""
 
 authorizations_create_table = """create table if not exists authorizations (
-                _id varchar(200) primary key not null,
+                auth_id varchar(200) primary key not null,
                 email varchar(60) not null,
                 type varchar(10) not null, 
                 entity_id varchar(10) not null, 
@@ -62,7 +62,7 @@ authorizations_create_table = """create table if not exists authorizations (
             )"""
 
 reqn_history_create_table = """create table if not exists requisition_history (
-                _id int primary key auto_increment not null,
+                reqn_id int primary key auto_increment not null,
                 buyer_id int not null,
                 product_name varchar(100) not null,
                 product_description varchar(500) not null,
@@ -80,14 +80,16 @@ supplier_relationship_create_table = """create table if not exists supplier_rela
             )"""
 
 verification_tokens_create_table = """create table if not exists verification_tokens (
-                _id varchar(200) primary key not null,
+                token_id varchar(200) primary key not null,
                 token_name varchar(20) not null, 
                 user_id varchar(60) not null, 
                 user_type varchar(20) not null
             )"""
 
+requisition_create_table = """create table if not exists """
+
 logs_create_table = """create table if not exists logs (
-                _id varchar(100) not null primary key,
+                log_id varchar(100) not null primary key,
                 function_name varchar(50) not null,
                 module_name varchar(50) not null, 
                 message varchar(1000) not null, 

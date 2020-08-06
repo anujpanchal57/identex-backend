@@ -39,6 +39,14 @@ PEPIPOST_API_KEY = conf_settings.get('api_keys').get('pepipost')
 
 MAILGUN_API_KEY = conf_settings.get('api_keys').get('mailgun')
 
+aws = {
+    'access_key': conf_settings['aws']['access_key_id'],
+    'secret_key': conf_settings['aws']['secret_key'],
+    'bucket_name': {
+        'uploads': 'uploads-idntx'
+    }
+}
+
 email_endpoints = {
     "development": {
         "verify_email": "http://localhost/verify/email",

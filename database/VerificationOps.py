@@ -13,7 +13,7 @@ class Verification:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__verification = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from verification_tokens where _id = %s and token_name = %s""", (self.__id, self.__name, ))
+            self.__cursor.execute("""select * from verification_tokens where token_id = %s and token_name = %s""", (self.__id, self.__name, ))
             self.__verification = self.__cursor.fetchone()
 
     # For closing the connection
@@ -23,7 +23,7 @@ class Verification:
             self.__sql.close()
 
     def add_auth_token(self, token_id, user_id, user_type):
-        self.__verification['_id'] = token_id
+        self.__verification['token_id'] = token_id
         self.__verification['token_name'] = self.__name
         self.__verification['user_id'] = user_id
         self.__verification['user_type'] = user_type
@@ -33,8 +33,8 @@ class Verification:
         try:
             self.__cursor.execute(Implementations.verification_tokens_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO verification_tokens (_id, token_name, user_id, user_type) VALUES (%s, %s, %s, %s)""",
-                                  (values['_id'], values['token_name'], values['user_id'], values['user_type']))
+            self.__cursor.execute("""INSERT INTO verification_tokens (token_id, token_name, user_id, user_type) VALUES (%s, %s, %s, %s)""",
+                                  (values['token_id'], values['token_name'], values['user_id'], values['user_type']))
             self.__sql.commit()
             return True
 
@@ -48,11 +48,11 @@ class Verification:
             return False
 
     def verify_auth_token(self, user_type):
-        self.__cursor.execute("select * from verification_tokens where _id = %s and token_name = %s and user_type = %s",
+        self.__cursor.execute("select * from verification_tokens where token_id = %s and token_name = %s and user_type = %s",
                               (self.__id, self.__name, user_type))
         if len(self.__cursor.fetchall()) == 0:
             return False
-        self.__cursor.execute("delete from verification_tokens where _id = %s and token_name = %s and user_type = %s",
+        self.__cursor.execute("delete from verification_tokens where token_id = %s and token_name = %s and user_type = %s",
                               (self.__id, self.__name, user_type))
         self.__sql.commit()
         return True
