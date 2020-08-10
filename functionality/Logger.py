@@ -24,14 +24,9 @@ class Logger:
     def log(self,error,priority='high', table="log_table"):
         try:
             # Checking whether the table exists or not
-            self.__cursor.execute(
-                """SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
-                (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-            # Create a table if not exists
-            if self.__cursor.fetchone() is None:
-                self.__cursor.execute(Implementations.logs_create_table)
+            self.__cursor.execute(Implementations.logs_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO logs (_id, function_name, module_name, message, priority, timestamp) VALUES (%s, %s, %s, %s, %s, %s)""",
+            self.__cursor.execute("""INSERT INTO logs (log_id, function_name, module_name, message, priority, timestamp) VALUES (%s, %s, %s, %s, %s, %s)""",
                                   (self.__log_id, self.__function_name, self.__module_name,
                                    error, priority, GenericOps.get_current_timestamp()))
             self.__sql.commit()

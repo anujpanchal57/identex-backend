@@ -1,6 +1,5 @@
 import traceback
 from pprint import pprint
-
 import jwt
 import mysql.connector
 from functionality import GenericOps, response
@@ -68,7 +67,7 @@ class SUser:
                        (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
         if cursor.fetchone() is None:
             return False
-        cursor.execute("""select _id from s_users where email = %s""", (email,))
+        cursor.execute("""select * from s_users where email = %s""", (email,))
         res = True if len(cursor.fetchall()) > 0 else False
         cursor.close()
         sql.close()

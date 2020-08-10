@@ -34,7 +34,7 @@ buser_create_table = """create table if not exists b_users (
                 status bool not null, 
                 created_at int(11) not null,
                 updated_at int(11) not null,
-                FOREIGN KEY (buyer_id) REFERENCES buyers(_id)
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             )"""
 
 suser_create_table = """create table if not exists s_users (
@@ -47,7 +47,7 @@ suser_create_table = """create table if not exists s_users (
                 status bool not null,
                 created_at int(11) not null,
                 updated_at int(11) not null,
-                FOREIGN KEY (supplier_id) REFERENCES suppliers(_id)
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
             )"""
 
 authorizations_create_table = """create table if not exists authorizations (
@@ -70,7 +70,7 @@ reqn_history_create_table = """create table if not exists requisition_history (
                 quantity int not null,
                 quantity_basis varchar(20) not null,
                 created_at int(11) not null,
-                FOREIGN KEY (buyer_id) REFERENCES buyers(_id)
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             )"""
 
 supplier_relationship_create_table = """create table if not exists supplier_relationships (
@@ -86,7 +86,78 @@ verification_tokens_create_table = """create table if not exists verification_to
                 user_type varchar(20) not null
             )"""
 
-requisition_create_table = """create table if not exists """
+requisition_create_table = """create table if not exists requisitions (
+                requisition_id int primary key not null auto_increment,
+                buyer_id int not null,
+                requisition_name varchar(50) not null,
+                timezone varchar(50) not null,
+                currency varchar(3) not null, 
+                deadline int(11) not null, 
+                supplier_instructions varchar(500) not null,
+                tnc varchar(500) not null,
+                cancelled bool not null,
+                status bool not null,
+                created_at int(11) not null,
+                FOREIGN KEY (buyer_id) REFERENCES requisition(requisition_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+lots_create_table = """create table if not exists lots (
+                lot_id int primary key not null auto_increment,
+                requisition_id int not null, 
+                lot_name varchar(50) not null, 
+                lot_description varchar(500) not null, 
+                force_lot_bidding bool not null,
+                FOREIGN KEY (requisition_id) REFERENCES requisition(requisition_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+products_create_table = """create table if not exists products (
+                product_id int primary key not null auto_increment,
+                lot_id int not null, 
+                product_name varchar(50) not null,
+                product_category varchar(50) not null, 
+                product_description varchar(500) not null, 
+                quantity int not null, 
+                unit varchar(40) not null,
+                FROEIGN KEY (lot_id) REFERENCES lots(lot_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+# Foreign key addition is pending
+documents_create_table = """create table if not exists documents (
+                document_id int primary key not null auto_increment,
+                operation_id int not null, 
+                operation_type varchar(10) not null, 
+                document_url varchar(100) not null,
+                document_type varchar(20) not null, 
+                document_name varchar(20) not null, 
+                uploaded_on int(11) not null, 
+                uploaded_by varchar(60) not null, 
+                uploader varchar(50) not null,
+                FOREIGN KEY (operation_id) REFERENCES requisition(requisition_id),
+                FOREIGN KEY (operation_id) REFERENCES auctions(auction_id),
+                FOREIGN KEY (operation_id) REFERENCES products(product_id),
+                FOREIGN KEY (uploaded_by) REFERENCES s_users(email),
+                FOREIGN KEY (uploaded_by) REFERENCES b_users(email),
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+invited_suppliers_create_table = """create table if not exists invited_suppliers (
+                intvite_id int primary key not null auto_increment,
+                operation_id int not null, 
+                operation_type varchar(10) not null, 
+                supplier_id int not null, 
+                invited_on int(11) not null, 
+                FOREIGN KEY (supplier_id) REFERENCES s_users(email),
+                FOREIGN KEY (operation_id) REFERENCES requisition(requisition_id),
+                FOREIGN KEY (operation_id) REFERENCES auctions(auction_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+quotations_create_table = """create table if not exists quotations (
+                quotation_id int primary key auto_increment,
+                supplier_id int not null, 
+                rfq_id int not null, 
+                tnc varchar(500) not null,
+                ip_address varchar(20) not null,
+                status varchar(500)
+            )"""
 
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,

@@ -31,6 +31,12 @@
             "verification_tokens_table": "verification_tokens",
             "products_table": "products",
             "requisition_history_table": "requisition_history",
+            "requisition_table": "requisitions",
+            "lot_table": "lots",
+            "documents_table": "documents",
+            "invited_supplier_table": "invited_suppliers",
+            "quotation_table": "quotations",
+            "quotes_table": "quotes",
             "constants_table": "constants",
             "log_table": "logs"
         },

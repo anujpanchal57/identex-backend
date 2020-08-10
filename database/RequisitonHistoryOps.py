@@ -36,7 +36,7 @@ class RequisitionHistory:
         try:
             self.__cursor.execute(Implementations.reqn_history_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO requisition_history (buyer_id, product_name, product_description, category, quantity, quantity_basis, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            self.__cursor.execute("""INSERT INTO requisition_history (buyer_id, product_name, product_description, category, quantity, quantity_basis, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                                   (values['buyer_id'], values['product_name'], values['product_description'],
                                    values['category'], values['quantity'], values['quantity_basis'],
                                    values['created_at']))

@@ -62,18 +62,23 @@ class BUser:
 
     @staticmethod
     def is_buser(email, table="buser_table"):
-        sql = DBConnectivity.create_sql_connection()
-        cursor = sql.cursor(dictionary=True)
-        cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
-                       (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
-        # Create a table if not exists
-        if cursor.fetchone() is None:
+        try:
+            sql = DBConnectivity.create_sql_connection()
+            cursor = sql.cursor(dictionary=True)
+            cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
+                           (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+            # Create a table if not exists
+            if cursor.fetchone() is None:
+                return False
+            cursor.execute("""select * from b_users where email = %s""", (email, ))
+            res = True if len(cursor.fetchall()) > 0 else False
+            cursor.close()
+            sql.close()
+            return res
+
+        except Exception as e:
+            pprint(str(e))
             return False
-        cursor.execute("""select _id from b_users where email = %s""", (email, ))
-        res = True if len(cursor.fetchall()) > 0 else False
-        cursor.close()
-        sql.close()
-        return res
 
     def get_buyer_id(self):
         return self.__buser['buyer_id']
@@ -127,7 +132,7 @@ class BUser:
         return True
 
 # buser = BUser("anujpanchal57@gmail.com")
-# pprint(BUser.is_buser("anuj.panchal@exportify.in"))
+# pprint(BUser.is_buser("utkarsh.dhawan@exportify.in"))
 # pprint(BUser("").add_buser("utkarsh.dhawan@exportify.in", "Utkarsh", 1000, "", "cbdbe4936ce8be63184d9f2e13fc249234371b9a", "admin"))
 # pprint(buser.encode_auth_token())
 # pprint(buser.decode_auth_toke())

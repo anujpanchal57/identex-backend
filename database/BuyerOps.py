@@ -64,7 +64,7 @@ class Buyer:
 
     @staticmethod
     def is_buyer_domain_registered(email, table="buyer_table"):
-        company_domain = '@' + email.split('@')[1]
+        company_domain = email.split('@')[1]
         sql = DBConnectivity.create_sql_connection()
         cursor = sql.cursor(dictionary=True)
         cursor.execute(
@@ -73,8 +73,8 @@ class Buyer:
         # Create a table if not exists
         if cursor.fetchone() is None:
             return False
-        cursor.execute("""select buyer_id from buyers where domain_name=%s""", (company_domain, ))
-        res = True if len(cursor.fetchall()) > 0 else False
+        cursor.execute("""select * from buyers where domain_name=%s;""", (company_domain, ))
+        res = cursor.fetchone()
         cursor.close()
         sql.close()
         return res
@@ -95,5 +95,6 @@ class Buyer:
         return self.__buyer['company_logo']
 
 # pprint(Buyer(1000))
-# pprint(Buyer("").add_buyer("ABC", "gmail.com"))
+# pprint(Buyer("").add_buyer("sdacbhckjdafcvdjgacvksavgdchgvsadcsadvcvsdcvsavdcasasdasd", "gmail.com"))
+# pprint(Buyer.is_buyer_domain_registered("anuj.panchal@exportify.in"))
 # pprint(Buyer(1000).set_auto_join(False))

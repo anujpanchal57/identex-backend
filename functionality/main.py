@@ -181,7 +181,6 @@ def buyer_signup_auth():
                         return response.customResponse({"response": "Thank you for signing up with Identex. We have sent you a verification link on your email"})
             else:
                 buyer_id = Buyer().add_buyer(company_name=data['company_name'], domain_name=domain_name)
-                pprint(buyer_id)
                 BUser().add_buser(email=data['_id'], name=data['name'], buyer_id=buyer_id, mobile_no=data['mobile_no'], password=data['password'], role="admin")
                 # Send verification email
                 token = GenericOps.generate_email_verification_token()
@@ -488,6 +487,20 @@ def upload_documents():
         log = Logger(module_name="/documents/upload", function_name="upload_documents()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+########################################### RFQ SECTION ##############################################################
+
+# POST request for buyer creating a new RFQ
+# @app.route("/buyer/rfq/create", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_create_rfq():
+#     try:
+#         pass
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/create", function_name="buyer_create_rfq()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 
 if __name__ == '__main__':
