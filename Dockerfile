@@ -10,4 +10,4 @@ COPY . .
 
 LABEL maintainer="Utkarsh Dhawan <utkarsh.dhawan@exportify.in>"
 
-CMD gunicorn -b 0.0.0.0:5000 wsgi:app --access-logfile '-'
+CMD gunicorn -b 0.0.0.0:5002 wsgi:app --access-logfile '-'

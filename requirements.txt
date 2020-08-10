@@ -31,5 +31,5 @@ gunicorn==19.9.0
 python-dateutil==2.7.2
 beautifulsoup4==4.4.1
 pdfkit==0.6.1
-pyiec==0.1.2
-
+mysql-connector-python==8.0.21
+boto3==1.14.38
