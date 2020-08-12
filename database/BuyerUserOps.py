@@ -53,7 +53,7 @@ class BUser:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='BuyerUserOps', function_name='insert()')
-            log.log(error, priority='highest')
+            log.log(str(error), priority='highest')
             return False
         except Exception as e:
             log = Logger(module_name='BuyerUserOps', function_name='insert()')
@@ -91,6 +91,9 @@ class BUser:
 
     def get_name(self):
         return self.__buser['name']
+
+    def get_first_name(self):
+        return self.__buser['name'].split(" ")[0]
 
     def get_mobile_no(self):
         return self.__buser['mobile_no']

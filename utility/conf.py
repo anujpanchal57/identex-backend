@@ -39,6 +39,8 @@ PEPIPOST_API_KEY = conf_settings.get('api_keys').get('pepipost')
 
 MAILGUN_API_KEY = conf_settings.get('api_keys').get('mailgun')
 
+ENV_ENDPOINT = conf_settings.get('endpoint')
+
 aws = {
     'access_key': conf_settings['aws']['access_key_id'],
     'secret_key': conf_settings['aws']['secret_key'],
@@ -48,21 +50,35 @@ aws = {
 }
 
 email_endpoints = {
-    "development": {
-        "verify_email": "http://localhost/verify/email",
-        "buyer_forgot_password": "http://locahost/buyer/forgot/password",
-        "supplier_forgot_password": "http://localhost/supplier/forgot/password"
+    "buyer": {
+        "email_verification": {
+            "page_url": "/verify-email",
+            "subject": "Verify your email",
+            "template_id": "email_verification"
+        },
+        "forgot_password": {
+            "page_url": "/reset-password",
+            "subject": "Reset your password",
+            "template_id": "forgot_password"
+        },
+        "supplier_onboarding": {
+            "page_url": "",
+            "subject": "You have been invited you to join Identex",
+            "template_id": "supplier_onboarding"
+        }
     },
-    "testing": {
-        "verify_email": "http://testing.identex.io/verify/email",
-        "buyer_forgot_password": "http://testing.identex.io/buyer/forgot/password",
-        "supplier_forgot_password": "http://testing.identex.io/supplier/forgot/password"
-    },
-    "production": {
-        "verify_email": "http://identex.io/verify/email",
-        "buyer_forgot_password": "http://identex.io/buyer/forgot/password",
-        "supplier_forgot_password": "http://identex.io/supplier/forgot/password"
+    "supplier": {
+        "email_verification": {
+            "page_url": "/verify-email",
+            "subject": "Verify your email",
+            "template_id": "email_verification"
+        },
+        "forgot_password": {
+            "page_url": "/reset-password",
+            "subject": "Reset your password",
+            "template_id": "forgot_password"
+        }
     }
 }
 
-default_recipient = "accounts@identex.io"
+default_recipient = "archives.identex@gmail.com"

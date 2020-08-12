@@ -98,7 +98,7 @@ requisition_create_table = """create table if not exists requisitions (
                 cancelled bool not null,
                 status bool not null,
                 created_at int(11) not null,
-                FOREIGN KEY (buyer_id) REFERENCES requisition(requisition_id)
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
 lots_create_table = """create table if not exists lots (
@@ -107,7 +107,8 @@ lots_create_table = """create table if not exists lots (
                 lot_name varchar(50) not null, 
                 lot_description varchar(500) not null, 
                 force_lot_bidding bool not null,
-                FOREIGN KEY (requisition_id) REFERENCES requisition(requisition_id)
+                created_at int(11) not null,
+                FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
 products_create_table = """create table if not exists products (
@@ -118,10 +119,10 @@ products_create_table = """create table if not exists products (
                 product_description varchar(500) not null, 
                 quantity int not null, 
                 unit varchar(40) not null,
-                FROEIGN KEY (lot_id) REFERENCES lots(lot_id)
+                created_at int(11) not null,
+                FOREIGN KEY (lot_id) REFERENCES lots(lot_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
-# Foreign key addition is pending
 documents_create_table = """create table if not exists documents (
                 document_id int primary key not null auto_increment,
                 operation_id int not null, 
@@ -131,33 +132,58 @@ documents_create_table = """create table if not exists documents (
                 document_name varchar(20) not null, 
                 uploaded_on int(11) not null, 
                 uploaded_by varchar(60) not null, 
-                uploader varchar(50) not null,
-                FOREIGN KEY (operation_id) REFERENCES requisition(requisition_id),
-                FOREIGN KEY (operation_id) REFERENCES auctions(auction_id),
-                FOREIGN KEY (operation_id) REFERENCES products(product_id),
-                FOREIGN KEY (uploaded_by) REFERENCES s_users(email),
-                FOREIGN KEY (uploaded_by) REFERENCES b_users(email),
+                uploader varchar(50) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
 invited_suppliers_create_table = """create table if not exists invited_suppliers (
-                intvite_id int primary key not null auto_increment,
+                invite_id int primary key not null auto_increment,
                 operation_id int not null, 
                 operation_type varchar(10) not null, 
                 supplier_id int not null, 
                 invited_on int(11) not null, 
-                FOREIGN KEY (supplier_id) REFERENCES s_users(email),
-                FOREIGN KEY (operation_id) REFERENCES requisition(requisition_id),
-                FOREIGN KEY (operation_id) REFERENCES auctions(auction_id)
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
+                FOREIGN KEY (operation_id) REFERENCES requisitions(requisition_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
 quotations_create_table = """create table if not exists quotations (
                 quotation_id int primary key auto_increment,
                 supplier_id int not null, 
-                rfq_id int not null, 
-                tnc varchar(500) not null,
-                ip_address varchar(20) not null,
-                status varchar(500)
-            )"""
+                requisition_id int not null, 
+                remarks varchar(500) not null,
+                quote_validity int(11) not null, 
+                delivery_time int not null, 
+                total_amount float(11, 2) not null, 
+                total_gst float(11, 2) not null, 
+                status bool not null, 
+                unlock_status bool not null, 
+                created_at int(11) not null, 
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
+                FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+quotes_create_table = """create table if not exists quotes (
+                quote_id int primary key not null auto_increment,
+                quotation_id int not null, 
+                charge_id int not null, 
+                charge_name varchar(50) not null, 
+                quantity int not null, 
+                gst int not null, 
+                per_unit float(11, 2) not null, 
+                amount float(11, 2) not null, 
+                FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
+                FOREIGN KEY (charge_id) REFERENCES products(product_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+activity_logs_create_table = """create table if not exists activity_logs (
+                activity_id int primary key not null auto_increment,
+                activity varchar(100) not null, 
+                done_by varchar(60) not null, 
+                type_of_user varchar(10) not null,
+                operation_id int not null, 
+                operation_type varchar(10) not null,
+                ip_address varchar(50) not null, 
+                timestamp int(11) not null
+            ) ENGINE=InnoDB auto_increment=1000"""
 
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,

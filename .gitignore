@@ -208,5 +208,7 @@ pyvenv.cfg
 pip-selfcheck.json
 settings.json
 .idea/
+conf.json
+
 ### VirtualEnv ###
 # Virtualenv

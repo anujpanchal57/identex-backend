@@ -8,7 +8,7 @@ from functionality import GenericOps, EmailNotifications
 
 class Logger:
 
-    def __init__(self,module_name,function_name):
+    def __init__(self, module_name, function_name):
         self.__module_name = module_name
         self.__function_name = function_name
         self.__log_id = str(uuid.uuid4())
@@ -21,7 +21,7 @@ class Logger:
             self.__cursor.close()
             self.__sql.close()
 
-    def log(self,error,priority='high', table="log_table"):
+    def log(self, error, priority='high', table="log_table"):
         try:
             # Checking whether the table exists or not
             self.__cursor.execute(Implementations.logs_create_table)
@@ -33,8 +33,9 @@ class Logger:
             return True
         except mysql.connector.Error as error:
             # Email the error
-            message = "<h1>Error in logger: </h1><br><p>{}</p>".format(error)
-            EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.io"])
+            if priority.lower() == "critical":
+                message = "<h1>Error in logger: </h1><br><p>{}</p>".format(error)
+                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.io"])
             return False
 
 # pprint(Logger(module_name="/buyer/forgot-password/auth", function_name="buyer_forgot_password_auth()").log("adsferwvwervwfvsdfv"))

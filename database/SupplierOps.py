@@ -54,7 +54,7 @@ class Supplier:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='SupplierOps', function_name='insert()')
-            log.log(error, priority='highest')
+            log.log(str(error), priority='highest')
             return False
         except Exception as e:
             log = Logger(module_name='SupplierOps', function_name='insert()')

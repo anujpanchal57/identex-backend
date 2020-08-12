@@ -13,12 +13,18 @@ import random
 import string
 from pprint import pprint
 
+import pytz
+
 from utility import DBConnectivity
 from utility import conf
 
 
 def get_current_timestamp(rounded=True):
     return math.ceil(time.time()) if rounded else time.time()
+
+def convert_datestring_to_timestamp(date_str, format="%d-%m-%Y"):
+    return int(datetime.datetime.strptime(date_str, format).timestamp())
+
 
 def generate_forgot_password_token():
     token = ''.join(str(uuid.uuid4()).split('-'))
@@ -43,3 +49,12 @@ def is_url(url):
 def generate_user_password(length=7):
     password_characters = string.ascii_letters + string.digits
     return ''.join(random.choice(password_characters) for i in range(length))
+
+def get_calculated_timestamp(date_time):
+    return datetime.datetime.strptime(date_time, "%d-%m-%Y %H:%M").timestamp()
+
+# timezone = pytz.timezone("asia/calcutta")
+# dt = datetime.datetime.now(timezone)
+# pprint(dt)
+# utc_dt = dt.astimezone(pytz.utc)
+# pprint(dt.strftime("%z"))
