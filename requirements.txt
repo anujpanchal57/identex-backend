@@ -33,3 +33,4 @@ beautifulsoup4==4.4.1
 pdfkit==0.6.1
 mysql-connector-python==8.0.21
 boto3==1.14.38
+pytz==2020.1
