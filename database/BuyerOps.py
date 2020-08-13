@@ -76,6 +76,12 @@ class Buyer:
         sql.close()
         return res
 
+    def update_activation_status(self, status):
+        self.__buyer['activation_status'] = status
+        self.__cursor.execute("update buyers set activation_status = %s where buyer_id = %s", (status, self.__id))
+        self.__sql.commit()
+        return True
+
     def get_activation_status(self):
         return self.__buyer['activation_status']
 
@@ -98,3 +104,4 @@ class Buyer:
 # pprint(Buyer("").add_buyer("Bhavani", "gmail.com"))
 # pprint(Buyer.is_buyer_domain_registered("anuj.panchal@exportify.in"))
 # pprint(Buyer(1000).set_auto_join(False))
+# pprint(Buyer(1007).update_activation_status(True))

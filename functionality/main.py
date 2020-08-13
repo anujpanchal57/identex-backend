@@ -360,7 +360,7 @@ def supplier_forgot_password_auth():
         token = GenericOps.generate_forgot_password_token()
         if Verification(name="forgot_password").add_auth_token(token_id=token, user_id=data['_id'], user_type="supplier"):
             DBConnectivity.set_redis_key(data['_id'] + "forgot_password", token, timeout=86400)
-            link = conf.ENV_ENDPOINT + conf.email_endpoints['supplier']['forgot_password']['page_url'] + "?id=" + data['_id'] + "&token=" + token
+            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['forgot_password']['page_url'] + "?id=" + data['_id'] + "&token=" + token
             # send an email
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [data['_id']],
                                                                               "subject": conf.email_endpoints['supplier']['forgot_password']['subject'],
@@ -553,6 +553,31 @@ def upload_documents():
 
     except Exception as e:
         log = Logger(module_name="/documents/upload", function_name="upload_documents()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request uploading documents
+@app.route('/buyer/activation-status/update', methods=['POST'])
+def buyer_activation_status_update():
+    try:
+        data = request.json
+        data['email'] = data['email'].lower()
+        key = request.headers.get('IDNTX-SECRET-KEY')
+        if key == conf.BUYER_ACTIVATION_SECRET_KEY:
+            buser = BUser(data['email'])
+            buyer_id = buser.get_buyer_id()
+            if Buyer(buyer_id).update_activation_status(data['activation_status']):
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [data['email']],
+                                                                                  "subject": conf.email_endpoints['buyer']['welcome_mail']['subject'],
+                                                                                  "template": conf.email_endpoints['buyer']['welcome_mail']['template_id'],
+                                                                                  "USER": buser.get_first_name()})
+                p.start()
+                return response.customResponse({"response": "Account activated successfully"})
+            return response.errorResponse("Oops, some error occured")
+        return response.errorResponse("Please recheck and send the correct secret key")
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/activation-status/update", function_name="buyer_activation_status_update()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

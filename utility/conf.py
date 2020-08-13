@@ -41,6 +41,10 @@ MAILGUN_API_KEY = conf_settings.get('api_keys').get('mailgun')
 
 ENV_ENDPOINT = conf_settings.get('endpoint')
 
+SUPPLIERS_ENDPOINT = conf_settings.get('suppliers_endpoint')
+
+BUYER_ACTIVATION_SECRET_KEY = conf_settings.get('secret').get('buyer_activation')
+
 aws = {
     'access_key': conf_settings['aws']['access_key_id'],
     'secret_key': conf_settings['aws']['secret_key'],
@@ -55,6 +59,11 @@ email_endpoints = {
             "page_url": "/verify-email",
             "subject": "Verify your email",
             "template_id": "email_verification"
+        },
+        "welcome_mail": {
+            "page_url": "",
+            "subject": "Identex account activated",
+            "template_id": "welcome_mail"
         },
         "forgot_password": {
             "page_url": "/reset-password",
