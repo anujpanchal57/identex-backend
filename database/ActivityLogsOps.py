@@ -22,7 +22,7 @@ class ActivityLogs:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_activity(self, activity, done_by, type_of_user, operation_id, operation_type, ip_address):
+    def add_activity(self, activity, done_by, type_of_user, operation_id, operation_type, ip_address=""):
         self.__activity_log['activity'] = activity
         self.__activity_log['done_by'] = done_by
         self.__activity_log['type_of_user'] = type_of_user

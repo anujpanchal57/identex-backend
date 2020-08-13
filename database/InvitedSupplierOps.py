@@ -22,11 +22,12 @@ class InviteSupplier:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_supplier(self, operation_id, operation_type, supplier_id):
+    def add_supplier(self, operation_id, operation_type, supplier_id, unlock_status=True):
         self.__inv_supplier['operation_id'] = operation_id
         self.__inv_supplier['operation_type'] = operation_type
         self.__inv_supplier['supplier_id'] = supplier_id
         self.__inv_supplier['invited_on'] = GenericOps.get_current_timestamp()
+        self.__inv_supplier['unlock_status'] = unlock_status
         self.__inv_supplier['invite_id'] = self.insert(self.__inv_supplier)
         return self.__inv_supplier['invite_id']
 
@@ -34,10 +35,11 @@ class InviteSupplier:
         try:
             self.__cursor.execute(Implementations.invited_suppliers_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO invited_suppliers (operation_id, operation_type, supplier_id, invited_on) 
-            VALUES (%s, %s, %s, %s)""",
+            self.__cursor.execute("""INSERT INTO invited_suppliers (operation_id, operation_type, supplier_id, invited_on, unlock_status) 
+            VALUES (%s, %s, %s, %s, %s)""",
                                   (values['operation_id'], values['operation_type'],
-                                   values['supplier_id'], values['invited_on']))
+                                   values['supplier_id'], values['invited_on'],
+                                   values['unlock_status']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
@@ -54,8 +56,8 @@ class InviteSupplier:
         try:
             self.__cursor.execute(Implementations.invited_suppliers_create_table)
             # Inserting the record in the table
-            self.__cursor.executemany("""INSERT INTO invited_suppliers (operation_id, operation_type, supplier_id, invited_on) 
-            VALUES (%s, %s, %s, %s)""", values)
+            self.__cursor.executemany("""INSERT INTO invited_suppliers (operation_id, operation_type, supplier_id, invited_on, unlock_status) 
+            VALUES (%s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]
@@ -71,3 +73,12 @@ class InviteSupplier:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
             return False
+
+    def update_unlock_status(self, supplier_id, operation_id, operation_type, status):
+        self.__inv_supplier['unlock_status'] = status
+        self.__cursor.execute("update invited_suppliers set unlock_status = %s where operation_id = %s and operation_type = %s and supplier_id = %s",
+                              (status, operation_id, operation_type, supplier_id))
+        self.__sql.commit()
+        return True
+
+# pprint(InviteSupplier().add_supplier(1000, "auction", 1000))

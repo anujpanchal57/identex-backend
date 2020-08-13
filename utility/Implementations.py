@@ -141,6 +141,7 @@ invited_suppliers_create_table = """create table if not exists invited_suppliers
                 operation_type varchar(10) not null, 
                 supplier_id int not null, 
                 invited_on int(11) not null, 
+                unlock_status bool not null, 
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
                 FOREIGN KEY (operation_id) REFERENCES requisitions(requisition_id)
             ) ENGINE=InnoDB auto_increment=1000"""
@@ -155,7 +156,6 @@ quotations_create_table = """create table if not exists quotations (
                 total_amount float(11, 2) not null, 
                 total_gst float(11, 2) not null, 
                 status bool not null, 
-                unlock_status bool not null, 
                 created_at int(11) not null, 
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
                 FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)

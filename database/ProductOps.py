@@ -75,11 +75,10 @@ class Product:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-
     def get_lot_products(self, lot_id):
         try:
             self.__cursor.execute("""select product_id, product_name, product_category, product_description, quantity, unit, created_at 
-            from products where lot_id = 1000;""", (lot_id))
+            from products where lot_id = %s;""", (lot_id, ))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res

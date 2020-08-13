@@ -52,4 +52,11 @@ class Lot:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_lot_for_requisition(self, requisition_id):
+        self.__cursor.execute("""select * from lots where requisition_id = %s""", (requisition_id, ))
+        self.__lot = self.__cursor.fetchone()
+        self.__sql.commit()
+        return self.__lot
+
 # pprint(Lot().add_lot(1000, "sample", "sample"))
+# pprint(Lot().get_lot_for_requisition(1000))

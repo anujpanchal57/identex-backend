@@ -76,5 +76,14 @@ class Document:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_docs(self, operation_id, operation_type):
+        self.__cursor.execute("""select document_name, document_type, document_url, uploaded_on, uploaded_by from documents 
+        where operation_id = %s and operation_type = %s""", (operation_id, operation_type, ))
+        res = self.__cursor.fetchall()
+        self.__sql.commit()
+        return res
+
 # pprint(Document().insert_many([(1000, "rfq", "adsfdsafdsaf", "product", "product", 351321651, 1000, "buyer"),
 #                                (1000, "rfq", "adsfdsafdsaf", "product", "product", 351321651, 1000, "buyer")]))
+
+# pprint(Document().get_docs(1001, "product"))

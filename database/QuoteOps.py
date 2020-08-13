@@ -64,7 +64,6 @@ class Quote:
             result_ids = [last_row_id]
             for x in range(1, len(values)):
                 result_ids.append(last_row_id + x)
-            pprint(result_ids)
             return result_ids
 
         except mysql.connector.Error as error:

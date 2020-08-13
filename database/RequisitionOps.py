@@ -73,4 +73,10 @@ class Requisition:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_deadline(self):
+        return self.__requisition['deadline']
+
+    def get_requisition(self):
+        return self.__requisition
+
 # pprint(Requisition().get_rfq(1000))

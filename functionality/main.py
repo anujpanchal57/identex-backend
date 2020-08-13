@@ -590,6 +590,9 @@ def buyer_create_rfq():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        buser = BUser(data['_id'])
+        buyer_id = buser.get_buyer_id()
+        buyer = Buyer(buyer_id)
         if len(data['invited_suppliers']) == 0:
             return response.errorResponse("Please invite atleast one supplier in order to create RFQ")
 
@@ -601,12 +604,12 @@ def buyer_create_rfq():
         # Create the requisition
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
-                                                         currency=data['currency'], buyer_id=data['buyer_id'], deadline=deadline)
+                                                         currency=data['currency'], buyer_id=buyer_id, deadline=deadline)
 
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
-            supp = [requisition_id, "rfq", supplier, GenericOps.get_current_timestamp()]
+            supp = [requisition_id, "rfq", supplier, GenericOps.get_current_timestamp(), True]
             supp = tuple(supp)
             suppliers.append(supp)
         invited_suppliers_ids = InviteSupplier("").insert_many(suppliers)
@@ -644,7 +647,19 @@ def buyer_create_rfq():
         ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq", type_of_user="buyer")
 
         # Trigger the email alert to invited suppliers
+        invited_suppliers = Join().get_invited_suppliers(operation_id=requisition_id, operation_type="rfq")
+        buyer_company_name = buyer.get_company_name()
+        subject = conf.email_endpoints['buyer']['rfq_created']['subject'].replace("{{buyer_company}}", buyer_company_name).replace("{{lot_name}}", data['lot']['lot_name'])
+        for supplier in invited_suppliers:
+            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supplier['email']],
+                                                                              "template": conf.email_endpoints['buyer']['rfq_created']['template_id'],
+                                                                              "subject": subject,
+                                                                              "USER": supplier['name'],
+                                                                              "BUYER_COMPANY_NAME": buyer_company_name,
+                                                                              "LOT_NAME": data['lot']['lot_name']})
+            p.start()
 
+        # Confirmation Email to buyers
 
         return response.customResponse({"response": "Your RFQ has been created successfully and sent to the invited suppliers",
                                         "rfq_id": requisition_id})
@@ -673,8 +688,49 @@ def buyer_rfq_list():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching the details of a RFQ
+@app.route("/buyer/rfq/details/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_details_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        # Fetch the requisition details
+        result = Requisition(data['requisition_id']).get_requisition()
+        # Fetch the lot related to the requisition
+        result['lot'] = Lot().get_lot_for_requisition(data['requisition_id'])
+        # Fetch products and their documents
+        result['products'] = Product().get_lot_products(result['lot']['lot_id'])
+        # Fetch products documents
+        for prod in result['products']:
+            prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
+        # Fetch specification documents
+        result['specification_documents'] = Document().get_docs(operation_id=data['requisition_id'], operation_type="rfq")
 
-########################################### SUPPLIER RFQ SECTION ##############################################################
+        return response.customResponse({"rfq": result})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/details/get", function_name="buyer_rfq_details_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the suppliers quoting for the RFQ
+@app.route("/buyer/rfq/suppliers/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_suppliers_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+        return response.customResponse({"suppliers": suppliers})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/suppliers/get", function_name="buyer_rfq_suppliers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+
+########################################### SUPPLIER RFQ SECTION #####################################################
 
 # POST request for listing the RFQs for buyer
 @app.route("/supplier/quotation/send", methods=["POST"])
@@ -685,6 +741,13 @@ def supplier_quotation_send():
         data['_id'] = data['_id'].lower()
         quotation = data['quotation']
         suser = SUser(data['_id'])
+        supplier_id = suser.get_supplier_id()
+        requisition = Requisition(data['requisition_id'])
+        supplier = Supplier(supplier_id)
+        # If supplier is quoting for a closed RFQ
+        if GenericOps.get_current_timestamp() > requisition.get_deadline():
+            return response.errorResponse("This RFQ is not accepting any further quotations from suppliers")
+
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
                                                  remarks=quotation['remarks'], quote_validity=quotation['quote_validity'],
@@ -697,8 +760,25 @@ def supplier_quotation_send():
                   quote['per_unit'], quote['amount']]
             qt = tuple(qt)
             quotes.append(qt)
-        pprint(quotes)
         quotes_id = Quote().insert_many(quotes)
+
+        # Update the unlock_status of supplier
+        InviteSupplier().update_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'], operation_type="rfq", status=False)
+
+        # Sending a mail to buyer
+        supplier_company_name = supplier.get_company_name()
+        buyers = Join().get_buyers_for_rfq(data['requisition_id'])
+        subject = conf.email_endpoints['supplier']['quotation_submitted']['subject'].replace("{{supplier_company_name}}", supplier_company_name).replace("{{requisition_id}}", str(data['requisition_id']))
+        for buyer in buyers:
+            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
+                                                                              "template": conf.email_endpoints['supplier']['quotation_submitted']['template_id'],
+                                                                              "subject": subject,
+                                                                              "USER": buyer['name'],
+                                                                              "SUPPLIER_NAME": supplier_company_name,
+                                                                              "TYPE_OF_REQUEST": "RFQ",
+                                                                              "REQUEST_ID": str(data['requisition_id']),
+                                                                              "LOT_NAME": buyer['requisition_name']})
+            p.start()
 
         return response.customResponse({"response": "Quotation sent successfully"})
 
