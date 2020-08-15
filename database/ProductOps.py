@@ -22,8 +22,9 @@ class Product:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_product(self, lot_id, product_name, product_category, product_description, unit, quantity=0):
+    def add_product(self, lot_id, buyer_id, product_name, product_category, product_description, unit, quantity=0):
         self.__product['lot_id'] = lot_id
+        self.__product['buyer_id'] = buyer_id
         self.__product['product_name'] = product_name
         self.__product['product_category'] = product_category
         self.__product['product_description'] = product_description
@@ -36,9 +37,9 @@ class Product:
         try:
             self.__cursor.execute(Implementations.products_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO products (lot_id, product_name, product_category, product_description, quantity, 
-            unit, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['lot_id'], values['product_name'], values['product_category'],
+            self.__cursor.execute("""INSERT INTO products (lot_id, buyer_id, product_name, product_category, product_description, quantity, 
+            unit, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                                  (values['lot_id'], values['buyer_id'], values['product_name'], values['product_category'],
                                    values['product_description'], values['quantity'], values['unit'],
                                    values['created_at']))
             self.__sql.commit()
@@ -57,8 +58,8 @@ class Product:
         try:
             self.__cursor.execute(Implementations.products_create_table)
             # Inserting the record in the table
-            self.__cursor.executemany("""INSERT INTO products (lot_id, product_name, product_category, product_decription, quantity, 
-            unit, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)""", values)
+            self.__cursor.executemany("""INSERT INTO products (lot_id, buyer_id, product_name, product_category, product_description, quantity, 
+            unit, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]
@@ -78,7 +79,7 @@ class Product:
     def get_lot_products(self, lot_id):
         try:
             self.__cursor.execute("""select product_id, product_name, product_category, product_description, quantity, unit, created_at 
-            from products where lot_id = %s;""", (lot_id, ))
+            from products where lot_id = %s""", (lot_id, ))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res
@@ -89,6 +90,23 @@ class Product:
             return False
         except Exception as e:
             log = Logger(module_name='ProductOps', function_name='get_lot_products()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+    def get_buyer_products(self, buyer_id):
+        try:
+            self.__cursor.execute("""select product_id, product_name, product_category, product_description, quantity, unit, created_at 
+                        from products where buyer_id = %s""", (buyer_id,))
+            res = self.__cursor.fetchall()
+            self.__sql.commit()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ProductOps', function_name='get_buyer_products()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='ProductOps', function_name='get_buyer_products()')
             log.log(traceback.format_exc(), priority='highest')
             return False
 

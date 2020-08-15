@@ -113,14 +113,16 @@ lots_create_table = """create table if not exists lots (
 
 products_create_table = """create table if not exists products (
                 product_id int primary key not null auto_increment,
-                lot_id int not null, 
+                lot_id int not null,
+                buyer_id int not null,  
                 product_name varchar(50) not null,
                 product_category varchar(50) not null, 
                 product_description varchar(500) not null, 
                 quantity int not null, 
                 unit varchar(40) not null,
                 created_at int(11) not null,
-                FOREIGN KEY (lot_id) REFERENCES lots(lot_id)
+                FOREIGN KEY (lot_id) REFERENCES lots(lot_id),
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
 documents_create_table = """create table if not exists documents (

@@ -535,13 +535,14 @@ def buyer_supplier_add():
 
 # POST request uploading documents
 @app.route('/documents/upload', methods=['POST'])
+@validate_access_token
 def upload_documents():
     try:
         data = DictionaryOps.set_primary_key(request.json, 'email')
         cloud = AWS('s3')
         result = []
         for document in data['documents']:
-            upload_file_name = GenericOps.generate_aws_file_path(client_type=data['uploader'], client_id=data['uploaded_by'],
+            upload_file_name = GenericOps.generate_aws_file_path(client_type=data['client_type'], client_id=data['uploaded_by'],
                                                                  document_type=document['document_name'].split(".")[1])
             uploaded = cloud.upload_file_from_base64(base64_string=document['base64'], path=upload_file_name)
             document['document_name'] = document['document_name'].split(".")[0]
@@ -591,7 +592,7 @@ def buyer_create_rfq():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         buser = BUser(data['_id'])
-        buyer_id = buser.get_buyer_id()
+        buyer_id = data['buyer_id']
         buyer = Buyer(buyer_id)
         if len(data['invited_suppliers']) == 0:
             return response.errorResponse("Please invite atleast one supplier in order to create RFQ")
@@ -620,7 +621,8 @@ def buyer_create_rfq():
         # Insert the products
         product_ids = []
         for product in data['products']:
-            product_id = Product("").add_product(lot_id=lot_id, product_name=product['product_name'], product_category=product['product_category'],
+            product_id = Product("").add_product(lot_id=lot_id, buyer_id=buyer_id, product_name=product['product_name'],
+                                                 product_category=product['product_category'],
                                                  product_description=product['product_description'], unit=product['unit'],
                                                  quantity=product['quantity'])
             product_ids.append(product_id)
@@ -729,6 +731,60 @@ def buyer_rfq_suppliers_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching list of suppliers for buyer
+@app.route("/buyer/suppliers/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_suppliers_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        buyer_id = BUser(data['_id']).get_buyer_id()
+        suppliers = Join().get_suppliers_for_buyers(buyer_id=buyer_id)
+        return response.customResponse({"suppliers": suppliers})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/suppliers/get", function_name="buyer_suppliers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for managing supplier abilities in RFQ
+@app.route("/buyer/rfq/suppliers/ops", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_supplier_ops():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        if data['operation_type'] == "unlock":
+            if InviteSupplier().update_unlock_status(supplier_id=data['supplier_id'], operation_id=data['requisition_id'], operation_type="rfq", status=data['status']):
+                suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+                return response.customResponse({"response": "Supplier unlocked successfully", "suppliers": suppliers})
+            return response.errorResponse("Oops, some error occured. Please try again after sometime")
+
+        if data['operation_type'] == "remove":
+            if InviteSupplier().remove_supplier(supplier_id=data['supplier_id'], operation_id=data['requisition_id'], operation_type="rfq"):
+                suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+                return response.customResponse({"response": "Supplier removed from the RFQ successfully", "suppliers": suppliers})
+            return response.errorResponse("Oops, some error occured. Please try again after sometime")
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/suppliers/ops", function_name="buyer_rfq_suppliers_ops()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching list of suppliers for buyer
+@app.route("/buyer/products/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_products_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        products = Product().get_buyer_products(buyer_id=data['buyer_id'])
+        return response.customResponse({"products": products})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/products/get", function_name="buyer_products_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -744,9 +800,18 @@ def supplier_quotation_send():
         supplier_id = suser.get_supplier_id()
         requisition = Requisition(data['requisition_id'])
         supplier = Supplier(supplier_id)
+        unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
+                                                           operation_type="rfq")
+
+        # Checking the unlock status
+        if not unlock_status:
+            return response.errorResponse("You cannot quote more than once until buyer unlocks you to quote from his dashboard")
+
         # If supplier is quoting for a closed RFQ
         if GenericOps.get_current_timestamp() > requisition.get_deadline():
             return response.errorResponse("This RFQ is not accepting any further quotations from suppliers")
+
+
 
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],

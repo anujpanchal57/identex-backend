@@ -81,4 +81,28 @@ class InviteSupplier:
         self.__sql.commit()
         return True
 
+    def get_unlock_status(self, supplier_id, operation_id, operation_type):
+        self.__cursor.execute("""select unlock_status from invited_suppliers where supplier_id = %s and operation_id = %s and operation_type = %s""",
+                              (supplier_id, operation_id, operation_type))
+        res = self.__cursor.fetchone()
+        self.__sql.commit()
+        return res['unlock_status']
+
+    def remove_supplier(self, supplier_id, operation_id, operation_type):
+        try:
+            self.__cursor.execute("""delete from invited_suppliers where supplier_id = %s and operation_id = %s and operation_type = %s""",
+                                  (supplier_id, operation_id, operation_type))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvitedSupplierOps', function_name='remove_supplier()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='InvitedSupplierOps', function_name='remove_supplier()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
 # pprint(InviteSupplier().add_supplier(1000, "auction", 1000))
+# pprint(InviteSupplier().get_unlock_status(1000, 1000, "rfq"))
