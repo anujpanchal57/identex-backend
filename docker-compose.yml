@@ -4,7 +4,7 @@ services:
   backend:
     build: .
     ports:
-      - '5007:5002'
+      - '80:5002'
     restart: always
     environment:
       - TZ=Asia/Kolkata
