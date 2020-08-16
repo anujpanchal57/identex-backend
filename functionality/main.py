@@ -852,5 +852,35 @@ def supplier_quotation_send():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+########################################### CONTACT SECTION #####################################################
+
+# POST request for sending contact details to identex team
+@app.route("/request/demo", methods=["POST"])
+def contact_details_submit():
+    try:
+        data = request.json
+        if data['request_type'].lower() == "free_trial":
+            msg = "<h3>" + data['email'] + "</h3> has requested for a free trial."
+            p = Process(target=EmailNotifications.send_mail, kwargs={"subject": "Request for a free trial",
+                                                                     "recipients": [conf.default_founder_email],
+                                                                     "message": msg})
+            p.start()
+            return response.customResponse({"response": "Thank you, someone, from our team will contact you shortly"})
+        if data['request_type'].lower() == "demo":
+            msg = "Name: " + data['name'] + "<br>Company Name: " + data['company_name'] + "<br>Email: " + data['email'] + "<br>Mobile Number: " + data['mobile_no'] + "<br>Country: " + data['country'] + "<br>Additional Comments: " + data['additional_comments']
+            subject = "Request for a demo from " + data['company_name'] + " (" + data['name'] + ")"
+            p = Process(target=EmailNotifications.send_mail, kwargs={"subject": subject,
+                                                                     "message": msg,
+                                                                     "recipients": [conf.default_founder_email]})
+            p.start()
+            return response.customResponse({"response": "Thank you, someone, from our team will contact you shortly"})
+        return response.errorResponse("Invalid request type")
+
+    except Exception as e:
+        log = Logger(module_name="/contact-details/submit", function_name="contact_details_submit()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5200, threaded=True)
