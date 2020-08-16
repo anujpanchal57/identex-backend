@@ -173,7 +173,8 @@ def buyer_signup_auth():
         if not is_buser:
             if domain_name not in Generics().mail_providers:
                 existing_domain = Buyer.is_buyer_domain_registered(data['_id'])
-
+                if existing_domain:
+                    auto_join = existing_domain['auto_join']
                 if not existing_domain:
                     buyer_id = Buyer().add_buyer(company_name=data['company_name'], domain_name=domain_name)
                     BUser().add_buser(email=data['_id'], name=data['name'], buyer_id=buyer_id, mobile_no=data['mobile_no'], password=data['password'], role="admin")
@@ -188,7 +189,10 @@ def buyer_signup_auth():
                         p.start()
                         return response.customResponse({"response": "Thank you for signing up with Identex. We have sent you a verification link on your email"})
                 else:
-                    buyer_id = existing_domain['buyer_id']
+                    if auto_join:
+                        buyer_id = existing_domain['buyer_id']
+                    else:
+                        buyer_id = Buyer().add_buyer(company_name=data['company_name'], domain_name=domain_name)
                     BUser().add_buser(email=data['_id'], name=data['name'], buyer_id=buyer_id, mobile_no=data['mobile_no'], password=data['password'], role="employee")
                     # Send verification email
                     token = GenericOps.generate_email_verification_token()
@@ -432,6 +436,7 @@ def supplier_login_verify():
                                                 "name": suser.get_name(),
                                                 "mobile_no": suser.get_mobile_no(),
                                                 "access_token": auth_id,
+                                                "company_name": supplier.get_company_name(),
                                                 "company_logo": supplier.get_company_logo(),
                                                 "status": suser.get_status(),
                                                 "role": suser.get_role(),
@@ -509,8 +514,7 @@ def buyer_supplier_add():
             else:
                 supplier_id = Supplier().add_supplier(company_name=supp['company_name'])
                 password = GenericOps.generate_user_password()
-                passwd = password.encode()
-                SUser().add_suser(email=supp['email'], name=supp['name'], supplier_id=supplier_id, password=hashlib.sha1(passwd).hexdigest())
+                SUser().add_suser(email=supp['email'], name=supp['name'], supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
                 SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
                 # Send an email to supplier
                 suser = SUser(supp['email'])
@@ -520,10 +524,10 @@ def buyer_supplier_add():
                                                                                   "SUPPLIER_USER": suser.get_first_name(),
                                                                                   "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
                                                                                   "SUPPLIER_USERNAME": suser.get_email(),
-                                                                                  "PASSWORD": passwd,
+                                                                                  "PASSWORD": password,
                                                                                   "FIRST_INVITE": "block"})
                 p.start()
-        # Have to decide whether to send the list of suppliers or not in response
+
         result = Join().get_suppliers_info(buyer_id)
         return response.customResponse({"response": "Supplier(s) added successfully",
                                         "suppliers": result})
@@ -545,7 +549,6 @@ def upload_documents():
             upload_file_name = GenericOps.generate_aws_file_path(client_type=data['client_type'], client_id=data['uploaded_by'],
                                                                  document_type=document['document_name'].split(".")[1])
             uploaded = cloud.upload_file_from_base64(base64_string=document['base64'], path=upload_file_name)
-            document['document_name'] = document['document_name'].split(".")[0]
             document['document_url'] = uploaded
             document['uploaded_on'] = GenericOps.get_current_timestamp()
             del document['base64']
@@ -582,16 +585,16 @@ def buyer_activation_status_update():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-########################################### RFQ SECTION ##############################################################
+########################################### BUYER RFQ SECTION #########################################################
 
 # POST request for buyer creating a new RFQ
 @app.route("/buyer/rfq/create", methods=["POST"])
 @validate_buyer_access_token
 def buyer_create_rfq():
     try:
+        pprint(request.json)
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        buser = BUser(data['_id'])
         buyer_id = data['buyer_id']
         buyer = Buyer(buyer_id)
         if len(data['invited_suppliers']) == 0:
@@ -601,12 +604,12 @@ def buyer_create_rfq():
             return response.errorResponse("Please add atleast one product in order to create RFQ")
 
         document_ids, product_ids, invited_suppliers_ids = [], [], []
-
+        pprint(data)
         # Create the requisition
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline)
-
+        pprint(requisition_id)
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -651,14 +654,16 @@ def buyer_create_rfq():
         # Trigger the email alert to invited suppliers
         invited_suppliers = Join().get_invited_suppliers(operation_id=requisition_id, operation_type="rfq")
         buyer_company_name = buyer.get_company_name()
-        subject = conf.email_endpoints['buyer']['rfq_created']['subject'].replace("{{buyer_company}}", buyer_company_name).replace("{{lot_name}}", data['lot']['lot_name'])
+        rfq_link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['rfq_created']['page_url']
+        subject = conf.email_endpoints['supplier']['rfq_created']['subject'].replace("{{buyer_company}}", buyer_company_name).replace("{{lot_name}}", data['lot']['lot_name'])
         for supplier in invited_suppliers:
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supplier['email']],
-                                                                              "template": conf.email_endpoints['buyer']['rfq_created']['template_id'],
+                                                                              "template": conf.email_endpoints['supplier']['rfq_created']['template_id'],
                                                                               "subject": subject,
                                                                               "USER": supplier['name'],
                                                                               "BUYER_COMPANY_NAME": buyer_company_name,
-                                                                              "LOT_NAME": data['lot']['lot_name']})
+                                                                              "LOT_NAME": data['lot']['lot_name'],
+                                                                              "LINK_FOR_RFQ": rfq_link})
             p.start()
 
         # Confirmation Email to buyers
@@ -785,6 +790,22 @@ def buyer_products_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for cancelling a RFQ
+@app.route("/buyer/rfq/cancel", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_cancel():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        if Requisition(data['requisition_id']).cancel_rfq():
+            return response.customResponse({"response": "RFQ: " + str(data['requisition_id']) + " has been cancelled successfully"})
+        return response.errorResponse("Oops, some error occured. Please try again after sometime")
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/cancel", function_name="buyer_rfq_cancel()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -802,6 +823,9 @@ def supplier_quotation_send():
         supplier = Supplier(supplier_id)
         unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
                                                            operation_type="rfq")
+
+        if requisition.get_cancelled():
+            return response.errorResponse("You cannot quote against a cancelled RFQ")
 
         # Checking the unlock status
         if not unlock_status:

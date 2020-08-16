@@ -38,13 +38,16 @@ class Requisition:
 
     def insert(self, values, table="requisition_table"):
         try:
+            pprint("in requisition create")
             self.__cursor.execute(Implementations.requisition_create_table)
+            pprint("requisition table created")
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO requisitions (buyer_id, requisition_name, timezone, currency, deadline, supplier_instructions, 
             tnc, cancelled, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['buyer_id'], values['requisition_name'], values['timezone'], values['currency'],
                                    values['deadline'], values['supplier_instructions'], values['tnc'],
                                    values['cancelled'], values['status'], values['created_at']))
+            pprint("requisition created")
             self.__sql.commit()
             return self.__cursor.lastrowid
 
@@ -73,10 +76,30 @@ class Requisition:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def cancel_rfq(self):
+        try:
+            self.__cursor.execute(
+                """update requisitions set cancelled = true where requisition_id = %s""",
+                (self.__id,))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='RequisitionOps', function_name='cancel_rfq()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='RequisitionOps', function_name='cancel_rfq()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
     def get_deadline(self):
         return self.__requisition['deadline']
 
     def get_requisition(self):
         return self.__requisition
+
+    def get_cancelled(self):
+        return self.__requisition['cancelled']
 
 # pprint(Requisition().get_rfq(1000))

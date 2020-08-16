@@ -76,7 +76,7 @@ email_endpoints = {
             "template_id": "supplier_onboarding"
         },
         "rfq_created": {
-            "page_url": "",
+            "page_url": "/rfq",
             "subject": "You have received a RFQ from {{buyer_company}} for {{lot_name}}",
             "template_id": "rfq_created"
         }
@@ -96,6 +96,11 @@ email_endpoints = {
             "page_url": "",
             "subject": "{{supplier_company_name}} has submitted a quotation against RFQ: #{{requisition_id}}",
             "template_id": "quotation_submitted"
+        },
+        "rfq_created": {
+            "page_url": "/rfq",
+            "subject": "You have received a RFQ from {{buyer_company}} for {{lot_name}}",
+            "template_id": "rfq_created"
         }
     }
 }

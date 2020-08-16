@@ -70,7 +70,7 @@ class Buyer:
         # Create a table if not exists
         if cursor.fetchone() is None:
             return False
-        cursor.execute("""select * from buyers where domain_name=%s;""", (company_domain, ))
+        cursor.execute("""select * from buyers where domain_name = %s;""", (company_domain, ))
         res = cursor.fetchone()
         cursor.close()
         sql.close()
