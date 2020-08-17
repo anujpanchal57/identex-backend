@@ -921,8 +921,7 @@ def supplier_rfq_list():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        requisitions = Join().get_buyer_requisitions(buyer_id=data['buyer_id'], start_limit=start_limit, end_limit=end_limit,
-                                                     req_type=data['type'].lower())
+        requisitions = Join().get_supplier_requisitions(supplier_id=data['supplier_id'], start_limit=start_limit, end_limit=end_limit, req_type=data['type'].lower())
         # Looping through all the requisitions
         if len(requisitions) > 0:
             for req in requisitions:
@@ -932,12 +931,8 @@ def supplier_rfq_list():
                     for prod in req['products']:
                         prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
 
-                # Insert invited suppliers
-                req['invited_suppliers'] = InviteSupplier().get_operation_suppliers_count(operation_id=req['requisition_id'],
-                                                                                          operation_type="rfq")
-
-                # Insert number of responses received
-                req['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=req['requisition_id'])
+                # Insert specification docs
+                req['specification_documents'] = Document().get_docs(operation_id=req['requisition_id'], operation_type="rfq")
 
         return response.customResponse({"requisitions": requisitions})
 
