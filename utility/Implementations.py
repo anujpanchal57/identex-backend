@@ -197,6 +197,19 @@ messages_create_table = """create table if not exists messages (
                 sender varchar(20) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
+message_documents_create_table = """create table if not exists message_documents (
+                document_id int primary key not null auto_increment,
+                operation_id int not null, 
+                operation_type varchar(10) not null,
+                entity_id int not null, 
+                document_url varchar(100) not null,
+                document_type varchar(20) not null, 
+                document_name varchar(100) not null, 
+                uploaded_on int(11) not null, 
+                uploaded_by varchar(60) not null, 
+                uploader varchar(50) not null
+            ) ENGINE=InnoDB auto_increment=1000"""
+
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,
                 function_name varchar(50) not null,

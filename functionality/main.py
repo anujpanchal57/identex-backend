@@ -46,6 +46,8 @@ from database.QuotationOps import Quotation
 from database.QuoteOps import Quote
 from functionality import EmailNotifications
 from database.JoinOps import Join
+from database.MessageOps import Message
+from database.MessageDocumentOps import MessageDocument
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -981,7 +983,86 @@ def supplier_rfq_list():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-########################################### CONTACT SECTION #####################################################
+########################################### MESSAGE SECTION ##########################################################
+
+# POST request for sending a message
+@app.route("/message/send", methods=['POST'])
+@validate_access_token
+def send_message():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        # Insert the documents
+        documents, document_ids = [], []
+
+        message_id = Message().add_message(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                           message=data['message'],
+                                           sent_by=data['_id'], sender=data['client_type'])
+
+        if len(data['documents']) > 0:
+            for document in data['documents']:
+                doc = [message_id, data['operation_type'], data['operation_id'], document['document_url'], document['document_type'],
+                       document['document_name'], document['uploaded_on'], data['_id'], data['client_type']]
+                doc = tuple(doc)
+                documents.append(doc)
+            document_ids += MessageDocument().insert_many(documents)
+
+        message = Message(message_id).get_message()
+        message['documents'] = data['documents']
+        return response.customResponse({"response": "Message sent successfully", "message": message})
+
+    except Exception as e:
+        log = Logger(module_name="/message/send", function_name="send_message()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+
+# POST request for fetching messages
+@app.route("/messages/get", methods=['POST'])
+@validate_access_token
+def get_messages():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 10
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        messages = Message().get_operation_messages(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                                    start_limit=start_limit, end_limit=end_limit)
+
+        # reversing for bottoms up placement on the UI end
+        messages = messages[::-1]
+
+        if len(messages) > 0:
+            for message in messages:
+                message['documents'] = MessageDocument(message['message_id']).get_message_docs(operation_id=message['message_id'],
+                                                                                               operation_type=data['operation_type'])
+
+        return response.customResponse({"messages": messages})
+
+    except Exception as e:
+        log = Logger(module_name="/messages/get", function_name="get_messages()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching messages
+@app.route("/messages/documents/get", methods=['POST'])
+@validate_access_token
+def get_messages_documents():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        documents = MessageDocument().get_docs(entity_id=data['operation_id'], operation_type=data['operation_type'])
+        return response.customResponse({"documents": documents})
+
+    except Exception as e:
+        log = Logger(module_name="/messages/documents/get", function_name="get_messages_documents()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+
+########################################### CONTACT SECTION ##########################################################
 
 # POST request for sending contact details to identex team
 @app.route("/request/demo", methods=["POST"])
