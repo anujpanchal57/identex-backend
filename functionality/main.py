@@ -592,7 +592,6 @@ def buyer_activation_status_update():
 @validate_buyer_access_token
 def buyer_create_rfq():
     try:
-        pprint(request.json)
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         buyer_id = data['buyer_id']
@@ -604,12 +603,10 @@ def buyer_create_rfq():
             return response.errorResponse("Please add atleast one product in order to create RFQ")
 
         document_ids, product_ids, invited_suppliers_ids = [], [], []
-        pprint(data)
         # Create the requisition
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline)
-        pprint(requisition_id)
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -683,10 +680,27 @@ def buyer_rfq_list():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        requisitions = []
-        # Get all requisitions for the buyer
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        requisitions = Join().get_buyer_requisitions(buyer_id=data['buyer_id'], start_limit=start_limit, end_limit=end_limit,
+                                                     req_type=data['type'].lower())
+        # Looping through all the requisitions
+        if len(requisitions) > 0:
+            for req in requisitions:
+                # Insert products and its documents
+                req['products'] = Product().get_lot_products(req['lot_id'])
+                if len(req['products']) > 0:
+                    for prod in req['products']:
+                        prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
 
-        # Loop through add the products and number of responses received for each requisition
+                # Insert invited suppliers
+                req['invited_suppliers'] = InviteSupplier().get_operation_suppliers_count(operation_id=req['requisition_id'],
+                                                                                          operation_type="rfq")
+
+                # Insert number of responses received
+                req['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=req['requisition_id'])
 
         return response.customResponse({"requisitions": requisitions})
 
@@ -806,6 +820,26 @@ def buyer_rfq_cancel():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for passing on the metadata about an RFQ
+@app.route("/buyer/rfq/metadata", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_metadata():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        result = {}
+        requisition = Requisition(data['requisition_id']).get_requisition()
+        result['time_remaining'] = GenericOps.calculate_operation_deadline(op_tz=requisition['timezone'], deadline=requisition['deadline'])
+        result['requisition_name'] = requisition['requisition_name']
+        result['requisition_id'] = requisition['requisition_id']
+        result['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=requisition['requisition_id'])
+        return response.customResponse({"details": result})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/metadata", function_name="buyer_rfq_metadata()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -873,6 +907,42 @@ def supplier_quotation_send():
 
     except Exception as e:
         log = Logger(module_name="/supplier/quotation/send", function_name="supplier_quotation_send()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for listing the RFQs for supplier
+@app.route("/supplier/rfq/list", methods=["POST"])
+@validate_supplier_access_token
+def supplier_rfq_list():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        requisitions = Join().get_buyer_requisitions(buyer_id=data['buyer_id'], start_limit=start_limit, end_limit=end_limit,
+                                                     req_type=data['type'].lower())
+        # Looping through all the requisitions
+        if len(requisitions) > 0:
+            for req in requisitions:
+                # Insert products and its documents
+                req['products'] = Product().get_lot_products(req['lot_id'])
+                if len(req['products']) > 0:
+                    for prod in req['products']:
+                        prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
+
+                # Insert invited suppliers
+                req['invited_suppliers'] = InviteSupplier().get_operation_suppliers_count(operation_id=req['requisition_id'],
+                                                                                          operation_type="rfq")
+
+                # Insert number of responses received
+                req['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=req['requisition_id'])
+
+        return response.customResponse({"requisitions": requisitions})
+
+    except Exception as e:
+        log = Logger(module_name="/supplier/rfq/list", function_name="supplier_rfq_list()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

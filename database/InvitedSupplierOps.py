@@ -104,5 +104,24 @@ class InviteSupplier:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_operation_suppliers_count(self, operation_id, operation_type):
+        try:
+            self.__cursor.execute("""select count(*) as ins_count from invited_suppliers
+                                    where operation_id = %s and operation_type = %s;""",
+                                  (operation_id, operation_type))
+            res = self.__cursor.fetchall()
+            return res[0]['ins_count']
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvitedSupplierOps', function_name='get_operation_suppliers()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='InvitedSupplierOps', function_name='get_operation_suppliers()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+
 # pprint(InviteSupplier().add_supplier(1000, "auction", 1000))
 # pprint(InviteSupplier().get_unlock_status(1000, 1000, "rfq"))
+# pprint(InviteSupplier().get_operation_suppliers_count(1000, "rfq"))

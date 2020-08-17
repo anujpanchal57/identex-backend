@@ -41,7 +41,7 @@ MAILGUN_API_KEY = conf_settings.get('api_keys').get('mailgun')
 
 ENV_ENDPOINT = conf_settings.get('endpoint')
 
-SUPPLIERS_ENDPOINT = conf_settings.get('suppliers_endpoint')
+SUPPLIERS_ENDPOINT = conf_settings.get('supplier_endpoint')
 
 BUYER_ACTIVATION_SECRET_KEY = conf_settings.get('secret').get('buyer_activation')
 

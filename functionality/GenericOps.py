@@ -1,7 +1,7 @@
 import base64
 import calendar
 import datetime
-from datetime import timedelta
+from datetime import timedelta, timezone
 import random
 import re
 import string
@@ -52,10 +52,19 @@ def generate_user_password(length=7):
 def get_calculated_timestamp(date_time):
     return datetime.datetime.strptime(date_time, "%d-%m-%Y %H:%M").timestamp()
 
+def convert_time_offset_to_timestamp(offset, utc_timestamp):
+    return int(utc_timestamp + (int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60))
+
+def calculate_operation_deadline(op_tz, deadline):
+    tz = pytz.timezone(op_tz)
+    offset = datetime.datetime.now(tz).strftime("%z")
+    utc_timestamp = datetime.datetime.utcnow().timestamp()
+    pprint(utc_timestamp)
+    actual_timestamp = convert_time_offset_to_timestamp(offset, utc_timestamp)
+    time_remaining = deadline - actual_timestamp
+    return time_remaining
+
+# pprint(calculate_operation_deadline("asia/calcutta", 1597912200))
+# pprint(datetime.datetime.utcnow().timestamp())
+# pprint(convert_time_offset_to_timestamp("-0500", 1000000))
 # pprint(generate_email_verification_token())
-# Time conversion template
-# timezone = pytz.timezone("asia/calcutta")
-# dt = datetime.datetime.now(timezone)
-# pprint(dt)
-# utc_dt = dt.astimezone(pytz.utc)
-# pprint(dt.strftime("%z"))

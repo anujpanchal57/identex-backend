@@ -56,3 +56,26 @@ class Quotation:
             log = Logger(module_name='QuotationOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
             return False
+
+    def get_quotations_count_for_requisition(self, requisition_id, table="quotation_table"):
+        try:
+            self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
+                                  (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
+            if self.__cursor.fetchone() is None:
+                return 0
+            self.__cursor.execute("""select count(*) as quotation_count
+                                    from quotations
+                                    where requisition_id = %s;""", (requisition_id, ))
+            res = self.__cursor.fetchall()
+            return res[0]['quotation_count']
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='get_quotations_count_for_requisition()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='get_quotations_count_for_requisition()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+# pprint(Quotation().get_quotations_count_for_requisition(1000))

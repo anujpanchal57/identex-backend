@@ -38,16 +38,13 @@ class Requisition:
 
     def insert(self, values, table="requisition_table"):
         try:
-            pprint("in requisition create")
             self.__cursor.execute(Implementations.requisition_create_table)
-            pprint("requisition table created")
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO requisitions (buyer_id, requisition_name, timezone, currency, deadline, supplier_instructions, 
             tnc, cancelled, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['buyer_id'], values['requisition_name'], values['timezone'], values['currency'],
                                    values['deadline'], values['supplier_instructions'], values['tnc'],
                                    values['cancelled'], values['status'], values['created_at']))
-            pprint("requisition created")
             self.__sql.commit()
             return self.__cursor.lastrowid
 
