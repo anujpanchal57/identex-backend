@@ -131,7 +131,7 @@ documents_create_table = """create table if not exists documents (
                 operation_type varchar(10) not null, 
                 document_url varchar(100) not null,
                 document_type varchar(20) not null, 
-                document_name varchar(20) not null, 
+                document_name varchar(100) not null, 
                 uploaded_on int(11) not null, 
                 uploaded_by varchar(60) not null, 
                 uploader varchar(50) not null
@@ -185,6 +185,16 @@ activity_logs_create_table = """create table if not exists activity_logs (
                 operation_type varchar(10) not null,
                 ip_address varchar(50) not null, 
                 timestamp int(11) not null
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+messages_create_table = """create table if not exists messages (
+                message_id int primary key auto_increment not null, 
+                operation_id int not null, 
+                operation_type varchar(20) not null, 
+                message varchar(500) not null, 
+                sent_on int(11) not null, 
+                sent_by varchar(60) not null, 
+                sender varchar(20) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
 logs_create_table = """create table if not exists logs (

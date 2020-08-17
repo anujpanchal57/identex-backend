@@ -173,7 +173,7 @@ class Join:
         try:
             if req_type == "open":
                 self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc 
+                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
                                         from invited_suppliers as ins 
                                         join requisitions as r
                                         on ins.operation_id = r.requisition_id
@@ -187,7 +187,7 @@ class Join:
             # For time being, I have kept pending for approval and approved categories completely same
             elif req_type == "pending_approval":
                 self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc 
+                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
                                         from invited_suppliers as ins 
                                         join requisitions as r
                                         on ins.operation_id = r.requisition_id
@@ -200,7 +200,7 @@ class Join:
                                         limit %s, %s;""", (supplier_id, operation_type, start_limit, end_limit))
             elif req_type == "approved":
                 self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc 
+                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
                                         from invited_suppliers as ins 
                                         join requisitions as r
                                         on ins.operation_id = r.requisition_id
@@ -213,7 +213,7 @@ class Join:
                                         limit %s, %s;""", (supplier_id, operation_type, start_limit, end_limit))
             else:
                 self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc 
+                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
                                         from invited_suppliers as ins 
                                         join requisitions as r
                                         on ins.operation_id = r.requisition_id

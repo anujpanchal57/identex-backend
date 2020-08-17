@@ -432,7 +432,8 @@ def supplier_login_verify():
             DBConnectivity.set_redis_key(auth_id, str(True), conf.jwt_expiration)
             return response.customResponse({"response": "Logged in successfully",
                                             "details": {
-                                                "_id": data['_id'],
+                                                "supplier_id": suser.get_supplier_id(),
+                                                "email": data['_id'],
                                                 "name": suser.get_name(),
                                                 "mobile_no": suser.get_mobile_no(),
                                                 "access_token": auth_id,
@@ -837,6 +838,45 @@ def buyer_rfq_metadata():
 
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/metadata", function_name="buyer_rfq_metadata()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for inviting supplier(s) to quote against an RFQ
+@app.route("/buyer/rfq/suppliers/invite", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_invite_supplier():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        buyer = Buyer(data['buyer_id'])
+        suppliers = []
+        for supplier in data['invited_suppliers']:
+            supp = [data['requisition_id'], "rfq", supplier, GenericOps.get_current_timestamp(), True]
+            supp = tuple(supp)
+            suppliers.append(supp)
+
+        # Adding multiple suppliers
+        InviteSupplier("").insert_many(suppliers)
+        # Fetching lot info for email notification
+        lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+        invited_suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
+        buyer_company_name = buyer.get_company_name()
+        rfq_link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['rfq_created']['page_url']
+        subject = conf.email_endpoints['supplier']['rfq_created']['subject'].replace("{{buyer_company}}", buyer_company_name).replace("{{lot_name}}", lot['lot_name'])
+        for supplier in invited_suppliers:
+            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supplier['email']],
+                                                                              "template": conf.email_endpoints['supplier']['rfq_created']['template_id'],
+                                                                              "subject": subject,
+                                                                              "USER": supplier['name'],
+                                                                              "BUYER_COMPANY_NAME": buyer_company_name,
+                                                                              "LOT_NAME": lot['lot_name'],
+                                                                              "LINK_FOR_RFQ": rfq_link})
+            p.start()
+
+        return response.customResponse({"suppliers": invited_suppliers, "response": "Supplier(s) invited successfully"})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/suppliers/invite", function_name="buyer_rfq_invite_supplier()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
