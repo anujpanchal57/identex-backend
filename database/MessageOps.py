@@ -139,7 +139,26 @@ class Message:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def read_messages(self, operation_id, operation_type, sent_by, sender, receiver_id, receiver_type):
+        try:
+            self.__cursor.execute("""update messages set status = true
+                                    where operation_id = %s and operation_type = %s and 
+                                    sent_by = %s and sender = %s and received_by = %s and receiver = %s and status = false;""",
+                                  (operation_id, operation_type, sent_by, sender, receiver_id, receiver_type))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='MessageOps', function_name='read_messages()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='MessageOps', function_name='read_messages()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
 # pprint(Message().get_operation_messages(1000, "rfq_msg", 1000, "buyer", 1000, "supplier"))
 # pprint(Message().get_unread_messages(1000, "rfq_msg", 1000, "supplier", 1000, "buyer"))
 # pprint(Message().get_last_message(1000, "rfq_msg", 1000, "supplier", 1000, "buyer"))
 # pprint(Message().get_total_unread_messages(1000, "rfq_msg", "supplier"))
+# pprint(Message().read_messages(1000, "rfq_msg", 1000, "buyer", 1000, "supplier"))

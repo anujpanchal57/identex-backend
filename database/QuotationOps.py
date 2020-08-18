@@ -107,7 +107,6 @@ class Quotation:
                 quotation_ids = [x['quotation_id'] for x in res]
             else:
                 quotation_ids = []
-            pprint(quotation_ids)
             return tuple(quotation_ids)
 
         except mysql.connector.Error as error:

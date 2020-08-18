@@ -791,7 +791,6 @@ def buyer_rfq_supplier_ops():
                     Quotation().remove_quotations(quotation_ids=quotation_ids)
                 else:
                     quotation_ids = quotation_ids[0]
-                    print(quotation_ids)
                     Quote().remove_quotes(quotation_ids=quotation_ids)
                     Quotation().remove_quotations(quotation_ids=quotation_ids)
                 return response.customResponse({"response": "Supplier removed from the RFQ successfully", "suppliers": suppliers})
@@ -1093,7 +1092,13 @@ def receive_messages():
 @validate_access_token
 def read_messages():
     try:
-        pass
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        Message().read_messages(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                sent_by=data['receiver_id'], sender=data['receiver_type'],
+                                receiver_id=data['client_id'], receiver_type=data['client_type'])
+
+        return response.customResponse({"read_flag": True, "response": "Messages read successfully"})
 
     except Exception as e:
         log = Logger(module_name="/messages/read", function_name="read_messages()")
