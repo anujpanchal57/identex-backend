@@ -101,6 +101,28 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
+    def get_suppliers_messaging(self, operation_id, operation_type):
+        try:
+            self.__cursor.execute("""select s.supplier_id, s.company_name, su.name, su.email
+                                    from suppliers as s
+                                    join s_users as su
+                                    on s.supplier_id = su.supplier_id
+                                    join invited_suppliers as ins
+                                    on su.supplier_id = ins.supplier_id
+                                    where operation_id = %s and operation_type = %s""", (operation_id, operation_type))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_suppliers_messaging()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_suppliers_messaging()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+
     def get_suppliers_for_buyers(self, buyer_id):
         try:
             self.__cursor.execute("""select su.name, su.email, s.company_name, su.mobile_no, s.supplier_id
@@ -235,6 +257,27 @@ class Join:
             log = Logger(module_name='JoinOps', function_name='get_supplier_requisitions()')
             log.log(traceback.format_exc(), priority='highest')
             return []
+
+    # def get_supplier_messages(self, receiver_id, receiver_type, client_id, client_type, requisition_id, requisition_type):
+    #     try:
+    #         self.__cursor.execute("""select su.name, su.email, s.company_name, su.mobile_no, s.supplier_id
+    #                                 from suppliers as s
+    #                                 join s_users as su
+    #                                 on s.supplier_id = su.supplier_id
+    #                                 join supplier_relationships as sr
+    #                                 on su.supplier_id = sr.supplier_id
+    #                                 where sr.buyer_id = %s""", (buyer_id, ))
+    #         res = self.__cursor.fetchall()
+    #         return res
+    #
+    #     except mysql.connector.Error as error:
+    #         log = Logger(module_name='JoinOps', function_name='get_suppliers_for_buyers()')
+    #         log.log(str(error), priority='highest')
+    #         return []
+    #     except Exception as e:
+    #         log = Logger(module_name='JoinOps', function_name='get_suppliers_for_buyers()')
+    #         log.log(traceback.format_exc(), priority='highest')
+    #         return []
 
 # pprint(Join().get_suppliers_info(1000))
 # pprint(Join().get_invited_suppliers(1000))

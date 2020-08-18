@@ -75,5 +75,24 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def remove_quotes(self, quotation_ids):
+        try:
+            if isinstance(quotation_ids, int):
+                self.__cursor.execute("""delete from quotes where quotation_id = %s""", (quotation_ids, ))
+            else:
+                self.__cursor.execute("""delete from quotes where quotation_id in %s""", (quotation_ids, ))
+
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='remove_quotes()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='remove_quotes()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))

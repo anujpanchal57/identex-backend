@@ -78,4 +78,45 @@ class Quotation:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def remove_quotations(self, quotation_ids):
+        try:
+            if isinstance(quotation_ids, int):
+                self.__cursor.execute("""delete from quotations where quotation_id = %s""",
+                                      (quotation_ids, ))
+            else:
+                self.__cursor.execute("""delete from quotations where quotation_id in %s""",
+                                      (quotation_ids,))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='remove_quotations()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='remove_quotations()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+    def get_quotation_ids(self, requisition_id, supplier_id):
+        try:
+            self.__cursor.execute("""select quotation_id from quotations where requisition_id = %s and supplier_id = %s""",
+                          (requisition_id, supplier_id, ))
+            res = self.__cursor.fetchall()
+            if len(res) > 0:
+                quotation_ids = [x['quotation_id'] for x in res]
+            else:
+                quotation_ids = []
+            pprint(quotation_ids)
+            return tuple(quotation_ids)
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='get_quotation_ids()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='get_quotation_ids()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
 # pprint(Quotation().get_quotations_count_for_requisition(1000))

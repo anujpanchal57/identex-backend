@@ -784,6 +784,16 @@ def buyer_rfq_supplier_ops():
         if data['operation_type'] == "remove":
             if InviteSupplier().remove_supplier(supplier_id=data['supplier_id'], operation_id=data['requisition_id'], operation_type="rfq"):
                 suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+                # Remove Quotation
+                quotation_ids = Quotation().get_quotation_ids(requisition_id=data['requisition_id'], supplier_id=data['supplier_id'])
+                if len(quotation_ids) > 0 and len(quotation_ids) != 1:
+                    Quote().remove_quotes(quotation_ids=quotation_ids)
+                    Quotation().remove_quotations(quotation_ids=quotation_ids)
+                else:
+                    quotation_ids = quotation_ids[0]
+                    print(quotation_ids)
+                    Quote().remove_quotes(quotation_ids=quotation_ids)
+                    Quotation().remove_quotations(quotation_ids=quotation_ids)
                 return response.customResponse({"response": "Supplier removed from the RFQ successfully", "suppliers": suppliers})
             return response.errorResponse("Oops, some error occured. Please try again after sometime")
 
@@ -835,6 +845,7 @@ def buyer_rfq_metadata():
         result['time_remaining'] = GenericOps.calculate_operation_deadline(op_tz=requisition['timezone'], deadline=requisition['deadline'])
         result['requisition_name'] = requisition['requisition_name']
         result['requisition_id'] = requisition['requisition_id']
+        result['total_unread_messages'] = Message().get_total_unread_messages(operation_id=requisition['requisition_id'], operation_type="rfq_msg", receiver="buyer")
         result['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=requisition['requisition_id'])
         return response.customResponse({"details": result})
 
@@ -996,8 +1007,9 @@ def send_message():
         documents, document_ids = [], []
 
         message_id = Message().add_message(operation_id=data['operation_id'], operation_type=data['operation_type'],
-                                           message=data['message'],
-                                           sent_by=data['_id'], sender=data['client_type'])
+                                           message=data['message'], sender_user=data['_id'],
+                                           sent_by=data['client_id'], sender=data['client_type'], received_by=data['receiver_id'],
+                                           receiver=data['receiver_type'])
 
         if len(data['documents']) > 0:
             for document in data['documents']:
@@ -1016,11 +1028,44 @@ def send_message():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching messages
+@app.route("/messages/suppliers/get", methods=['POST'])
+@validate_access_token
+def messages_suppliers_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        if data['client_type'] == "buyer":
+            operation_type = data['operation_type'].split("_")[0]
+
+            suppliers = Join().get_suppliers_messaging(operation_id=data['operation_id'], operation_type=operation_type)
+            for supp in suppliers:
+                supp['unread_messages'] = Message().get_unread_messages(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                                                            sent_by=supp['supplier_id'], sender="supplier",
+                                                                            receiver_id=data['client_id'], receiver_type=data['client_type'])
+
+                last_message = Message().get_last_message(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                                                            sent_by=data['client_id'], sender=data['client_type'],
+                                                                            receiver_id=supp['supplier_id'], receiver_type="supplier")
+
+                if last_message is not None:
+                    supp['last_message'] = last_message['message']
+                    supp['last_message_timestamp'] = last_message['sent_on']
+                else:
+                    supp['last_message'] = ""
+                    supp['last_message_timestamp'] = 0
+
+            return response.customResponse({"suppliers": suppliers})
+
+    except Exception as e:
+        log = Logger(module_name="/messages/suppliers/get", function_name="messages_suppliers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 # POST request for fetching messages
-@app.route("/messages/get", methods=['POST'])
+@app.route("/messages/receive", methods=['POST'])
 @validate_access_token
-def get_messages():
+def receive_messages():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
@@ -1029,20 +1074,29 @@ def get_messages():
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         messages = Message().get_operation_messages(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                                    sent_by=data['client_id'], sender=data['client_type'],
+                                                    receiver_id=data['receiver_id'], receiver_type=data['receiver_type'],
                                                     start_limit=start_limit, end_limit=end_limit)
-
-        # reversing for bottoms up placement on the UI end
-        messages = messages[::-1]
-
         if len(messages) > 0:
-            for message in messages:
-                message['documents'] = MessageDocument(message['message_id']).get_message_docs(operation_id=message['message_id'],
-                                                                                               operation_type=data['operation_type'])
+            for msg in messages:
+                msg['documents'] = MessageDocument().get_message_docs(operation_id=msg['message_id'], operation_type=data['operation_type'])
 
         return response.customResponse({"messages": messages})
 
     except Exception as e:
-        log = Logger(module_name="/messages/get", function_name="get_messages()")
+        log = Logger(module_name="/messages/receive", function_name="receive_messages()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for marking messages as read
+@app.route("/messages/read", methods=['POST'])
+@validate_access_token
+def read_messages():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/messages/read", function_name="read_messages()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

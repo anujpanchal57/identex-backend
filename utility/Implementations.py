@@ -193,8 +193,12 @@ messages_create_table = """create table if not exists messages (
                 operation_type varchar(20) not null, 
                 message varchar(500) not null, 
                 sent_on int(11) not null, 
-                sent_by varchar(60) not null, 
-                sender varchar(20) not null
+                sender_user varchar(60) not null, 
+                sent_by int not null, 
+                sender varchar(20) not null,
+                received_by int not null, 
+                receiver varchar(20) not null, 
+                status bool not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
 message_documents_create_table = """create table if not exists message_documents (
