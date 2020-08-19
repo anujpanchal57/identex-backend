@@ -66,11 +66,11 @@ class ProductMaster:
         except mysql.connector.Error as error:
             log = Logger(module_name='ProductMasterOps', function_name='insert_many()')
             log.log(str(error), priority='highest')
-            raise exceptions.IncompleteRequestException('Failed to add product, please try again')
+            raise exceptions.IncompleteRequestException('Failed to add product(s), please try again')
         except Exception as e:
             log = Logger(module_name='ProductMasterOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
-            raise exceptions.IncompleteRequestException('Failed to add product, please try again')
+            raise exceptions.IncompleteRequestException('Failed to add product(s), please try again')
 
     def is_product_added(self, product_name, product_category, buyer_id):
         try:

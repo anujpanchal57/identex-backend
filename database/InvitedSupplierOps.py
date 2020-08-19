@@ -37,7 +37,7 @@ class InviteSupplier:
             self.__cursor.execute(Implementations.invited_suppliers_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO invited_suppliers (operation_id, operation_type, supplier_id, invited_on, unlock_status) 
-            VALUES (%s, %s, %s, %s, %s)""",
+                                    VALUES (%s, %s, %s, %s, %s)""",
                                   (values['operation_id'], values['operation_type'],
                                    values['supplier_id'], values['invited_on'],
                                    values['unlock_status']))
@@ -47,11 +47,11 @@ class InviteSupplier:
         except mysql.connector.Error as error:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to invite supplier, please try again')
         except Exception as e:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to invite supplier, please try again')
 
     def insert_many(self, values):
         try:
@@ -69,11 +69,11 @@ class InviteSupplier:
         except mysql.connector.Error as error:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert_many()')
             log.log(str(error), priority='highest')
-            raise exceptions.IncompleteRequestException('Failed to invite supplier, please try again')
+            raise exceptions.IncompleteRequestException('Failed to invite supplier(s), please try again')
         except Exception as e:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
-            raise exceptions.IncompleteRequestException('Failed to invite supplier, please try again')
+            raise exceptions.IncompleteRequestException('Failed to invite supplier(s), please try again')
 
     def update_unlock_status(self, supplier_id, operation_id, operation_type, status):
         try:
