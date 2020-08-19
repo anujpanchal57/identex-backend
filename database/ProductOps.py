@@ -13,7 +13,7 @@ class Product:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__product = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from products where product_id = %s""", (self.__id, ))
+            self.__cursor.execute("""select * from products where reqn_product_id = %s""", (self.__id, ))
             self.__product = self.__cursor.fetchone()
 
     # For closing the connection
@@ -22,26 +22,23 @@ class Product:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_product(self, lot_id, buyer_id, product_name, product_category, product_description, unit, quantity=0):
+    def add_product(self, product_id, lot_id, buyer_id, product_description, unit, quantity=0):
         self.__product['lot_id'] = lot_id
+        self.__product['product_id'] = product_id
         self.__product['buyer_id'] = buyer_id
-        self.__product['product_name'] = product_name
-        self.__product['product_category'] = product_category
         self.__product['product_description'] = product_description
         self.__product['quantity'] = quantity
         self.__product['unit'] = unit
-        self.__product['created_at'] = GenericOps.get_current_timestamp()
         return self.insert(self.__product)
 
     def insert(self, values):
         try:
             self.__cursor.execute(Implementations.products_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO products (lot_id, buyer_id, product_name, product_category, product_description, quantity, 
-            unit, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['lot_id'], values['buyer_id'], values['product_name'], values['product_category'],
-                                   values['product_description'], values['quantity'], values['unit'],
-                                   values['created_at']))
+            self.__cursor.execute("""INSERT INTO products (product_id, lot_id, buyer_id, product_description, quantity, 
+            unit) VALUES (%s, %s, %s, %s, %s, %s)""",
+                                  (values['product_id'], values['lot_id'], values['buyer_id'],
+                                   values['product_description'], values['quantity'], values['unit']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
@@ -58,8 +55,8 @@ class Product:
         try:
             self.__cursor.execute(Implementations.products_create_table)
             # Inserting the record in the table
-            self.__cursor.executemany("""INSERT INTO products (lot_id, buyer_id, product_name, product_category, product_description, quantity, 
-            unit, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", values)
+            self.__cursor.executemany("""INSERT INTO products (product_id, lot_id, buyer_id, product_description, quantity, 
+            unit) VALUES (%s, %s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]
@@ -90,23 +87,6 @@ class Product:
             return False
         except Exception as e:
             log = Logger(module_name='ProductOps', function_name='get_lot_products()')
-            log.log(traceback.format_exc(), priority='highest')
-            return False
-
-    def get_buyer_products(self, buyer_id):
-        try:
-            self.__cursor.execute("""select product_id, product_name, product_category, product_description, quantity, unit, created_at 
-                        from products where buyer_id = %s""", (buyer_id,))
-            res = self.__cursor.fetchall()
-            self.__sql.commit()
-            return res
-
-        except mysql.connector.Error as error:
-            log = Logger(module_name='ProductOps', function_name='get_buyer_products()')
-            log.log(str(error), priority='highest')
-            return False
-        except Exception as e:
-            log = Logger(module_name='ProductOps', function_name='get_buyer_products()')
             log.log(traceback.format_exc(), priority='highest')
             return False
 

@@ -48,6 +48,7 @@ from functionality import EmailNotifications
 from database.JoinOps import Join
 from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
+from database.ProductMasterOps import ProductMaster
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -605,7 +606,7 @@ def buyer_create_rfq():
         if len(data['products']) == 0:
             return response.errorResponse("Please add atleast one product in order to create RFQ")
 
-        document_ids, product_ids, invited_suppliers_ids = [], [], []
+        document_ids, invited_suppliers_ids = [], []
         # Create the requisition
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
@@ -622,13 +623,10 @@ def buyer_create_rfq():
         lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'])
 
         # Insert the products
-        product_ids = []
         for product in data['products']:
-            product_id = Product("").add_product(lot_id=lot_id, buyer_id=buyer_id, product_name=product['product_name'],
-                                                 product_category=product['product_category'],
+            product_id = Product("").add_product(lot_id=lot_id, buyer_id=buyer_id, product_id=product['product_id'],
                                                  product_description=product['product_description'], unit=product['unit'],
                                                  quantity=product['quantity'])
-            product_ids.append(product_id)
             if len(product['documents']) > 0:
                 documents = []
                 for document in product['documents']:
@@ -696,7 +694,7 @@ def buyer_rfq_list():
                 req['products'] = Product().get_lot_products(req['lot_id'])
                 if len(req['products']) > 0:
                     for prod in req['products']:
-                        prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
+                        prod['documents'] = Document().get_docs(operation_id=prod['reqn_product_id'], operation_type="product")
 
                 # Insert invited suppliers
                 req['invited_suppliers'] = InviteSupplier().get_operation_suppliers_count(operation_id=req['requisition_id'],
@@ -727,7 +725,7 @@ def buyer_rfq_details_get():
         result['products'] = Product().get_lot_products(result['lot']['lot_id'])
         # Fetch products documents
         for prod in result['products']:
-            prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
+            prod['documents'] = Document().get_docs(operation_id=prod['reqn_product_id'], operation_type="product")
         # Fetch specification documents
         result['specification_documents'] = Document().get_docs(operation_id=data['requisition_id'], operation_type="rfq")
 
@@ -808,7 +806,7 @@ def buyer_products_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        products = Product().get_buyer_products(buyer_id=data['buyer_id'])
+        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'])
         return response.customResponse({"products": products})
 
     except Exception as e:
@@ -892,6 +890,70 @@ def buyer_rfq_invite_supplier():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching the quotes received form the suppliers
+@app.route("/buyer/rfq/quotes/get", methods=["POST"])
+@validate_buyer_access_token
+def get_buyer_rfq_quotes():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+        # If no lot is found
+        if len(lot) == 0:
+            return response.errorResponse("No lot found against this RFQ")
+        invited_suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
+        # If no suppliers are quoting
+        if len(invited_suppliers) == 0:
+            return response.errorResponse("No suppliers are quoting against this RFQ")
+        products = Product().get_lot_products(lot_id=lot['lot_id'])
+        invited_suppliers_ids = [x['supplier_id'] for x in invited_suppliers]
+        if len(products) > 0:
+            for i in range(0, len(products)):
+                # Loop over invited suppliers
+                for supplier in invited_suppliers:
+                    # products[i]['quotes'] =
+                    pass
+
+            return response.customResponse({"quotes_received": True})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quotes/get", function_name="get_buyer_rfq_quotes()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the CFO quotes out of all the received ones
+@app.route("/buyer/rfq/quotes/summary", methods=["POST"])
+@validate_buyer_access_token
+def get_buyer_rfq_quotes_summary():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quotes/summary", function_name="get_buyer_rfq_quotes_summary()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for adding new products to the product master of buyer
+@app.route("/buyer/product/add", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_add():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        # Check whether the product is existing or not
+        if not ProductMaster().is_product_added(product_name=data['product_name'].lower(),
+                                                product_category=data['product_category'].lower(),
+                                                buyer_id=data['buyer_id']):
+            # Insert the product
+            product_id = ProductMaster().add_product(product_name=data['product_name'], product_category=data['product_category'],
+                                                     buyer_id=data['buyer_id'])
+            return response.customResponse({"response": "Product added successfully", "product_id": product_id})
+        return response.errorResponse("Product already exists in the inventory. Please select it from the products dropdown")
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/product/add", function_name="buyer_product_add()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -921,18 +983,16 @@ def supplier_quotation_send():
         if GenericOps.get_current_timestamp() > requisition.get_deadline():
             return response.errorResponse("This RFQ is not accepting any further quotations from suppliers")
 
-
-
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
-                                                 remarks=quotation['remarks'], quote_validity=quotation['quote_validity'],
-                                                 delivery_time=quotation['delivery_time'], total_amount=quotation['total_amount'],
+                                                 remarks=quotation['remarks'], total_amount=quotation['total_amount'],
                                                  total_gst=quotation['total_gst'])
         # Add quotes
         quotes = []
         for quote in quotation['quotes']:
             qt = [quotation_id, quote['charge_id'], quote['charge_name'], quote['quantity'], quote['gst'],
-                  quote['per_unit'], quote['amount']]
+                  quote['per_unit'], quote['amount'], GenericOps.convert_datestring_to_timestamp(quote['quote_validity']),
+                  quote['delivery_time']]
             qt = tuple(qt)
             quotes.append(qt)
         quotes_id = Quote().insert_many(quotes)
@@ -981,7 +1041,7 @@ def supplier_rfq_list():
                 req['products'] = Product().get_lot_products(req['lot_id'])
                 if len(req['products']) > 0:
                     for prod in req['products']:
-                        prod['documents'] = Document().get_docs(operation_id=prod['product_id'], operation_type="product")
+                        prod['documents'] = Document().get_docs(operation_id=prod['reqn_product_id'], operation_type="product")
 
                 # Insert specification docs
                 req['specification_documents'] = Document().get_docs(operation_id=req['requisition_id'], operation_type="rfq")
@@ -1120,7 +1180,6 @@ def get_messages_documents():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-
 ########################################### CONTACT SECTION ##########################################################
 
 # POST request for sending contact details to identex team
@@ -1149,6 +1208,21 @@ def contact_details_submit():
         log = Logger(module_name="/contact-details/submit", function_name="contact_details_submit()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+########################################### MISCELLANEOUS SECTION #####################################################
+
+# POST request for fetching messages
+@app.route("/buyer/activity-logs/get", methods=['POST'])
+@validate_buyer_access_token
+def get_activity_logs():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/activity-logs/get", function_name="get_activity_logs()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 
 if __name__ == '__main__':

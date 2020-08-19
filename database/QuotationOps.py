@@ -22,13 +22,10 @@ class Quotation:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_quotation(self, supplier_id, requisition_id, remarks, quote_validity, delivery_time, total_amount,
-                        total_gst, status=True):
+    def add_quotation(self, supplier_id, requisition_id, remarks, total_amount, total_gst, status=True):
         self.__quotation['supplier_id'] = supplier_id
         self.__quotation['requisition_id'] = requisition_id
         self.__quotation['remarks'] = remarks
-        self.__quotation['quote_validity'] = GenericOps.convert_datestring_to_timestamp(quote_validity)
-        self.__quotation['delivery_time'] = delivery_time
         self.__quotation['total_amount'] = total_amount
         self.__quotation['total_gst'] = total_gst
         self.__quotation['status'] = status
@@ -44,10 +41,10 @@ class Quotation:
                                   (values['requisition_id'], values['supplier_id']))
             self.__sql.commit()
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO quotations (supplier_id, requisition_id, remarks, quote_validity, delivery_time, total_amount,
-                        total_gst, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['supplier_id'], values['requisition_id'], values['remarks'], values['quote_validity'],
-                                   values['delivery_time'], values['total_amount'], values['total_gst'],
+            self.__cursor.execute("""INSERT INTO quotations (supplier_id, requisition_id, remarks, total_amount,
+                        total_gst, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                                  (values['supplier_id'], values['requisition_id'], values['remarks'],
+                                   values['total_amount'], values['total_gst'],
                                    values['status'], values['created_at']))
             self.__sql.commit()
             return self.__cursor.lastrowid

@@ -112,16 +112,24 @@ lots_create_table = """create table if not exists lots (
             ) ENGINE=InnoDB auto_increment=1000"""
 
 products_create_table = """create table if not exists products (
-                product_id int primary key not null auto_increment,
+                reqn_product_id int primary key not null auto_increment,
+                product_id int not null, 
                 lot_id int not null,
                 buyer_id int not null,  
-                product_name varchar(50) not null,
-                product_category varchar(50) not null, 
                 product_description varchar(500) not null, 
                 quantity int not null, 
                 unit varchar(40) not null,
-                created_at int(11) not null,
                 FOREIGN KEY (lot_id) REFERENCES lots(lot_id),
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
+                FOREIGN KEY (product_id) REFERENCES product_master(product_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+product_master_create_table = """create table if not exists product_master (
+                product_id int primary key not null auto_increment,
+                buyer_id int not null,  
+                product_name varchar(50) not null,
+                product_category varchar(50) not null, 
+                created_at int(11) not null,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
@@ -152,9 +160,7 @@ quotations_create_table = """create table if not exists quotations (
                 quotation_id int primary key auto_increment,
                 supplier_id int not null, 
                 requisition_id int not null, 
-                remarks varchar(500) not null,
-                quote_validity int(11) not null, 
-                delivery_time int not null, 
+                remarks varchar(500) not null, 
                 total_amount float(11, 2) not null, 
                 total_gst float(11, 2) not null, 
                 status bool not null, 
@@ -172,6 +178,8 @@ quotes_create_table = """create table if not exists quotes (
                 gst int not null, 
                 per_unit float(11, 2) not null, 
                 amount float(11, 2) not null, 
+                quote_validity int(11) not null, 
+                delivery_time int not null,
                 FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
                 FOREIGN KEY (charge_id) REFERENCES products(product_id)
             ) ENGINE=InnoDB auto_increment=1000"""
