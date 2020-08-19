@@ -39,6 +39,10 @@ class Quotation:
     def insert(self, values):
         try:
             self.__cursor.execute(Implementations.quotations_create_table)
+            # update the status of previous quote to false if any
+            self.__cursor.execute("""update quotations set status = false where requisition_id = %s and supplier_id = %s and status = true;""",
+                                  (values['requisition_id'], values['supplier_id']))
+            self.__sql.commit()
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO quotations (supplier_id, requisition_id, remarks, quote_validity, delivery_time, total_amount,
                         total_gst, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
