@@ -5,6 +5,7 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
 
 class Lot:
     def __init__(self, _id=""):
@@ -42,15 +43,13 @@ class Lot:
             return self.__cursor.lastrowid
 
         except mysql.connector.Error as error:
-            pprint(error)
             log = Logger(module_name='LotOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add lot details, please try again')
         except Exception as e:
-            pprint(e)
             log = Logger(module_name='LotOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add lot details, please try again')
 
     def get_lot_for_requisition(self, requisition_id):
         self.__cursor.execute("""select * from lots where requisition_id = %s""", (requisition_id, ))

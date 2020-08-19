@@ -5,6 +5,8 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
+
 
 class Requisition:
     def __init__(self, _id=""):
@@ -51,11 +53,11 @@ class Requisition:
         except mysql.connector.Error as error:
             log = Logger(module_name='RequisitionOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add RFQ, please try again')
         except Exception as e:
             log = Logger(module_name='RequisitionOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add RFQ, please try again')
 
     def get_rfq(self, buyer_id):
         try:
@@ -84,11 +86,11 @@ class Requisition:
         except mysql.connector.Error as error:
             log = Logger(module_name='RequisitionOps', function_name='cancel_rfq()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to cancel RFQ, please try again')
         except Exception as e:
             log = Logger(module_name='RequisitionOps', function_name='cancel_rfq()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to cancel RFQ, please try again')
 
     def get_deadline(self):
         return self.__requisition['deadline']
@@ -100,3 +102,4 @@ class Requisition:
         return self.__requisition['cancelled']
 
 # pprint(Requisition().get_rfq(1000))
+# pprint(Requisition().add_requisition(requisition_name="ABC", buyer_id=1000, timezone="asia/calcutta", currency="inr", deadline=6513216854))

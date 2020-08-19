@@ -647,7 +647,8 @@ def buyer_create_rfq():
             document_ids += Document("").insert_many(documents)
 
         # Adding activity performed to the log
-        ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq", type_of_user="buyer")
+        ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq",
+                                      type_of_user="buyer", user_id=data['buyer_id'])
 
         # Trigger the email alert to invited suppliers
         invited_suppliers = Join().get_invited_suppliers(operation_id=requisition_id, operation_type="rfq")
@@ -669,6 +670,8 @@ def buyer_create_rfq():
         return response.customResponse({"response": "Your RFQ has been created successfully and sent to the invited suppliers",
                                         "rfq_id": requisition_id})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/create", function_name="buyer_create_rfq()")
         log.log(traceback.format_exc())
@@ -794,6 +797,8 @@ def buyer_rfq_supplier_ops():
                 return response.customResponse({"response": "Supplier removed from the RFQ successfully", "suppliers": suppliers})
             return response.errorResponse("Oops, some error occured. Please try again after sometime")
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/suppliers/ops", function_name="buyer_rfq_suppliers_ops()")
         log.log(traceback.format_exc())
@@ -823,8 +828,9 @@ def buyer_rfq_cancel():
         data['_id'] = data['_id'].lower()
         if Requisition(data['requisition_id']).cancel_rfq():
             return response.customResponse({"response": "RFQ: " + str(data['requisition_id']) + " has been cancelled successfully"})
-        return response.errorResponse("Oops, some error occured. Please try again after sometime")
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/cancel", function_name="buyer_rfq_cancel()")
         log.log(traceback.format_exc())
@@ -885,6 +891,8 @@ def buyer_rfq_invite_supplier():
 
         return response.customResponse({"suppliers": invited_suppliers, "response": "Supplier(s) invited successfully"})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/suppliers/invite", function_name="buyer_rfq_invite_supplier()")
         log.log(traceback.format_exc())
@@ -901,20 +909,18 @@ def get_buyer_rfq_quotes():
         # If no lot is found
         if len(lot) == 0:
             return response.errorResponse("No lot found against this RFQ")
-        invited_suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
+        invited_suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
         # If no suppliers are quoting
         if len(invited_suppliers) == 0:
             return response.errorResponse("No suppliers are quoting against this RFQ")
         products = Product().get_lot_products(lot_id=lot['lot_id'])
-        invited_suppliers_ids = [x['supplier_id'] for x in invited_suppliers]
         if len(products) > 0:
             for i in range(0, len(products)):
                 # Loop over invited suppliers
-                for supplier in invited_suppliers:
-                    # products[i]['quotes'] =
-                    pass
-
-            return response.customResponse({"quotes_received": True})
+                products[i]['quotes'] = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
+                                                                                    charge_id=products[i]['product_id'])
+            return response.customResponse({"quotes_received": products, "suppliers": invited_suppliers})
+        return response.errorResponse("No products found in this lot")
 
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/quotes/get", function_name="get_buyer_rfq_quotes()")
@@ -950,6 +956,8 @@ def buyer_product_add():
             return response.customResponse({"response": "Product added successfully", "product_id": product_id})
         return response.errorResponse("Product already exists in the inventory. Please select it from the products dropdown")
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/product/add", function_name="buyer_product_add()")
         log.log(traceback.format_exc())
@@ -986,16 +994,20 @@ def supplier_quotation_send():
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
                                                  remarks=quotation['remarks'], total_amount=quotation['total_amount'],
-                                                 total_gst=quotation['total_gst'])
+                                                 total_gst=quotation['total_gst'], quote_validity=quotation['quote_validity'])
+
+
         # Add quotes
         quotes = []
         for quote in quotation['quotes']:
             qt = [quotation_id, quote['charge_id'], quote['charge_name'], quote['quantity'], quote['gst'],
-                  quote['per_unit'], quote['amount'], GenericOps.convert_datestring_to_timestamp(quote['quote_validity']),
-                  quote['delivery_time']]
+                  quote['per_unit'], quote['amount'], quote['delivery_time']]
             qt = tuple(qt)
             quotes.append(qt)
         quotes_id = Quote().insert_many(quotes)
+
+        if not quotation_id or not quotes_id:
+            return response.errorResponse("Failed to send quotation, please try again")
 
         # Update the unlock_status of supplier
         InviteSupplier().update_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'], operation_type="rfq", status=False)
@@ -1017,6 +1029,8 @@ def supplier_quotation_send():
 
         return response.customResponse({"response": "Quotation sent successfully"})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/supplier/quotation/send", function_name="supplier_quotation_send()")
         log.log(traceback.format_exc())
@@ -1082,6 +1096,8 @@ def send_message():
         message['documents'] = data['documents']
         return response.customResponse({"response": "Message sent successfully", "message": message})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/message/send", function_name="send_message()")
         log.log(traceback.format_exc())
@@ -1160,6 +1176,8 @@ def read_messages():
 
         return response.customResponse({"read_flag": True, "response": "Messages read successfully"})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/messages/read", function_name="read_messages()")
         log.log(traceback.format_exc())
@@ -1212,14 +1230,22 @@ def contact_details_submit():
 ########################################### MISCELLANEOUS SECTION #####################################################
 
 # POST request for fetching messages
-@app.route("/buyer/activity-logs/get", methods=['POST'])
-@validate_buyer_access_token
+@app.route("/activity-logs/get", methods=['POST'])
+@validate_access_token
 def get_activity_logs():
     try:
-        pass
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 10
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        activity_logs = ActivityLogs().get_activity_logs(done_by=data['_id'], user_id=data['client_id'], start_limit=start_limit,
+                                                         end_limit=end_limit)
+        return response.customResponse({"activity_logs": activity_logs})
 
     except Exception as e:
-        log = Logger(module_name="/buyer/activity-logs/get", function_name="get_activity_logs()")
+        log = Logger(module_name="/activity-logs/get", function_name="get_activity_logs()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

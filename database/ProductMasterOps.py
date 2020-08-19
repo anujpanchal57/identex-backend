@@ -5,6 +5,7 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
 
 class ProductMaster:
     def __init__(self, _id=""):
@@ -43,11 +44,11 @@ class ProductMaster:
         except mysql.connector.Error as error:
             log = Logger(module_name='ProductMasterOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add product, please try again')
         except Exception as e:
             log = Logger(module_name='ProductMasterOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add product, please try again')
 
     def insert_many(self, values):
         try:
@@ -65,11 +66,11 @@ class ProductMaster:
         except mysql.connector.Error as error:
             log = Logger(module_name='ProductMasterOps', function_name='insert_many()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add product, please try again')
         except Exception as e:
             log = Logger(module_name='ProductMasterOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add product, please try again')
 
     def is_product_added(self, product_name, product_category, buyer_id):
         try:

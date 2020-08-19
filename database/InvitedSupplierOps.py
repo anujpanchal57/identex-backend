@@ -5,6 +5,7 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
 
 class InviteSupplier:
     def __init__(self, _id=""):
@@ -68,18 +69,28 @@ class InviteSupplier:
         except mysql.connector.Error as error:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert_many()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to invite supplier, please try again')
         except Exception as e:
             log = Logger(module_name='InvitedSupplierOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to invite supplier, please try again')
 
     def update_unlock_status(self, supplier_id, operation_id, operation_type, status):
-        self.__inv_supplier['unlock_status'] = status
-        self.__cursor.execute("update invited_suppliers set unlock_status = %s where operation_id = %s and operation_type = %s and supplier_id = %s",
-                              (status, operation_id, operation_type, supplier_id))
-        self.__sql.commit()
-        return True
+        try:
+            self.__inv_supplier['unlock_status'] = status
+            self.__cursor.execute("update invited_suppliers set unlock_status = %s where operation_id = %s and operation_type = %s and supplier_id = %s",
+                                  (status, operation_id, operation_type, supplier_id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvitedSupplierOps', function_name='update_unlock_status()')
+            log.log(str(error), priority='highest')
+            raise exceptions.IncompleteRequestException('Failed to update unlock status of a supplier, please try again')
+        except Exception as e:
+            log = Logger(module_name='InvitedSupplierOps', function_name='update_unlock_status()')
+            log.log(traceback.format_exc(), priority='highest')
+            raise exceptions.IncompleteRequestException('Failed to update unlock status of a supplier, please try again')
 
     def get_unlock_status(self, supplier_id, operation_id, operation_type):
         self.__cursor.execute("""select unlock_status from invited_suppliers where supplier_id = %s and operation_id = %s and operation_type = %s""",
@@ -98,11 +109,11 @@ class InviteSupplier:
         except mysql.connector.Error as error:
             log = Logger(module_name='InvitedSupplierOps', function_name='remove_supplier()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to remove supplier, please try again')
         except Exception as e:
             log = Logger(module_name='InvitedSupplierOps', function_name='remove_supplier()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to remove supplier, please try again')
 
     def get_operation_suppliers_count(self, operation_id, operation_type):
         try:

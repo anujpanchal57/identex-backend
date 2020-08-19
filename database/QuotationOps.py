@@ -5,6 +5,7 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
 
 class Quotation:
     def __init__(self, _id=""):
@@ -22,11 +23,12 @@ class Quotation:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_quotation(self, supplier_id, requisition_id, remarks, total_amount, total_gst, status=True):
+    def add_quotation(self, supplier_id, requisition_id, remarks, total_amount, total_gst, quote_validity, status=True):
         self.__quotation['supplier_id'] = supplier_id
         self.__quotation['requisition_id'] = requisition_id
         self.__quotation['remarks'] = remarks
         self.__quotation['total_amount'] = total_amount
+        self.__quotation['quote_validity'] = GenericOps.convert_datestring_to_timestamp(quote_validity)
         self.__quotation['total_gst'] = total_gst
         self.__quotation['status'] = status
         self.__quotation['created_at'] = GenericOps.get_current_timestamp()
@@ -42,9 +44,9 @@ class Quotation:
             self.__sql.commit()
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO quotations (supplier_id, requisition_id, remarks, total_amount,
-                        total_gst, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                        total_gst, quote_validity, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['supplier_id'], values['requisition_id'], values['remarks'],
-                                   values['total_amount'], values['total_gst'],
+                                   values['total_amount'], values['total_gst'], values['quote_validity'],
                                    values['status'], values['created_at']))
             self.__sql.commit()
             return self.__cursor.lastrowid
@@ -52,11 +54,11 @@ class Quotation:
         except mysql.connector.Error as error:
             log = Logger(module_name='QuotationOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException("Failed to add quotation, please try again")
         except Exception as e:
             log = Logger(module_name='QuotationOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException("Failed to add quotation, please try again")
 
     def get_quotations_count_for_requisition(self, requisition_id, table="quotation_table"):
         try:
@@ -93,11 +95,11 @@ class Quotation:
         except mysql.connector.Error as error:
             log = Logger(module_name='QuotationOps', function_name='remove_quotations()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException("Failed to remove quotation, please try again")
         except Exception as e:
             log = Logger(module_name='QuotationOps', function_name='remove_quotations()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException("Failed to remove quotation, please try again")
 
     def get_quotation_ids(self, requisition_id, supplier_id):
         try:
@@ -116,6 +118,22 @@ class Quotation:
             return False
         except Exception as e:
             log = Logger(module_name='QuotationOps', function_name='get_quotation_ids()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+    def get_quotations_for_requisition(self, requisition_id, status=True):
+        try:
+            self.__cursor.execute("""select * from quotations where requisition_id = %s and status = %s""",
+                          (requisition_id, status, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='get_quotations_for_requisition()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='get_quotations_for_requisition()')
             log.log(traceback.format_exc(), priority='highest')
             return False
 

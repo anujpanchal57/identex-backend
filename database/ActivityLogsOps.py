@@ -22,9 +22,27 @@ class ActivityLogs:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_activity(self, activity, done_by, type_of_user, operation_id, operation_type, ip_address=""):
+    def get_activity_logs(self, done_by, user_id, start_limit, end_limit):
+        try:
+            self.__cursor.execute("""select * from activity_logs where done_by = %s and user_id = %s
+                                        order by timestamp desc
+                                        limit %s, %s""", (done_by, user_id, start_limit, end_limit))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ActivityLogsOps', function_name='get_activity_logs()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='ActivityLogsOps', function_name='get_activity_logs()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+    def add_activity(self, activity, done_by, type_of_user, operation_id, operation_type, user_id, ip_address=""):
         self.__activity_log['activity'] = activity
         self.__activity_log['done_by'] = done_by
+        self.__activity_log['user_id'] = user_id
         self.__activity_log['type_of_user'] = type_of_user
         self.__activity_log['operation_id'] = operation_id
         self.__activity_log['operation_type'] = operation_type
@@ -37,9 +55,9 @@ class ActivityLogs:
         try:
             self.__cursor.execute(Implementations.activity_logs_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO activity_logs (activity, done_by, type_of_user, operation_id, operation_type, 
-                                    ip_address, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['activity'], values['done_by'], values['type_of_user'], values['operation_id'],
+            self.__cursor.execute("""INSERT INTO activity_logs (activity, done_by, user_id, type_of_user, operation_id, operation_type, 
+                                    ip_address, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                                  (values['activity'], values['done_by'], values['user_id'], values['type_of_user'], values['operation_id'],
                                    values['operation_type'], values['ip_address'], values['timestamp']))
             self.__sql.commit()
             return self.__cursor.lastrowid

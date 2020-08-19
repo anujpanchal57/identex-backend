@@ -162,7 +162,8 @@ quotations_create_table = """create table if not exists quotations (
                 requisition_id int not null, 
                 remarks varchar(500) not null, 
                 total_amount float(11, 2) not null, 
-                total_gst float(11, 2) not null, 
+                total_gst float(11, 2) not null,
+                quote_validity int(11) not null, 
                 status bool not null, 
                 created_at int(11) not null, 
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
@@ -177,17 +178,17 @@ quotes_create_table = """create table if not exists quotes (
                 quantity int not null, 
                 gst int not null, 
                 per_unit float(11, 2) not null, 
-                amount float(11, 2) not null, 
-                quote_validity int(11) not null, 
-                delivery_time int not null,
+                amount float(11, 2) not null,
+                delivery_time int not null, 
                 FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
-                FOREIGN KEY (charge_id) REFERENCES products(product_id)
+                FOREIGN KEY (charge_id) REFERENCES product_master(product_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
 activity_logs_create_table = """create table if not exists activity_logs (
                 activity_id int primary key not null auto_increment,
                 activity varchar(100) not null, 
                 done_by varchar(60) not null, 
+                user_id int not null,
                 type_of_user varchar(10) not null,
                 operation_id int not null, 
                 operation_type varchar(10) not null,

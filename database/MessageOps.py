@@ -5,6 +5,7 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
 
 class Message:
     def __init__(self, _id=""):
@@ -54,11 +55,11 @@ class Message:
         except mysql.connector.Error as error:
             log = Logger(module_name='MessageOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Unable to send message, please try again')
         except Exception as e:
             log = Logger(module_name='MessageOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Unable to send message, please try again')
 
     def get_operation_messages(self, operation_id, operation_type, sent_by, sender, receiver_id, receiver_type, start_limit=0, end_limit=10):
         try:
@@ -151,11 +152,11 @@ class Message:
         except mysql.connector.Error as error:
             log = Logger(module_name='MessageOps', function_name='read_messages()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to read message(s), please try again')
         except Exception as e:
             log = Logger(module_name='MessageOps', function_name='read_messages()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to read message(s), please try again')
 
 # pprint(Message().get_operation_messages(1000, "rfq_msg", 1000, "buyer", 1000, "supplier"))
 # pprint(Message().get_unread_messages(1000, "rfq_msg", 1000, "supplier", 1000, "buyer"))

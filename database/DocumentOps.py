@@ -5,6 +5,7 @@ from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
 import mysql.connector
+from exceptions import exceptions
 
 class Document:
     def __init__(self, _id=""):
@@ -48,11 +49,12 @@ class Document:
         except mysql.connector.Error as error:
             log = Logger(module_name='DocumentOps', function_name='insert()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add document, please try again')
+
         except Exception as e:
             log = Logger(module_name='DocumentOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add document, please try again')
 
     def insert_many(self, values):
         try:
@@ -70,11 +72,11 @@ class Document:
         except mysql.connector.Error as error:
             log = Logger(module_name='DocumentOps', function_name='insert_many()')
             log.log(str(error), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add document(s), please try again')
         except Exception as e:
             log = Logger(module_name='DocumentOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
-            return False
+            raise exceptions.IncompleteRequestException('Failed to add document(s), please try again')
 
     def get_docs(self, operation_id, operation_type):
         self.__cursor.execute("""select document_name, document_type, document_url, uploaded_on, uploaded_by from documents 

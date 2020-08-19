@@ -75,8 +75,12 @@ class Product:
 
     def get_lot_products(self, lot_id):
         try:
-            self.__cursor.execute("""select product_id, product_name, product_category, product_description, quantity, unit, created_at 
-            from products where lot_id = %s""", (lot_id, ))
+            self.__cursor.execute("""select p.reqn_product_id, pm.product_id, pm.product_name, pm.product_category, p.product_description, 
+                                    p.quantity, p.unit 
+                                    from products as p 
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    where p.lot_id = %s;""", (lot_id, ))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res

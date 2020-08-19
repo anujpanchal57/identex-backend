@@ -22,12 +22,14 @@ class InvalidBankAccountDetails(Exception):
 class IncompleteRequestException(Exception):
     def __init__(self, error):
         self.error = error
-        print()
+
+class BadRequestException(Exception):
+    def __init__(self, error):
+        self.error = error
 
 class InvalidLoginCredentials(Exception):
     def __init__(self, error):
         self.error = error
-
 
 class AccountVerified(Exception):
     pass
