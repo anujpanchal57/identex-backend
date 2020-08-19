@@ -108,3 +108,5 @@ email_endpoints = {
 default_recipient = "archives.identex@gmail.com"
 
 default_founder_email = "utkarsh.dhawan@identex.io"
+
+all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
