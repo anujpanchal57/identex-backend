@@ -93,7 +93,7 @@ email_endpoints = {
             "template_id": "forgot_password"
         },
         "quotation_submitted": {
-            "page_url": "",
+            "page_url": "/rfq/live-rfq?id={{requisition_id}}&action=quotes",
             "subject": "{{supplier_company_name}} has submitted a quotation against RFQ: #{{requisition_id}}",
             "template_id": "quotation_submitted"
         },

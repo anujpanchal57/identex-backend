@@ -5,7 +5,6 @@ from functionality.Logger import Logger
 from pymongo import MongoClient
 from utility import conf
 from redis import StrictRedis
-import pymysql
 
 def create_sql_connection():
     try:

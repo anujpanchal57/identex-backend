@@ -22,10 +22,13 @@ class Join:
     def get_suppliers_info(self, buyer_id):
         try:
             self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id
-                                    from supplier_relationships as sr join suppliers as s
+                                    from supplier_relationships as sr 
+                                    join suppliers as s
                                     on sr.supplier_id = s.supplier_id
                                     join s_users as su
-                                    on su.supplier_id = sr.supplier_id where sr.buyer_id = %s""", (buyer_id, ))
+                                    on su.supplier_id = sr.supplier_id 
+                                    where sr.buyer_id = %s
+                                    order by su.created_at desc""", (buyer_id, ))
             res = self.__cursor.fetchall()
             return res
 
@@ -38,6 +41,7 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
+    # Made this method for the sake of email
     def get_invited_suppliers(self, operation_id, operation_type="rfq"):
         try:
             self.__cursor.execute("""select substring_index(su.name, " ", 1) as name, su.email, s.company_name, su.mobile_no
@@ -46,7 +50,8 @@ class Join:
                                     on s.supplier_id = su.supplier_id
                                     join invited_suppliers as ins
                                     on su.supplier_id = ins.supplier_id
-                                    where operation_type = %s and operation_id = %s""", (operation_type, operation_id))
+                                    where ins.operation_type = %s and ins.operation_id = %s 
+                                    order by ins.invited_on desc;""", (operation_type, operation_id))
             res = self.__cursor.fetchall()
             return res
 
@@ -122,27 +127,6 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
-    def get_suppliers_for_buyers(self, buyer_id):
-        try:
-            self.__cursor.execute("""select su.name, su.email, s.company_name, su.mobile_no, s.supplier_id
-                                    from suppliers as s
-                                    join s_users as su
-                                    on s.supplier_id = su.supplier_id
-                                    join supplier_relationships as sr
-                                    on su.supplier_id = sr.supplier_id
-                                    where sr.buyer_id = %s""", (buyer_id, ))
-            res = self.__cursor.fetchall()
-            return res
-
-        except mysql.connector.Error as error:
-            log = Logger(module_name='JoinOps', function_name='get_suppliers_for_buyers()')
-            log.log(str(error), priority='highest')
-            return []
-        except Exception as e:
-            log = Logger(module_name='JoinOps', function_name='get_suppliers_for_buyers()')
-            log.log(traceback.format_exc(), priority='highest')
-            return []
-
     def get_buyer_requisitions(self, buyer_id, start_limit, end_limit, cancelled, req_type="open"):
         try:
             self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id 
@@ -191,6 +175,7 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
+# pprint(Join().get_suppliers_for_buyers(1000))
 # pprint(Join().get_suppliers_info(1000))
 # pprint(Join().get_invited_suppliers(1000))
 # pprint(Join().get_buyers_for_rfq(1000))

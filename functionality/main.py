@@ -765,7 +765,7 @@ def buyer_suppliers_get():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         buyer_id = BUser(data['_id']).get_buyer_id()
-        suppliers = Join().get_suppliers_for_buyers(buyer_id=buyer_id)
+        suppliers = Join().get_suppliers_info(buyer_id=buyer_id)
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
@@ -1043,6 +1043,7 @@ def supplier_quotation_send():
         supplier_company_name = supplier.get_company_name()
         buyers = Join().get_buyers_for_rfq(data['requisition_id'])
         subject = conf.email_endpoints['supplier']['quotation_submitted']['subject'].replace("{{supplier_company_name}}", supplier_company_name).replace("{{requisition_id}}", str(data['requisition_id']))
+        link = conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", data['requisition_id'])
         for buyer in buyers:
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
                                                                               "template": conf.email_endpoints['supplier']['quotation_submitted']['template_id'],
@@ -1051,7 +1052,8 @@ def supplier_quotation_send():
                                                                               "SUPPLIER_NAME": supplier_company_name,
                                                                               "TYPE_OF_REQUEST": "RFQ",
                                                                               "REQUEST_ID": str(data['requisition_id']),
-                                                                              "LOT_NAME": buyer['requisition_name']})
+                                                                              "LOT_NAME": buyer['requisition_name'],
+                                                                              "LINK": link})
             p.start()
 
         return response.customResponse({"response": "Quotation sent successfully"})
