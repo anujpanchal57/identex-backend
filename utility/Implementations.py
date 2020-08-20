@@ -2,6 +2,9 @@ default_bteam_name = "All Users"
 
 default_bteam_id = "All_Users"
 
+# 30 mins for requisition as well as auction
+deadline_change_time_factor = 30 * 60
+
 buyer_create_table = """create table if not exists buyers (
                 buyer_id int primary key not null auto_increment,
                 company_name varchar(50) not null,
@@ -93,9 +96,11 @@ requisition_create_table = """create table if not exists requisitions (
                 timezone varchar(50) not null,
                 currency varchar(3) not null, 
                 deadline int(11) not null, 
+                utc_deadline varchar(20) not null,
                 supplier_instructions varchar(500) not null,
                 tnc varchar(500) not null,
                 cancelled bool not null,
+                request_type varchar(20) not null,
                 status bool not null,
                 created_at int(11) not null,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
@@ -180,6 +185,7 @@ quotes_create_table = """create table if not exists quotes (
                 per_unit float(11, 2) not null, 
                 amount float(11, 2) not null,
                 delivery_time int not null, 
+                confirmed bool not null,
                 FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
                 FOREIGN KEY (charge_id) REFERENCES product_master(product_id)
             ) ENGINE=InnoDB auto_increment=1000"""

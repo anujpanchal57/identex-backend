@@ -609,8 +609,10 @@ def buyer_create_rfq():
         document_ids, invited_suppliers_ids = [], []
         # Create the requisition
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
+        utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'])
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
-                                                         currency=data['currency'], buyer_id=buyer_id, deadline=deadline)
+                                                         currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
+                                                         utc_deadline=utc_deadline)
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -688,8 +690,9 @@ def buyer_rfq_list():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
+        cancelled = True if data['type'].lower() == "cancelled" else False
         requisitions = Join().get_buyer_requisitions(buyer_id=data['buyer_id'], start_limit=start_limit, end_limit=end_limit,
-                                                     req_type=data['type'].lower())
+                                                     req_type=data['type'].lower(), cancelled=cancelled)
         # Looping through all the requisitions
         if len(requisitions) > 0:
             for req in requisitions:
@@ -857,6 +860,30 @@ def buyer_rfq_metadata():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for changing the deadline of an RFQ
+@app.route("/buyer/rfq/deadline/change", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_deadline_change():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        requisition = Requisition(data['requisition_id'])
+        deadline = GenericOps.get_calculated_timestamp(data['deadline'])
+        # Checking the deadline
+        if GenericOps.get_current_timestamp_of_timezone(requisition.get_timezone()) + Implementations.deadline_change_time_factor > deadline:
+            return response.errorResponse("Please set a deadline of more than 30 mins")
+        utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'])
+        if requisition.update_deadline(deadline=deadline, utc_deadline=utc_deadline):
+            time_remaining = GenericOps.calculate_operation_deadline(op_tz=requisition.get_timezone(), deadline=requisition.get_deadline())
+            return response.customResponse({"response": "Deadline changed successfully", "time_remaining": time_remaining})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/deadline/change", function_name="buyer_rfq_deadline_change()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for inviting supplier(s) to quote against an RFQ
 @app.route("/buyer/rfq/suppliers/invite", methods=["POST"])
 @validate_buyer_access_token
@@ -988,7 +1015,7 @@ def supplier_quotation_send():
             return response.errorResponse("You cannot quote more than once until buyer unlocks you to quote from his dashboard")
 
         # If supplier is quoting for a closed RFQ
-        if GenericOps.get_current_timestamp() > requisition.get_deadline():
+        if requisition.get_request_type() != "open":
             return response.errorResponse("This RFQ is not accepting any further quotations from suppliers")
 
         # Add quotation
@@ -1001,7 +1028,7 @@ def supplier_quotation_send():
         quotes = []
         for quote in quotation['quotes']:
             qt = [quotation_id, quote['charge_id'], quote['charge_name'], quote['quantity'], quote['gst'],
-                  quote['per_unit'], quote['amount'], quote['delivery_time']]
+                  quote['per_unit'], quote['amount'], quote['delivery_time'], False]
             qt = tuple(qt)
             quotes.append(qt)
         quotes_id = Quote().insert_many(quotes)
@@ -1047,7 +1074,9 @@ def supplier_rfq_list():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        requisitions = Join().get_supplier_requisitions(supplier_id=data['supplier_id'], start_limit=start_limit, end_limit=end_limit, req_type=data['type'].lower())
+        cancelled = True if data['type'].lower() == "cancelled" else False
+        requisitions = Join().get_supplier_requisitions(supplier_id=data['supplier_id'], start_limit=start_limit, end_limit=end_limit,
+                                                        req_type=data['type'].lower(), cancelled=cancelled)
         # Looping through all the requisitions
         if len(requisitions) > 0:
             for req in requisitions:

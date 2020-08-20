@@ -25,6 +25,11 @@ def get_current_timestamp(rounded=True):
 def convert_datestring_to_timestamp(date_str, format="%d-%m-%Y"):
     return int(datetime.datetime.strptime(date_str, format).timestamp())
 
+def convert_datetime_to_utc_datetimestring(datetime_str, in_format="%d-%m-%Y %H:%M", out_format="%Y-%m-%d %H:%M"):
+    dt = datetime.datetime.strptime(datetime_str, in_format)
+    ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+    return datetime.datetime.fromtimestamp(ts).strftime(out_format)
+
 def generate_forgot_password_token():
     token = ''.join(str(uuid.uuid4()).split('-'))
     return token
@@ -59,12 +64,18 @@ def calculate_operation_deadline(op_tz, deadline):
     tz = pytz.timezone(op_tz)
     offset = datetime.datetime.now(tz).strftime("%z")
     utc_timestamp = datetime.datetime.utcnow().timestamp()
-    pprint(utc_timestamp)
     actual_timestamp = convert_time_offset_to_timestamp(offset, utc_timestamp)
     time_remaining = deadline - actual_timestamp
     return time_remaining
 
+def get_current_timestamp_of_timezone(op_tz):
+    tz = pytz.timezone(op_tz)
+    offset = datetime.datetime.now(tz).strftime("%z")
+    return convert_time_offset_to_timestamp(offset, datetime.datetime.utcnow().timestamp())
+
+# pprint(convert_datetime_to_utc_datetimestring("20-08-2020 02:00"))
 # pprint(calculate_operation_deadline("asia/calcutta", 1597912200))
 # pprint(datetime.datetime.utcnow().timestamp())
 # pprint(convert_time_offset_to_timestamp("-0500", 1000000))
 # pprint(generate_email_verification_token())
+# pprint(get_current_timestamp_of_timezone('Asia/Aqtau'))

@@ -23,7 +23,7 @@ class Quote:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_quote(self, quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time):
+    def add_quote(self, quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time, confirmed=False):
         self.__quote['quotation_id'] = quotation_id
         self.__quote['charge_id'] = charge_id
         self.__quote['charge_name'] = charge_name
@@ -32,6 +32,7 @@ class Quote:
         self.__quote['per_unit'] = per_unit
         self.__quote['amount'] = amount
         self.__quote['delivery_time'] = delivery_time
+        self.__quote['confirmed'] = confirmed
         self.__quote['quote_id'] = self.insert(self.__quote)
         return self.__quote['quote_id']
 
@@ -39,10 +40,12 @@ class Quote:
         try:
             self.__cursor.execute(Implementations.quotes_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO quotes (quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time) 
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+            self.__cursor.execute("""INSERT INTO quotes (quotation_id, charge_id, charge_name, quantity, gst, per_unit, 
+                                        amount, delivery_time, confirmed) 
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['quotation_id'], values['charge_id'], values['charge_name'], values['quantity'],
-                                   values['gst'], values['per_unit'], values['amount'], values['delivery_time']))
+                                   values['gst'], values['per_unit'], values['amount'], values['delivery_time'],
+                                   values['confirmed']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
@@ -59,8 +62,9 @@ class Quote:
         try:
             self.__cursor.execute(Implementations.quotes_create_table)
             # Inserting the record in the table
-            self.__cursor.executemany("""INSERT INTO quotes (quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time) 
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", values)
+            self.__cursor.executemany("""INSERT INTO quotes (quotation_id, charge_id, charge_name, quantity, gst, per_unit, 
+                                        amount, delivery_time, confirmed) 
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]

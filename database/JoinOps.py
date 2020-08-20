@@ -143,41 +143,15 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
-    def get_buyer_requisitions(self, buyer_id, start_limit, end_limit, req_type="open"):
+    def get_buyer_requisitions(self, buyer_id, start_limit, end_limit, cancelled, req_type="open"):
         try:
-            if req_type == "open":
-                self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id 
-                                        from requisitions as r
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        where r.deadline > unix_timestamp() and buyer_id = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (buyer_id, start_limit, end_limit))
-            # For time being, I have kept pending for approval and approved categories completely same
-            elif req_type == "pending_approval":
-                self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id
-                                        from requisitions as r
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        where r.deadline < unix_timestamp() and buyer_id = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (buyer_id, start_limit, end_limit))
-            elif req_type == "approved":
-                self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id
-                                        from requisitions as r
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        where r.deadline < unix_timestamp() and buyer_id = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (buyer_id, start_limit, end_limit))
-            else:
-                self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id
-                                        from requisitions as r
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        where r.cancelled = true and buyer_id = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (buyer_id, start_limit, end_limit))
+            self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id 
+                                    from requisitions as r
+                                    join lots as l
+                                    on r.requisition_id = l.requisition_id
+                                    where r.request_type = %s and buyer_id = %s and r.cancelled = %s
+                                    order by r.created_at desc
+                                    limit %s, %s;""", (req_type, buyer_id, cancelled,start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
@@ -190,61 +164,21 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
-    def get_supplier_requisitions(self, supplier_id, start_limit, end_limit, req_type="open", operation_type="rfq"):
+    def get_supplier_requisitions(self, supplier_id, start_limit, end_limit, cancelled, req_type="open", operation_type="rfq"):
         try:
-            if req_type == "open":
-                self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
-                                        from invited_suppliers as ins 
-                                        join requisitions as r
-                                        on ins.operation_id = r.requisition_id
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        join buyers as b
-                                        on r.buyer_id = b.buyer_id
-                                        where r.deadline > unix_timestamp() and ins.supplier_id = %s and ins.operation_type = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (supplier_id, operation_type, start_limit, end_limit))
-            # For time being, I have kept pending for approval and approved categories completely same
-            elif req_type == "pending_approval":
-                self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
-                                        from invited_suppliers as ins 
-                                        join requisitions as r
-                                        on ins.operation_id = r.requisition_id
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        join buyers as b
-                                        on r.buyer_id = b.buyer_id
-                                        where r.deadline < unix_timestamp() and ins.supplier_id = %s and ins.operation_type = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (supplier_id, operation_type, start_limit, end_limit))
-            elif req_type == "approved":
-                self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
-                                        from invited_suppliers as ins 
-                                        join requisitions as r
-                                        on ins.operation_id = r.requisition_id
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        join buyers as b
-                                        on r.buyer_id = b.buyer_id
-                                        where r.deadline > unix_timestamp() and ins.supplier_id = %s and ins.operation_type = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (supplier_id, operation_type, start_limit, end_limit))
-            else:
-                self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                        b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
-                                        from invited_suppliers as ins 
-                                        join requisitions as r
-                                        on ins.operation_id = r.requisition_id
-                                        join lots as l
-                                        on r.requisition_id = l.requisition_id
-                                        join buyers as b
-                                        on r.buyer_id = b.buyer_id
-                                        where r.cancelled = true and ins.supplier_id = %s and ins.operation_type = %s
-                                        order by r.created_at desc
-                                        limit %s, %s;""", (supplier_id, operation_type, start_limit, end_limit))
+            self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
+                                    b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
+                                    from invited_suppliers as ins 
+                                    join requisitions as r
+                                    on ins.operation_id = r.requisition_id
+                                    join lots as l
+                                    on r.requisition_id = l.requisition_id
+                                    join buyers as b
+                                    on r.buyer_id = b.buyer_id
+                                    where r.request_type = %s and ins.supplier_id = %s and ins.operation_type = %s
+                                    and r.cancelled = %s
+                                    order by r.created_at desc
+                                    limit %s, %s;""", (req_type, supplier_id, operation_type, cancelled, start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
