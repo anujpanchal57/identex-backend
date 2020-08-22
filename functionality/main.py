@@ -943,7 +943,6 @@ def get_buyer_rfq_quotes():
         products = Product().get_lot_products(lot_id=lot['lot_id'])
         if len(products) > 0:
             for i in range(0, len(products)):
-                # Loop over invited suppliers
                 products[i]['quotes'] = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
                                                                                     charge_id=products[i]['product_id'])
             return response.customResponse({"quotes_received": products, "suppliers": invited_suppliers})
@@ -959,7 +958,36 @@ def get_buyer_rfq_quotes():
 @validate_buyer_access_token
 def get_buyer_rfq_quotes_summary():
     try:
-        pass
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+        # If no lot is found
+        if len(lot) == 0:
+            return response.errorResponse("No lot found against this RFQ")
+        invited_suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+        # If no suppliers are quoting
+        if len(invited_suppliers) == 0:
+            return response.errorResponse("No suppliers are quoting against this RFQ")
+        products = Product().get_lot_products(lot_id=lot['lot_id'])
+        if len(products) > 0:
+            quote = Quote()
+            for i in range(0, len(products)):
+                # Fetching the cheapest and optimal rates
+                products[i]['cheapest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'])
+                products[i]['fastest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'], category="fastest")
+                # Fetching and calculating the optimal rates
+                cheapest_amount, fastest_time = products[i]['cheapest']['amount'], products[i]['fastest']['delivery_time']
+                optimal = quote.get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'])
+                amount_deviations, delivery_deviations = [], []
+                # calculating deviations
+                for obj in optimal:
+                    amount_deviations.append(obj['amount'] - cheapest_amount)
+                    delivery_deviations.append(obj['delivery_time'] - fastest_time)
+                sum_deviations = amount_deviations + delivery_deviations
+                optimal_choice_ind = sum_deviations.index(min(sum_deviations))
+                products[i]['optimal'] = optimal[optimal_choice_ind]
+            return response.customResponse({"summary": products})
+        return response.errorResponse("No products found in this lot")
 
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/quotes/summary", function_name="get_buyer_rfq_quotes_summary()")
@@ -1043,7 +1071,7 @@ def supplier_quotation_send():
         supplier_company_name = supplier.get_company_name()
         buyers = Join().get_buyers_for_rfq(data['requisition_id'])
         subject = conf.email_endpoints['supplier']['quotation_submitted']['subject'].replace("{{supplier_company_name}}", supplier_company_name).replace("{{requisition_id}}", str(data['requisition_id']))
-        link = conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", data['requisition_id'])
+        link = conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", str(data['requisition_id']))
         for buyer in buyers:
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
                                                                               "template": conf.email_endpoints['supplier']['quotation_submitted']['template_id'],

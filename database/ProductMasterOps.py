@@ -93,7 +93,7 @@ class ProductMaster:
     def get_buyer_products(self, buyer_id):
         try:
             self.__cursor.execute("""select product_id, product_name, product_category, created_at 
-                        from product_master where buyer_id = %s""", (buyer_id,))
+                        from product_master where buyer_id = %s order by created_at desc""", (buyer_id,))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res

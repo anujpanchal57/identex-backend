@@ -124,5 +124,45 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_quotes_by_category(self, requisition_id, charge_id, category="cheapest", status=True):
+        try:
+            if category.lower() == "cheapest":
+                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity
+                                        from suppliers as s
+                                        join quotations as q
+                                        on s.supplier_id = q.supplier_id
+                                        join quotes as qu
+                                        on q.quotation_id = qu.quotation_id
+                                        where q.requisition_id = %s
+                                        and q.status = %s 
+                                        and qu.charge_id = %s
+                                        order by qu.amount asc
+                                        limit 0, 1;""", (requisition_id, status, charge_id))
+                res = self.__cursor.fetchall()[0]
+                return res
+            elif category.lower() == "fastest":
+                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity
+                                        from suppliers as s
+                                        join quotations as q
+                                        on s.supplier_id = q.supplier_id
+                                        join quotes as qu
+                                        on q.quotation_id = qu.quotation_id
+                                        where q.requisition_id = %s
+                                        and q.status = %s 
+                                        and qu.charge_id = %s
+                                        order by qu.delivery_time asc
+                                        limit 0, 1;""", (requisition_id, status, charge_id))
+                res = self.__cursor.fetchall()[0]
+                return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='get_quotes_by_category()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='get_quotes_by_category()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))
