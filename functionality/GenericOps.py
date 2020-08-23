@@ -83,17 +83,20 @@ def populate_email_template_for_messages(file_path, details):
         txt = html.read()
         soup = bs4.BeautifulSoup(txt, 'html.parser')
     params = {}
-    params['sender_name'] = details['SENDER_NAME'] if 'SENDER_NAME' in details else ""
+    params['USER'] = details['USER'] if 'USER' in details else ""
     message = details['MESSAGE'] if 'MESSAGE' in details else ""
-    params['booking_id'] = details['BOOKING_ID'] if 'BOOKING_ID' in details else ""
-    params['company_name'] = details['COMPANY_NAME'] if 'COMPANY_NAME' in details else ""
-    params['page_url'] = details['PAGE_URL'] if 'PAGE_URL' in details else ""
+    params['SENDER'] = details['SENDER'] if 'SENDER' in details else ""
+    params['TYPE_OF_REQUEST'] = details['TYPE_OF_REQUEST'] if 'TYPE_OF_REQUEST' in details else ""
+    params['REQUEST_ID'] = details['REQUEST_ID'] if 'REQUEST_ID' in details else ""
+    params['LOT_NAME'] = details['LOT_NAME'] if 'LOT_NAME' in details else ""
+    params['LINK_FOR_REPLY'] = details['LINK_FOR_REPLY'] if 'LINK_FOR_REPLY' in details else ""
     message_div = soup.find(id="message_div")
     message_div.append(bs4.BeautifulSoup(message, 'html.parser'))
     for key, val in params.items():
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
+# pprint(populate_email_template_for_messages(file_path=conf.message_files['message_received'], details={}))
 # pprint(convert_datetime_to_utc_datetimestring("20-08-2020 02:00"))
 # pprint(calculate_operation_deadline("asia/calcutta", 1597912200))
 # pprint(datetime.datetime.utcnow().timestamp())

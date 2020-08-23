@@ -1234,18 +1234,19 @@ def send_message():
             suser = SUser(supplier_id=data['receiver_id'])
             subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
             link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
-            lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+            lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
             sender = buser.get_name() + " (" + buyer.get_company_name() + ")"
             p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [suser.get_email()],
                                                                               "template": conf.email_endpoints['supplier']['message_received']['template_id'],
                                                                               "subject": subject,
                                                                               "LINK_FOR_REPLY": link,
                                                                               "USER": suser.get_first_name(),
-                                                                              "TYPE_OF_REQUEST": data['operation_type'].upper(),
+                                                                              "TYPE_OF_REQUEST": data['operation_type'].split(" ")[0].upper(),
                                                                               "REQUEST_ID": str(data['operation_id']),
                                                                               "LOT_NAME": lot['lot_name'],
                                                                               "SENDER": sender,
-                                                                              "MESSAGE": data['message']})
+                                                                              "MESSAGE": data['message'],
+                                                                              "documents": data['documents']})
             p.start()
         else:
             supplier = Supplier(data['client_id'])
@@ -1253,7 +1254,7 @@ def send_message():
             busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
             subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
             link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
-            lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+            lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
             sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
             for user in busers:
                 p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [user['email']],
@@ -1261,11 +1262,12 @@ def send_message():
                                                                                   "template": conf.email_endpoints['buyer']['message_received']['template_id'],
                                                                                   "LINK_FOR_REPLY": link,
                                                                                   "USER": user['name'].split(" ")[0],
-                                                                                  "TYPE_OF_REQUEST": data['operation_type'].upper(),
+                                                                                  "TYPE_OF_REQUEST": data['operation_type'].split(" ")[0].upper(),
                                                                                   "REQUEST_ID": str(data['operation_id']),
                                                                                   "LOT_NAME": lot['lot_name'],
                                                                                   "SENDER": sender,
-                                                                                  "MESSAGE": data['message']})
+                                                                                  "MESSAGE": data['message'],
+                                                                                  "documents": data['documents']})
                 p.start()
 
         message = Message(message_id).get_message()
@@ -1416,7 +1418,7 @@ def get_activity_logs():
         data['limit'] = data['limit'] if 'limit' in data else 10
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        activity_logs = ActivityLogs().get_activity_logs(done_by=data['_id'], user_id=data['client_id'], start_limit=start_limit,
+        activity_logs = ActivityLogs().get_activity_logs(type_of_user="buyer", user_id=data['client_id'], start_limit=start_limit,
                                                          end_limit=end_limit)
         return response.customResponse({"activity_logs": activity_logs})
 
@@ -1425,6 +1427,35 @@ def get_activity_logs():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching supplier operations count
+@app.route("/supplier-operations/count", methods=['POST'])
+@validate_supplier_access_token
+def supplier_operations_count():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        count = {}
+        count['open_requisitions_count'] = Join().get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="open", operation_type="rfq")
+        return response.customResponse({"operations_count": count})
+
+    except Exception as e:
+        log = Logger(module_name="/supplier-operations/count", function_name="supplier_operations_count()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching buyer operations count
+@app.route("/buyer-operations/count", methods=['POST'])
+@validate_buyer_access_token
+def buyer_operations_count():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        count = {}
+        count['open_requisitions_count'] = Join().get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="open")
+        return response.customResponse({"operations_count": count})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer-operations/count", function_name="buyer_operations_count()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 
 if __name__ == '__main__':

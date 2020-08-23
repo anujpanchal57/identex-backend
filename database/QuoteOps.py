@@ -103,7 +103,7 @@ class Quote:
     def get_supplier_quotes_for_requisition(self, requisition_id, charge_id, status=True):
         try:
             self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
-                                    qu.charge_id as product_id
+                                    qu.charge_id, qu.quote_id
                                     from suppliers as s
                                     join quotations as q
                                     on s.supplier_id = q.supplier_id
@@ -128,7 +128,8 @@ class Quote:
     def get_quotes_by_category(self, requisition_id, charge_id, category="cheapest", status=True):
         try:
             if category.lower() == "cheapest":
-                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity
+                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
+                                        qu.quote_id
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
@@ -142,7 +143,8 @@ class Quote:
                 res = self.__cursor.fetchall()[0]
                 return res
             elif category.lower() == "fastest":
-                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity
+                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
+                                        qu.quote_id
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id

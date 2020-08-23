@@ -76,7 +76,7 @@ email_endpoints = {
             "template_id": "supplier_onboarding"
         },
         "rfq_created": {
-            "page_url": "/rfq",
+            "page_url": "/rfq?type=open",
             "subject": "You have received a RFQ from {{buyer_company}} for {{lot_name}}",
             "template_id": "rfq_created"
         },
@@ -91,7 +91,7 @@ email_endpoints = {
             "template_id": "change_in_deadline"
         },
         "unlock_supplier": {
-            "page_url": "/rfq",
+            "page_url": "/rfq?type=open",
             "subject": "You have been unlocked by buyer to resubmit your quote for RFQ: #{{requisition_id}}",
             "template_id": "unlock_supplier"
         },
@@ -118,12 +118,12 @@ email_endpoints = {
             "template_id": "quotation_submitted"
         },
         "rfq_created": {
-            "page_url": "/rfq",
+            "page_url": "/rfq?type=open",
             "subject": "You have received a RFQ from {{buyer_company}} for {{lot_name}}",
             "template_id": "rfq_created"
         },
         "message_received": {
-            "page_url": "/{{operation}}",
+            "page_url": "/{{operation}}?type=open",
             "subject": "You have received a new message for RFQ: #{{requisition_id}}",
             "template_id": "message_received"
         }
@@ -131,7 +131,7 @@ email_endpoints = {
 }
 
 message_files = {
-    "message_received": app_name + "/templates/cha_message.html"
+    "message_received": app_name + "/templates/message_received.html"
 }
 
 default_recipient = "archives.identex@gmail.com"

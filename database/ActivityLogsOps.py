@@ -22,11 +22,11 @@ class ActivityLogs:
             self.__cursor.close()
             self.__sql.close()
 
-    def get_activity_logs(self, done_by, user_id, start_limit, end_limit):
+    def get_activity_logs(self, type_of_user, user_id, start_limit, end_limit):
         try:
-            self.__cursor.execute("""select * from activity_logs where done_by = %s and user_id = %s
+            self.__cursor.execute("""select * from activity_logs where type_of_user = %s and user_id = %s
                                         order by timestamp desc
-                                        limit %s, %s""", (done_by, user_id, start_limit, end_limit))
+                                        limit %s, %s""", (type_of_user, user_id, start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
