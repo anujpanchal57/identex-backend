@@ -9,13 +9,17 @@ from exceptions import exceptions
 from database.AuthorizationOps import Authorization
 
 class SUser:
-    def __init__(self, _id=""):
+    def __init__(self, _id="", supplier_id=""):
         self.__id = _id
+        self.__supplier_id = supplier_id
         self.__sql = DBConnectivity.create_sql_connection()
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__suser = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from s_users where email = %s""", (self.__id,))
+            self.__cursor.execute("""select * from s_users where email = %s""", (self.__id, ))
+            self.__suser = self.__cursor.fetchone()
+        if self.__supplier_id != "":
+            self.__cursor.execute("select * from s_users where supplier_id = %s", (self.__supplier_id, ))
             self.__suser = self.__cursor.fetchone()
 
     # For closing the connection
@@ -73,6 +77,9 @@ class SUser:
         sql.close()
         return res
 
+    def get_suser(self):
+        return self.__suser
+
     def get_name(self):
         return self.__suser['name']
 
@@ -123,7 +130,6 @@ class SUser:
             return decode
         except jwt.ExpiredSignatureError as e:
             return str(e)
-
 
 # suser = SUser("anujpanchal57@gmail.com")
 # pprint(SUser("").add_suser("avinash.kothari@exportify.in", "Avinash", 1000, "cbdbe4936ce8be63184d9f2e13fc249234371b9a"))

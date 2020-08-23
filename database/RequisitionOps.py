@@ -87,10 +87,11 @@ class Requisition:
 
     def cancel_rfq(self):
         try:
-            self.__cursor.execute("""update requisitions set cancelled = true where requisition_id = %s""", (self.__id,))
+            self.__cursor.execute("""update requisitions set cancelled = true, request_type = 'cancelled' where requisition_id = %s""", (self.__id, ))
             self.__sql.commit()
-
-            self.__cursor.execute("""drop event if exists %s""", ("rfq_" + str(self.__id)))
+            event_id = "rfq_" + str(self.__id)
+            drop_query = "DROP EVENT if exists " + event_id
+            self.__cursor.execute(drop_query)
             self.__sql.commit()
             return True
 
@@ -158,6 +159,6 @@ class Requisition:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to update deadline, please try again')
 
-
+# pprint(Requisition(1000).cancel_rfq())
 # pprint(Requisition().get_rfq(1000))
 # pprint(Requisition().add_requisition(requisition_name="ABC", buyer_id=1000, timezone="asia/calcutta", currency="inr", deadline=6513216854))

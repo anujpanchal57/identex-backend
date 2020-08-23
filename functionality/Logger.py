@@ -30,6 +30,9 @@ class Logger:
                                   (self.__log_id, self.__function_name, self.__module_name,
                                    error, priority, GenericOps.get_current_timestamp()))
             self.__sql.commit()
+            if priority.lower() == "critical":
+                message = "<h1>Error in logger: </h1><br><p>{}</p>".format(error)
+                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.io"])
             return True
         except mysql.connector.Error as error:
             # Email the error

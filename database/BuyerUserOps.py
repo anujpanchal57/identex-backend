@@ -25,6 +25,21 @@ class BUser:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_busers_for_buyer_id(self, buyer_id):
+        try:
+            self.__cursor.execute("""select * from b_users where buyer_id = %s""", (buyer_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='BuyerUserOps', function_name='get_busers_for_buyer_id()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='BuyerUserOps', function_name='get_busers_for_buyer_id()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
     # Adding a new user for a buyer company
     def add_buser(self, email, name, buyer_id, mobile_no, password, role, status=False):
         self.__buser['email'] = email

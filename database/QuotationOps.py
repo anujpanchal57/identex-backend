@@ -121,11 +121,11 @@ class Quotation:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    def get_quotations_for_requisition(self, requisition_id, status=True):
+    def get_active_quotations_for_requisition(self, requisition_id, status=True):
         try:
             self.__cursor.execute("""select * from quotations where requisition_id = %s and status = %s""",
                           (requisition_id, status, ))
-            res = self.__cursor.fetchall()
+            res = self.__cursor.fetchall()[0]
             return res
 
         except mysql.connector.Error as error:

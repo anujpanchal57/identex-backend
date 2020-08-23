@@ -102,14 +102,15 @@ class Quote:
 
     def get_supplier_quotes_for_requisition(self, requisition_id, charge_id, status=True):
         try:
-            self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity
+            self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
+                                    qu.charge_id as product_id
                                     from suppliers as s
                                     join quotations as q
                                     on s.supplier_id = q.supplier_id
                                     join quotes as qu
                                     on q.quotation_id = qu.quotation_id
                                     where q.requisition_id = %s
-                                    and q.status = %s 
+                                    and q.status = %s
                                     and qu.charge_id = %s
                                     order by amount asc;""", (requisition_id, status, charge_id))
             res = self.__cursor.fetchall()

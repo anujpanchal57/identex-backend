@@ -6,6 +6,7 @@ import time
 import traceback
 from pprint import pprint
 
+import flask
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import platform
@@ -650,7 +651,7 @@ def buyer_create_rfq():
 
         # Adding activity performed to the log
         ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq",
-                                      type_of_user="buyer", user_id=data['buyer_id'])
+                                      type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr)
 
         # Trigger the email alert to invited suppliers
         invited_suppliers = Join().get_invited_suppliers(operation_id=requisition_id, operation_type="rfq")
@@ -779,9 +780,27 @@ def buyer_suppliers_get():
 def buyer_rfq_supplier_ops():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        buyer_id = BUser(data['_id']).get_buyer_id()
+        buyer = Buyer(buyer_id)
+        suser = SUser(supplier_id=data['supplier_id'])
         if data['operation_type'] == "unlock":
             if InviteSupplier().update_unlock_status(supplier_id=data['supplier_id'], operation_id=data['requisition_id'], operation_type="rfq", status=data['status']):
+                ActivityLogs("").add_activity(activity="Unlock supplier", done_by=data['_id'], operation_id=data['requisition_id'],
+                                              operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
                 suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+                lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+                subject = conf.email_endpoints['buyer']['unlock_supplier']['subject'].replace("{{requisition_id}}", str(data['requisition_id']))
+                link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['unlock_supplier']['page_url']
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                                  "subject": subject,
+                                                                                  "template": conf.email_endpoints['buyer']['unlock_supplier']['template_id'],
+                                                                                  "USER": suser.get_first_name(),
+                                                                                  "LOT_NAME": lot['lot_name'],
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                                  "RFQ_ID": str(data['requisition_id']),
+                                                                                  "LINK": link})
+                p.start()
                 return response.customResponse({"response": "Supplier unlocked successfully", "suppliers": suppliers})
             return response.errorResponse("Oops, some error occured. Please try again after sometime")
 
@@ -797,6 +816,9 @@ def buyer_rfq_supplier_ops():
                     quotation_ids = quotation_ids[0]
                     Quote().remove_quotes(quotation_ids=quotation_ids)
                     Quotation().remove_quotations(quotation_ids=quotation_ids)
+                ActivityLogs("").add_activity(activity="Remove supplier", done_by=data['_id'],
+                                              operation_id=data['requisition_id'],
+                                              operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
                 return response.customResponse({"response": "Supplier removed from the RFQ successfully", "suppliers": suppliers})
             return response.errorResponse("Oops, some error occured. Please try again after sometime")
 
@@ -829,7 +851,24 @@ def buyer_rfq_cancel():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        if Requisition(data['requisition_id']).cancel_rfq():
+        buyer_id = BUser(data['_id']).get_buyer_id()
+        buyer = Buyer(buyer_id)
+        requisition = Requisition(data['requisition_id'])
+        if requisition.cancel_rfq():
+            ActivityLogs("").add_activity(activity="Cancel RFQ", done_by=data['_id'], operation_id=data['requisition_id'],
+                                          operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
+            # Sending email to suppliers
+            suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
+            lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+            for supp in suppliers:
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
+                                                                                  "subject": conf.email_endpoints['buyer']['cancel_rfq']['subject'],
+                                                                                  "template": conf.email_endpoints['buyer']['cancel_rfq']['template_id'],
+                                                                                  "USER": supp['name'],
+                                                                                  "RFQ_ID": str(data['requisition_id']),
+                                                                                  "LOT_NAME": lot['lot_name'],
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name()})
+                p.start()
             return response.customResponse({"response": "RFQ: " + str(data['requisition_id']) + " has been cancelled successfully"})
 
     except exceptions.IncompleteRequestException as e:
@@ -867,6 +906,8 @@ def buyer_rfq_deadline_change():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        buyer_id = BUser(data['_id']).get_buyer_id()
+        buyer = Buyer(buyer_id)
         requisition = Requisition(data['requisition_id'])
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
         # Checking the deadline
@@ -875,6 +916,21 @@ def buyer_rfq_deadline_change():
         utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'])
         if requisition.update_deadline(deadline=deadline, utc_deadline=utc_deadline):
             time_remaining = GenericOps.calculate_operation_deadline(op_tz=requisition.get_timezone(), deadline=requisition.get_deadline())
+            ActivityLogs("").add_activity(activity="Deadline changed", done_by=data['_id'], operation_id=data['requisition_id'],
+                                          operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
+            suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
+            lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+            subject= conf.email_endpoints['buyer']['change_in_deadline']['subject'].replace("{{requisition_id}}", str(data['requisition_id']))
+            for supp in suppliers:
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
+                                                                                  "subject": subject,
+                                                                                  "template": conf.email_endpoints['buyer']['change_in_deadline']['template_id'],
+                                                                                  "USER": supp['name'],
+                                                                                  "RFQ_ID": str(data['requisition_id']),
+                                                                                  "LOT_NAME": lot['lot_name'],
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                                  "NEW_DEADLINE": data['deadline']})
+                p.start()
             return response.customResponse({"response": "Deadline changed successfully", "time_remaining": time_remaining})
 
     except exceptions.IncompleteRequestException as e:
@@ -900,6 +956,10 @@ def buyer_rfq_invite_supplier():
 
         # Adding multiple suppliers
         InviteSupplier("").insert_many(suppliers)
+        # Adding in activity log
+        ActivityLogs("").add_activity(activity="Invite supplier", done_by=data['_id'], operation_id=data['requisition_id'],
+                                      operation_type="rfq",
+                                      type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr)
         # Fetching lot info for email notification
         lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
         invited_suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
@@ -944,7 +1004,7 @@ def get_buyer_rfq_quotes():
         if len(products) > 0:
             for i in range(0, len(products)):
                 products[i]['quotes'] = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
-                                                                                    charge_id=products[i]['product_id'])
+                                                                                    charge_id=products[i]['reqn_product_id'])
             return response.customResponse({"quotes_received": products, "suppliers": invited_suppliers})
         return response.errorResponse("No products found in this lot")
 
@@ -971,13 +1031,14 @@ def get_buyer_rfq_quotes_summary():
         products = Product().get_lot_products(lot_id=lot['lot_id'])
         if len(products) > 0:
             quote = Quote()
+            optimal_total, cheapest_total, fastest_total = 0, 0, 0
             for i in range(0, len(products)):
                 # Fetching the cheapest and optimal rates
                 products[i]['cheapest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'])
                 products[i]['fastest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'], category="fastest")
                 # Fetching and calculating the optimal rates
                 cheapest_amount, fastest_time = products[i]['cheapest']['amount'], products[i]['fastest']['delivery_time']
-                optimal = quote.get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'])
+                optimal = quote.get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'])
                 amount_deviations, delivery_deviations = [], []
                 # calculating deviations
                 for obj in optimal:
@@ -986,7 +1047,14 @@ def get_buyer_rfq_quotes_summary():
                 sum_deviations = amount_deviations + delivery_deviations
                 optimal_choice_ind = sum_deviations.index(min(sum_deviations))
                 products[i]['optimal'] = optimal[optimal_choice_ind]
-            return response.customResponse({"summary": products})
+                # Calculating totals for the 3 categories
+                optimal_total += products[i]['optimal']['amount']
+                cheapest_total += products[i]['cheapest']['amount']
+                fastest_total += products[i]['fastest']['amount']
+            return response.customResponse({"summary": products,
+                                            "optimal_total": GenericOps.round_of(optimal_total),
+                                            "cheapest_total": GenericOps.round_of(cheapest_total),
+                                            "fastest_total": GenericOps.round_of(fastest_total)})
         return response.errorResponse("No products found in this lot")
 
     except Exception as e:
@@ -1055,7 +1123,7 @@ def supplier_quotation_send():
         # Add quotes
         quotes = []
         for quote in quotation['quotes']:
-            qt = [quotation_id, quote['charge_id'], quote['charge_name'], quote['quantity'], quote['gst'],
+            qt = [quotation_id, quote['reqn_product_id'], quote['charge_name'], quote['quantity'], quote['gst'],
                   quote['per_unit'], quote['amount'], quote['delivery_time'], False]
             qt = tuple(qt)
             quotes.append(qt)
@@ -1067,6 +1135,10 @@ def supplier_quotation_send():
         # Update the unlock_status of supplier
         InviteSupplier().update_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'], operation_type="rfq", status=False)
 
+        ActivityLogs("").add_activity(activity="Quotation sent", done_by=data['_id'],
+                                      operation_id=data['requisition_id'],
+                                      operation_type="rfq",
+                                      type_of_user="supplier", user_id=supplier_id, ip_address=flask.request.remote_addr)
         # Sending a mail to buyer
         supplier_company_name = supplier.get_company_name()
         buyers = Join().get_buyers_for_rfq(data['requisition_id'])
@@ -1084,7 +1156,7 @@ def supplier_quotation_send():
                                                                               "LINK": link})
             p.start()
 
-        return response.customResponse({"response": "Quotation sent successfully"})
+        return response.customResponse({"response": "Quotation sent successfully", "unlock_status": 0})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -1112,6 +1184,10 @@ def supplier_rfq_list():
             for req in requisitions:
                 # Insert products and its documents
                 req['products'] = Product().get_lot_products(req['lot_id'])
+                req['time_remaining'] = GenericOps.calculate_operation_deadline(op_tz=req['timezone'], deadline=req['deadline'])
+                req['unread_messages'] = Message().get_unread_messages(operation_id=req['requisition_id'], operation_type="rfq",
+                                                                       receiver_id=data['supplier_id'], receiver_type="supplier",
+                                                                       sender="buyer", sent_by=req['buyer_id'])
                 if len(req['products']) > 0:
                     for prod in req['products']:
                         prod['documents'] = Document().get_docs(operation_id=prod['reqn_product_id'], operation_type="product")
@@ -1150,6 +1226,47 @@ def send_message():
                 doc = tuple(doc)
                 documents.append(doc)
             document_ids += MessageDocument().insert_many(documents)
+
+        # Sending emails on message send
+        if data['client_type'].lower() == "buyer":
+            buyer = Buyer(data['client_id'])
+            buser = BUser(data['_id'])
+            suser = SUser(supplier_id=data['receiver_id'])
+            subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
+            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
+            lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+            sender = buser.get_name() + " (" + buyer.get_company_name() + ")"
+            p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [suser.get_email()],
+                                                                              "template": conf.email_endpoints['supplier']['message_received']['template_id'],
+                                                                              "subject": subject,
+                                                                              "LINK_FOR_REPLY": link,
+                                                                              "USER": suser.get_first_name(),
+                                                                              "TYPE_OF_REQUEST": data['operation_type'].upper(),
+                                                                              "REQUEST_ID": str(data['operation_id']),
+                                                                              "LOT_NAME": lot['lot_name'],
+                                                                              "SENDER": sender,
+                                                                              "MESSAGE": data['message']})
+            p.start()
+        else:
+            supplier = Supplier(data['client_id'])
+            suser = SUser(data['_id'])
+            busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
+            subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
+            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
+            lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+            sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
+            for user in busers:
+                p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [user['email']],
+                                                                                  "subject": subject,
+                                                                                  "template": conf.email_endpoints['buyer']['message_received']['template_id'],
+                                                                                  "LINK_FOR_REPLY": link,
+                                                                                  "USER": user['name'].split(" ")[0],
+                                                                                  "TYPE_OF_REQUEST": data['operation_type'].upper(),
+                                                                                  "REQUEST_ID": str(data['operation_id']),
+                                                                                  "LOT_NAME": lot['lot_name'],
+                                                                                  "SENDER": sender,
+                                                                                  "MESSAGE": data['message']})
+                p.start()
 
         message = Message(message_id).get_message()
         message['documents'] = data['documents']
