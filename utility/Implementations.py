@@ -193,7 +193,9 @@ quotes_create_table = """create table if not exists quotes (
 activity_logs_create_table = """create table if not exists activity_logs (
                 activity_id int primary key not null auto_increment,
                 activity varchar(100) not null, 
-                done_by varchar(60) not null, 
+                done_by varchar(60) not null,
+                name varchar(60) not null,
+                company_name varchar(50) not null,
                 user_id int not null,
                 type_of_user varchar(10) not null,
                 operation_id int not null, 

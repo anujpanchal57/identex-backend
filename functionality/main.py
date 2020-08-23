@@ -599,6 +599,7 @@ def buyer_create_rfq():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        buser = BUser(data['_id'])
         buyer_id = data['buyer_id']
         buyer = Buyer(buyer_id)
         if len(data['invited_suppliers']) == 0:
@@ -651,7 +652,8 @@ def buyer_create_rfq():
 
         # Adding activity performed to the log
         ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq",
-                                      type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr)
+                                      type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr,
+                                      name=buser.get_name(), company_name=buyer.get_company_name())
 
         # Trigger the email alert to invited suppliers
         invited_suppliers = Join().get_invited_suppliers(operation_id=requisition_id, operation_type="rfq")
@@ -781,13 +783,15 @@ def buyer_rfq_supplier_ops():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        buyer_id = BUser(data['_id']).get_buyer_id()
+        buser = BUser(data['_id'])
+        buyer_id = buser.get_buyer_id()
         buyer = Buyer(buyer_id)
         suser = SUser(supplier_id=data['supplier_id'])
         if data['operation_type'] == "unlock":
             if InviteSupplier().update_unlock_status(supplier_id=data['supplier_id'], operation_id=data['requisition_id'], operation_type="rfq", status=data['status']):
                 ActivityLogs("").add_activity(activity="Unlock supplier", done_by=data['_id'], operation_id=data['requisition_id'],
-                                              operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
+                                              operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr,
+                                              name=buser.get_name(), company_name=buyer.get_company_name())
                 suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
                 lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
                 subject = conf.email_endpoints['buyer']['unlock_supplier']['subject'].replace("{{requisition_id}}", str(data['requisition_id']))
@@ -818,7 +822,8 @@ def buyer_rfq_supplier_ops():
                     Quotation().remove_quotations(quotation_ids=quotation_ids)
                 ActivityLogs("").add_activity(activity="Remove supplier", done_by=data['_id'],
                                               operation_id=data['requisition_id'],
-                                              operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
+                                              operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr,
+                                              name=buser.get_name(), company_name=buyer.get_company_name())
                 return response.customResponse({"response": "Supplier removed from the RFQ successfully", "suppliers": suppliers})
             return response.errorResponse("Oops, some error occured. Please try again after sometime")
 
@@ -851,12 +856,14 @@ def buyer_rfq_cancel():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        buyer_id = BUser(data['_id']).get_buyer_id()
+        buser = BUser(data['_id'])
+        buyer_id = buser.get_buyer_id()
         buyer = Buyer(buyer_id)
         requisition = Requisition(data['requisition_id'])
         if requisition.cancel_rfq():
             ActivityLogs("").add_activity(activity="Cancel RFQ", done_by=data['_id'], operation_id=data['requisition_id'],
-                                          operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
+                                          operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr,
+                                          name=buser.get_name(), company_name=buyer.get_company_name())
             # Sending email to suppliers
             suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
             lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
@@ -906,7 +913,8 @@ def buyer_rfq_deadline_change():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        buyer_id = BUser(data['_id']).get_buyer_id()
+        buser = BUser(data['_id'])
+        buyer_id = buser.get_buyer_id()
         buyer = Buyer(buyer_id)
         requisition = Requisition(data['requisition_id'])
         deadline = GenericOps.get_calculated_timestamp(data['deadline'])
@@ -917,7 +925,8 @@ def buyer_rfq_deadline_change():
         if requisition.update_deadline(deadline=deadline, utc_deadline=utc_deadline):
             time_remaining = GenericOps.calculate_operation_deadline(op_tz=requisition.get_timezone(), deadline=requisition.get_deadline())
             ActivityLogs("").add_activity(activity="Deadline changed", done_by=data['_id'], operation_id=data['requisition_id'],
-                                          operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr)
+                                          operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr,
+                                          name=buser.get_name(), company_name=buyer.get_company_name())
             suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
             lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
             subject= conf.email_endpoints['buyer']['change_in_deadline']['subject'].replace("{{requisition_id}}", str(data['requisition_id']))
@@ -947,6 +956,7 @@ def buyer_rfq_invite_supplier():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        buser = BUser(data['_id'])
         buyer = Buyer(data['buyer_id'])
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -959,7 +969,8 @@ def buyer_rfq_invite_supplier():
         # Adding in activity log
         ActivityLogs("").add_activity(activity="Invite supplier", done_by=data['_id'], operation_id=data['requisition_id'],
                                       operation_type="rfq",
-                                      type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr)
+                                      type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr,
+                                      name=buser.get_name(), company_name=buyer.get_company_name())
         # Fetching lot info for email notification
         lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
         invited_suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
@@ -1123,7 +1134,7 @@ def supplier_quotation_send():
         # Add quotes
         quotes = []
         for quote in quotation['quotes']:
-            qt = [quotation_id, quote['reqn_product_id'], quote['charge_name'], quote['quantity'], quote['gst'],
+            qt = [quotation_id, quote['charge_id'], quote['charge_name'], quote['quantity'], quote['gst'],
                   quote['per_unit'], quote['amount'], quote['delivery_time'], False]
             qt = tuple(qt)
             quotes.append(qt)
@@ -1138,7 +1149,8 @@ def supplier_quotation_send():
         ActivityLogs("").add_activity(activity="Quotation sent", done_by=data['_id'],
                                       operation_id=data['requisition_id'],
                                       operation_type="rfq",
-                                      type_of_user="supplier", user_id=supplier_id, ip_address=flask.request.remote_addr)
+                                      type_of_user="supplier", user_id=supplier_id, ip_address=flask.request.remote_addr,
+                                      name=suser.get_name(), company_name=supplier.get_company_name())
         # Sending a mail to buyer
         supplier_company_name = supplier.get_company_name()
         buyers = Join().get_buyers_for_rfq(data['requisition_id'])

@@ -39,9 +39,12 @@ class ActivityLogs:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    def add_activity(self, activity, done_by, type_of_user, operation_id, operation_type, user_id, ip_address=""):
+    def add_activity(self, activity, done_by, type_of_user, name, company_name, operation_id, operation_type, user_id,
+                     ip_address=""):
         self.__activity_log['activity'] = activity
         self.__activity_log['done_by'] = done_by
+        self.__activity_log['name'] = name
+        self.__activity_log['company_name'] = company_name
         self.__activity_log['user_id'] = user_id
         self.__activity_log['type_of_user'] = type_of_user
         self.__activity_log['operation_id'] = operation_id
@@ -55,9 +58,10 @@ class ActivityLogs:
         try:
             self.__cursor.execute(Implementations.activity_logs_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO activity_logs (activity, done_by, user_id, type_of_user, operation_id, operation_type, 
-                                    ip_address, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                                  (values['activity'], values['done_by'], values['user_id'], values['type_of_user'], values['operation_id'],
+            self.__cursor.execute("""INSERT INTO activity_logs (activity, done_by, name, company_name, user_id, type_of_user, operation_id, operation_type, 
+                                    ip_address, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                  (values['activity'], values['done_by'], values['name'], values['company_name'],
+                                   values['user_id'], values['type_of_user'], values['operation_id'],
                                    values['operation_type'], values['ip_address'], values['timestamp']))
             self.__sql.commit()
             return self.__cursor.lastrowid
