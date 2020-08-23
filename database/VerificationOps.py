@@ -56,3 +56,6 @@ class Verification:
                               (self.__id, self.__name, user_type))
         self.__sql.commit()
         return True
+
+    def is_valid_token(self):
+        return True if self.__verification is not None else False

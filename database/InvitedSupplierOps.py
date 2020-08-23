@@ -132,6 +132,24 @@ class InviteSupplier:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def is_supplier_present(self, supplier_id, operation_id, operation_type):
+        try:
+            self.__cursor.execute("""select * from invited_suppliers
+                                    where operation_id = %s and operation_type = %s and supplier_id = %s;""",
+                                  (operation_id, operation_type, supplier_id))
+            res = self.__cursor.fetchone()
+            return True if len(res) > 0 else False
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvitedSupplierOps', function_name='get_operation_suppliers()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='InvitedSupplierOps', function_name='get_operation_suppliers()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+
 
 # pprint(InviteSupplier().add_supplier(1000, "auction", 1000))
 # pprint(InviteSupplier().get_unlock_status(1000, 1000, "rfq"))

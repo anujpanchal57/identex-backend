@@ -328,6 +328,24 @@ def buyer_forgot_password_auth():
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
 
+# POST request for authentication of forgot password for buyer
+@app.route("/buyer/forgot-password/token/verify", methods=["POST"])
+def buyer_forgot_password_verify_token():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        if not BUser.is_buser(data['_id']):
+            return response.emailNotFound()
+        token = Verification(data['token'], "forgot_password")
+        if token.is_valid_token():
+            return response.customResponse({"is_valid": True})
+        return response.customResponse({"is_valid": False})
+
+    except Exception as e:
+        log = Logger(module_name='/buyer/forgot-password/token/verify', function_name='buyer_forgot_password_verify_token()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
 # POST request for verifying the buyer's forgot password request
 @app.route("/buyer/forgot-password/verify", methods=["POST"])
 def buyer_forgot_password_verify():
@@ -381,6 +399,24 @@ def supplier_forgot_password_auth():
 
     except Exception as e:
         log = Logger(module_name='/supplier/forgot-password/auth', function_name='supplier_forgot_password_auth()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
+# POST request for authentication of forgot password for supplier
+@app.route("/supplier/forgot-password/token/verify", methods=["POST"])
+def supplier_forgot_password_verify_token():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        if not SUser.is_suser(data['_id']):
+            return response.emailNotFound()
+        token = Verification(data['token'], "forgot_password")
+        if token.is_valid_token():
+            return response.customResponse({"is_valid": True})
+        return response.customResponse({"is_valid": False})
+
+    except Exception as e:
+        log = Logger(module_name='/supplier/forgot-password/token/verify', function_name='supplier_forgot_password_verify_token()')
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
 
@@ -966,9 +1002,10 @@ def buyer_rfq_invite_supplier():
         buyer = Buyer(data['buyer_id'])
         suppliers = []
         for supplier in data['invited_suppliers']:
-            supp = [data['requisition_id'], "rfq", supplier, GenericOps.get_current_timestamp(), True]
-            supp = tuple(supp)
-            suppliers.append(supp)
+            if not InviteSupplier().is_supplier_present(supplier_id=supplier, operation_id=data['requisition_id'], operation_type="rfq"):
+                supp = [data['requisition_id'], "rfq", supplier, GenericOps.get_current_timestamp(), True]
+                supp = tuple(supp)
+                suppliers.append(supp)
 
         # Adding multiple suppliers
         InviteSupplier("").insert_many(suppliers)
@@ -1051,8 +1088,8 @@ def get_buyer_rfq_quotes_summary():
             optimal_total, cheapest_total, fastest_total = 0, 0, 0
             for i in range(0, len(products)):
                 # Fetching the cheapest and optimal rates
-                products[i]['cheapest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'])
-                products[i]['fastest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['product_id'], category="fastest")
+                products[i]['cheapest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'])
+                products[i]['fastest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'], category="fastest")
                 # Fetching and calculating the optimal rates
                 cheapest_amount, fastest_time = products[i]['cheapest']['amount'], products[i]['fastest']['delivery_time']
                 optimal = quote.get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'])
@@ -1439,7 +1476,7 @@ def get_activity_logs():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         data['offset'] = data['offset'] if 'offset' in data else 0
-        data['limit'] = data['limit'] if 'limit' in data else 100000
+        data['limit'] = data['limit'] if 'limit' in data else 15
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         activity_logs = ActivityLogs().get_activity_logs(type_of_user="buyer", user_id=data['client_id'], start_limit=start_limit,

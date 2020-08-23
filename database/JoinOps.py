@@ -44,7 +44,7 @@ class Join:
     # Made this method for the sake of email
     def get_invited_suppliers(self, operation_id, operation_type="rfq"):
         try:
-            self.__cursor.execute("""select substring_index(su.name, " ", 1) as name, su.email, s.company_name, su.mobile_no
+            self.__cursor.execute("""select substring_index(su.name, " ", 1) as name, su.email, s.company_name, su.mobile_no, ins.unlock_status
                                     from suppliers as s 
                                     join s_users as su
                                     on s.supplier_id = su.supplier_id
