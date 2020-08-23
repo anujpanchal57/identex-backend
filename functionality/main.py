@@ -711,8 +711,14 @@ def buyer_rfq_list():
 
                 # Insert number of responses received
                 req['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=req['requisition_id'])
-
-        return response.customResponse({"requisitions": requisitions})
+        join_obj = Join()
+        count = {
+            "open": join_obj.get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="open"),
+            "pending_approval": join_obj.get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="pending_approval"),
+            "approved": join_obj.get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="approved"),
+            "cancelled": join_obj.get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="cancelled")
+        }
+        return response.customResponse({"requisitions": requisitions, "count": count})
 
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/list", function_name="buyer_create_list()")
@@ -1206,8 +1212,14 @@ def supplier_rfq_list():
 
                 # Insert specification docs
                 req['specification_documents'] = Document().get_docs(operation_id=req['requisition_id'], operation_type="rfq")
-
-        return response.customResponse({"requisitions": requisitions})
+        join_obj = Join()
+        count = {
+            "open": join_obj.get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="open"),
+            "pending_approval": join_obj.get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="pending_approval"),
+            "approved": join_obj.get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="approved"),
+            "cancelled": join_obj.get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="cancelled")
+        }
+        return response.customResponse({"requisitions": requisitions, "count": count})
 
     except Exception as e:
         log = Logger(module_name="/supplier/rfq/list", function_name="supplier_rfq_list()")
@@ -1427,7 +1439,7 @@ def get_activity_logs():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         data['offset'] = data['offset'] if 'offset' in data else 0
-        data['limit'] = data['limit'] if 'limit' in data else 10
+        data['limit'] = data['limit'] if 'limit' in data else 100000
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         activity_logs = ActivityLogs().get_activity_logs(type_of_user="buyer", user_id=data['client_id'], start_limit=start_limit,
