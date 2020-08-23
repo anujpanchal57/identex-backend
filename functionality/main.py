@@ -813,10 +813,10 @@ def buyer_rfq_supplier_ops():
                 suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
                 # Remove Quotation
                 quotation_ids = Quotation().get_quotation_ids(requisition_id=data['requisition_id'], supplier_id=data['supplier_id'])
-                if len(quotation_ids) > 0 and len(quotation_ids) != 1:
+                if len(quotation_ids) > 1:
                     Quote().remove_quotes(quotation_ids=quotation_ids)
                     Quotation().remove_quotations(quotation_ids=quotation_ids)
-                else:
+                elif len(quotation_ids) == 1:
                     quotation_ids = quotation_ids[0]
                     Quote().remove_quotes(quotation_ids=quotation_ids)
                     Quotation().remove_quotations(quotation_ids=quotation_ids)
