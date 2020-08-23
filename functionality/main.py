@@ -1155,7 +1155,7 @@ def supplier_quotation_send():
         supplier_company_name = supplier.get_company_name()
         buyers = Join().get_buyers_for_rfq(data['requisition_id'])
         subject = conf.email_endpoints['supplier']['quotation_submitted']['subject'].replace("{{supplier_company_name}}", supplier_company_name).replace("{{requisition_id}}", str(data['requisition_id']))
-        link = conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", str(data['requisition_id']))
+        link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", str(data['requisition_id']))
         for buyer in buyers:
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
                                                                               "template": conf.email_endpoints['supplier']['quotation_submitted']['template_id'],
@@ -1265,7 +1265,7 @@ def send_message():
             suser = SUser(data['_id'])
             busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
             subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
-            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
+            link = conf.ENV_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
             lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
             sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
             for user in busers:
