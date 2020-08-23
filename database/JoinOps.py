@@ -177,10 +177,10 @@ class Join:
 
     def get_buyer_requisitions_count(self, buyer_id, req_type="open"):
         try:
-            self.__cursor.execute("""select count(*) as requisition_count
+            self.__cursor.execute("""select count(*) as requisitions_count
                                     from requisitions
                                     where request_type = %s and buyer_id = %s;""", (req_type, buyer_id))
-            res = self.__cursor.fetchall()
+            res = self.__cursor.fetchone()['requisitions_count']
             return res
 
         except mysql.connector.Error as error:
@@ -200,7 +200,7 @@ class Join:
                                     on ins.operation_id = r.requisition_id
                                     where r.request_type = %s and ins.supplier_id = %s and ins.operation_type = %s""",
                                   (req_type, supplier_id, operation_type))
-            res = self.__cursor.fetchall()
+            res = self.__cursor.fetchone()['requisitions_count']
             return res
 
         except mysql.connector.Error as error:

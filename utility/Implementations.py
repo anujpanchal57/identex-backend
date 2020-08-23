@@ -187,7 +187,7 @@ quotes_create_table = """create table if not exists quotes (
                 delivery_time int not null, 
                 confirmed bool not null,
                 FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
-                FOREIGN KEY (charge_id) REFERENCES product_master(product_id)
+                FOREIGN KEY (charge_id) REFERENCES products(reqn_product_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
 activity_logs_create_table = """create table if not exists activity_logs (

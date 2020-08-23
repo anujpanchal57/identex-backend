@@ -24,7 +24,9 @@ class ActivityLogs:
 
     def get_activity_logs(self, type_of_user, user_id, start_limit, end_limit):
         try:
-            self.__cursor.execute("""select * from activity_logs where type_of_user = %s and user_id = %s
+            self.__cursor.execute("""select activity, done_by, name, company_name, type_of_user, operation_id, operation_type, ip_address, timestamp 
+                                        from activity_logs 
+                                        where type_of_user = %s and user_id = %s
                                         order by timestamp desc
                                         limit %s, %s""", (type_of_user, user_id, start_limit, end_limit))
             res = self.__cursor.fetchall()
