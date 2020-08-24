@@ -68,7 +68,7 @@ class Quotation:
                 return 0
             self.__cursor.execute("""select count(*) as quotation_count
                                     from quotations
-                                    where requisition_id = %s;""", (requisition_id, ))
+                                    where requisition_id = %s and status = True;""", (requisition_id, ))
             res = self.__cursor.fetchall()
             return res[0]['quotation_count']
 
