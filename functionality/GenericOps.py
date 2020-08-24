@@ -30,10 +30,14 @@ def round_of(number, number_of_decimals=2):
     except Exception as e:
         return number
 
-def convert_datetime_to_utc_datetimestring(datetime_str, in_format="%d-%m-%Y %H:%M", out_format="%Y-%m-%d %H:%M"):
-    dt = datetime.datetime.strptime(datetime_str, in_format)
-    ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
-    return datetime.datetime.fromtimestamp(ts).strftime(out_format)
+def convert_datetime_to_utc_datetimestring(datetime_str, op_tz, in_format="%d-%m-%Y %H:%M", out_format="%Y-%m-%d %H:%M"):
+    # dt = datetime.datetime.strptime(datetime_str, in_format)
+    # ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+    offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
+    date_obj = datetime.datetime.strptime(datetime_str, in_format)
+    ts = date_obj.replace(tzinfo=timezone.utc).timestamp()
+    actual = convert_time_offset_to_timestamp(offset, ts)
+    return datetime.datetime.fromtimestamp(actual).strftime(out_format)
 
 def generate_forgot_password_token():
     token = ''.join(str(uuid.uuid4()).split('-'))
@@ -59,24 +63,29 @@ def generate_user_password(length=7):
     password_characters = string.ascii_letters + string.digits
     return ''.join(random.choice(password_characters) for i in range(length))
 
-def get_calculated_timestamp(date_time):
-    return datetime.datetime.strptime(date_time, "%d-%m-%Y %H:%M").timestamp()
+def get_calculated_timestamp(date_time, op_tz):
+    offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
+    date_obj = datetime.datetime.strptime(date_time, "%d-%m-%Y %H:%M")
+    ts = date_obj.replace(tzinfo=timezone.utc).timestamp()
+    return convert_time_offset_to_timestamp(offset, ts)
 
 def convert_time_offset_to_timestamp(offset, utc_timestamp):
-    return int(utc_timestamp + (int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60))
+    return int(utc_timestamp - ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
 
-def calculate_operation_deadline(op_tz, deadline):
-    tz = pytz.timezone(op_tz)
-    offset = datetime.datetime.now(tz).strftime("%z")
+def calculate_operation_deadline(utc_deadline):
     utc_timestamp = datetime.datetime.utcnow().timestamp()
-    actual_timestamp = convert_time_offset_to_timestamp(offset, utc_timestamp)
-    time_remaining = deadline - actual_timestamp
+    deadline_ts = datetime.datetime.strptime(utc_deadline, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp()
+    time_remaining = deadline_ts - utc_timestamp
     return time_remaining
 
 def get_current_timestamp_of_timezone(op_tz):
     tz = pytz.timezone(op_tz)
     offset = datetime.datetime.now(tz).strftime("%z")
     return convert_time_offset_to_timestamp(offset, datetime.datetime.utcnow().timestamp())
+
+def calculate_closing_time(deadline, out_format="%d-%m-%Y %H:%M"):
+    ts = datetime.datetime.fromtimestamp(deadline).strftime(out_format)
+    return ts
 
 def populate_email_template_for_messages(file_path, details):
     with open(file_path) as html:
@@ -96,6 +105,8 @@ def populate_email_template_for_messages(file_path, details):
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
+# pprint(calculate_closing_time(1598376600, "asia/calcutta"))
+# pprint(calculate_closing_time("2020-08-25 17:30", "asia/calcutta"))
 # pprint(populate_email_template_for_messages(file_path=conf.message_files['message_received'], details={}))
 # pprint(convert_datetime_to_utc_datetimestring("20-08-2020 02:00"))
 # pprint(calculate_operation_deadline("asia/calcutta", 1597912200))

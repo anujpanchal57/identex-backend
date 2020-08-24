@@ -130,7 +130,7 @@ class Join:
 
     def get_buyer_requisitions(self, buyer_id, start_limit, end_limit, cancelled, req_type="open"):
         try:
-            self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id 
+            self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id, r.utc_deadline
                                     from requisitions as r
                                     join lots as l
                                     on r.requisition_id = l.requisition_id
@@ -151,7 +151,7 @@ class Join:
 
     def get_supplier_requisitions(self, supplier_id, start_limit, end_limit, cancelled, req_type="open", operation_type="rfq"):
         try:
-            self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
+            self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.utc_deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
                                     b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
                                     from invited_suppliers as ins 
                                     join requisitions as r

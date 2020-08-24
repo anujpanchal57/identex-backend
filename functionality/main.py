@@ -654,8 +654,11 @@ def buyer_create_rfq():
 
         document_ids, invited_suppliers_ids = [], []
         # Create the requisition
-        deadline = GenericOps.get_calculated_timestamp(data['deadline'])
-        utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'])
+        deadline = GenericOps.get_calculated_timestamp(date_time=data['deadline'], op_tz=data['timezone'])
+        # Deadline validation
+        if GenericOps.get_current_timestamp_of_timezone(data['timezone']) + Implementations.deadline_change_time_factor > deadline:
+            return response.errorResponse("Please set a deadline of more than 30 mins from the current time")
+        utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'], op_tz=data['timezone'])
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
                                                          utc_deadline=utc_deadline)
@@ -752,7 +755,7 @@ def buyer_rfq_list():
                 # Insert invited suppliers
                 req['invited_suppliers'] = InviteSupplier().get_operation_suppliers_count(operation_id=req['requisition_id'],
                                                                                           operation_type="rfq")
-
+                req['closes_on'] = GenericOps.calculate_closing_time(deadline=req['deadline'])
                 # Insert number of responses received
                 req['responses'] = Quotation().get_quotations_count_for_requisition(requisition_id=req['requisition_id'])
         join_obj = Join()
@@ -945,7 +948,7 @@ def buyer_rfq_metadata():
         data['_id'] = data['_id'].lower()
         result = {}
         requisition = Requisition(data['requisition_id']).get_requisition()
-        result['time_remaining'] = GenericOps.calculate_operation_deadline(op_tz=requisition['timezone'], deadline=requisition['deadline'])
+        result['time_remaining'] = GenericOps.calculate_operation_deadline(utc_deadline=requisition['utc_deadline'])
         result['requisition_name'] = requisition['requisition_name']
         result['requisition_id'] = requisition['requisition_id']
         result['total_unread_messages'] = Message().get_total_unread_messages(operation_id=requisition['requisition_id'], operation_type="rfq_msg", receiver="buyer")
@@ -968,13 +971,13 @@ def buyer_rfq_deadline_change():
         buyer_id = buser.get_buyer_id()
         buyer = Buyer(buyer_id)
         requisition = Requisition(data['requisition_id'])
-        deadline = GenericOps.get_calculated_timestamp(data['deadline'])
+        deadline = GenericOps.get_calculated_timestamp(date_time=data['deadline'], op_tz=requisition.get_timezone())
         # Checking the deadline
         if GenericOps.get_current_timestamp_of_timezone(requisition.get_timezone()) + Implementations.deadline_change_time_factor > deadline:
-            return response.errorResponse("Please set a deadline of more than 30 mins")
-        utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'])
+            return response.errorResponse("Please set a deadline of more than 30 mins from the current time")
+        utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(datetime_str=data['deadline'], op_tz=requisition.get_timezone())
         if requisition.update_deadline(deadline=deadline, utc_deadline=utc_deadline):
-            time_remaining = GenericOps.calculate_operation_deadline(op_tz=requisition.get_timezone(), deadline=requisition.get_deadline())
+            time_remaining = GenericOps.calculate_operation_deadline(utc_deadline=requisition.get_utc_deadline())
             ActivityLogs("").add_activity(activity="Deadline changed", done_by=data['_id'], operation_id=data['requisition_id'],
                                           operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr,
                                           name=buser.get_name(), company_name=buyer.get_company_name())
@@ -1252,7 +1255,7 @@ def supplier_rfq_list():
             for req in requisitions:
                 # Insert products and its documents
                 req['products'] = Product().get_lot_products(req['lot_id'])
-                req['time_remaining'] = GenericOps.calculate_operation_deadline(op_tz=req['timezone'], deadline=req['deadline'])
+                req['time_remaining'] = GenericOps.calculate_operation_deadline(utc_deadline=req['utc_deadline'])
                 req['unread_messages'] = Message().get_unread_messages(operation_id=req['requisition_id'], operation_type="rfq",
                                                                        receiver_id=data['supplier_id'], receiver_type="supplier",
                                                                        sender="buyer", sent_by=req['buyer_id'])
