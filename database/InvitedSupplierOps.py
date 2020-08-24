@@ -138,7 +138,7 @@ class InviteSupplier:
                                     where operation_id = %s and operation_type = %s and supplier_id = %s;""",
                                   (operation_id, operation_type, supplier_id))
             res = self.__cursor.fetchone()
-            return True if len(res) > 0 else False
+            return True if res is not None else False
 
         except mysql.connector.Error as error:
             log = Logger(module_name='InvitedSupplierOps', function_name='get_operation_suppliers()')
@@ -150,7 +150,7 @@ class InviteSupplier:
             return False
 
 
-
+# pprint(InviteSupplier().is_supplier_present(1001, 1000, "rfq"))
 # pprint(InviteSupplier().add_supplier(1000, "auction", 1000))
 # pprint(InviteSupplier().get_unlock_status(1000, 1000, "rfq"))
 # pprint(InviteSupplier().get_operation_suppliers_count(1000, "rfq"))

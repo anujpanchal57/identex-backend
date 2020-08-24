@@ -81,13 +81,9 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to add quote(s), please try again')
 
-    def remove_quotes(self, quotation_ids):
+    def remove_quotes(self, quotation_id):
         try:
-            if isinstance(quotation_ids, int):
-                self.__cursor.execute("""delete from quotes where quotation_id = %s""", (quotation_ids, ))
-            else:
-                self.__cursor.execute("""delete from quotes where quotation_id in %s""", (quotation_ids, ))
-
+            self.__cursor.execute("""delete from quotes where quotation_id = %s""", (quotation_id, ))
             self.__sql.commit()
             return True
 

@@ -338,8 +338,9 @@ def buyer_forgot_password_verify_token():
             return response.emailNotFound()
         token = Verification(data['token'], "forgot_password")
         if token.is_valid_token():
-            return response.customResponse({"is_valid": True})
-        return response.customResponse({"is_valid": False})
+            if DBConnectivity.get_redis_key(data['token']):
+                return response.customResponse({"is_valid": True, "response": "Token verified successfully"})
+        return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
 
     except Exception as e:
         log = Logger(module_name='/buyer/forgot-password/token/verify', function_name='buyer_forgot_password_verify_token()')
@@ -364,9 +365,10 @@ def buyer_forgot_password_verify():
             DBConnectivity.delete_redis_key(data['_id'] + "forgot_password")
             # Delete all the active login sessions from redis
             active_tokens = Authorization.get_active_tokens(email=data['_id'], type="buyer")
-            for token in active_tokens:
-                Authorization(token['_id']).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="password_reset")
-                DBConnectivity.delete_redis_key(token['_id'])
+            if len(active_tokens) > 0:
+                for token in active_tokens:
+                    Authorization(token['auth_id']).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="password_reset")
+                    DBConnectivity.delete_redis_key(token['auth_id'])
             return response.customResponse({"response": "Your password has been updated. You have been logged out of the other devices"})
         return response.errorResponse("Link seems to be broken")
 
@@ -412,8 +414,9 @@ def supplier_forgot_password_verify_token():
             return response.emailNotFound()
         token = Verification(data['token'], "forgot_password")
         if token.is_valid_token():
-            return response.customResponse({"is_valid": True})
-        return response.customResponse({"is_valid": False})
+            if DBConnectivity.get_redis_key(data['token']):
+                return response.customResponse({"is_valid": True, "response": "Token verified successfully"})
+        return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
 
     except Exception as e:
         log = Logger(module_name='/supplier/forgot-password/token/verify', function_name='supplier_forgot_password_verify_token()')
@@ -438,9 +441,10 @@ def supplier_forgot_password_verify():
             DBConnectivity.delete_redis_key(data['_id'] + "forgot_password")
             # Delete all the active login sessions from redis
             active_tokens = Authorization.get_active_tokens(email=data['_id'], type="supplier")
-            for token in active_tokens:
-                Authorization(token['_id']).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="password_reset")
-                DBConnectivity.delete_redis_key(token['_id'])
+            if len(active_tokens) > 0:
+                for token in active_tokens:
+                    Authorization(token['auth_id']).logout_user(logged_out=GenericOps.get_current_timestamp(), action_type="password_reset")
+                    DBConnectivity.delete_redis_key(token['auth_id'])
             return response.customResponse({"response": "Your password has been updated. You have been logged out of the other devices"})
         return response.errorResponse("Link seems to be broken")
 
@@ -856,12 +860,13 @@ def buyer_rfq_supplier_ops():
                 # Remove Quotation
                 quotation_ids = Quotation().get_quotation_ids(requisition_id=data['requisition_id'], supplier_id=data['supplier_id'])
                 if len(quotation_ids) > 1:
-                    Quote().remove_quotes(quotation_ids=quotation_ids)
-                    Quotation().remove_quotations(quotation_ids=quotation_ids)
+                    for id in quotation_ids:
+                        Quote().remove_quotes(quotation_id=id)
+                        Quotation().remove_quotation(quotation_id=id)
                 elif len(quotation_ids) == 1:
-                    quotation_ids = quotation_ids[0]
-                    Quote().remove_quotes(quotation_ids=quotation_ids)
-                    Quotation().remove_quotations(quotation_ids=quotation_ids)
+                    id = quotation_ids[0]
+                    Quote().remove_quotes(quotation_id=id)
+                    Quotation().remove_quotation(quotation_id=id)
                 ActivityLogs("").add_activity(activity="Remove supplier", done_by=data['_id'],
                                               operation_id=data['requisition_id'],
                                               operation_type="rfq", type_of_user="buyer", user_id=buyer_id, ip_address=flask.request.remote_addr,
@@ -1006,6 +1011,8 @@ def buyer_rfq_invite_supplier():
                 supp = [data['requisition_id'], "rfq", supplier, GenericOps.get_current_timestamp(), True]
                 supp = tuple(supp)
                 suppliers.append(supp)
+            else:
+                del data['invited_suppliers'][data['invited_suppliers'].index(supplier)]
 
         # Adding multiple suppliers
         InviteSupplier("").insert_many(suppliers)
@@ -1020,15 +1027,17 @@ def buyer_rfq_invite_supplier():
         buyer_company_name = buyer.get_company_name()
         rfq_link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['rfq_created']['page_url']
         subject = conf.email_endpoints['supplier']['rfq_created']['subject'].replace("{{buyer_company}}", buyer_company_name).replace("{{lot_name}}", lot['lot_name'])
-        for supplier in invited_suppliers:
-            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supplier['email']],
-                                                                              "template": conf.email_endpoints['supplier']['rfq_created']['template_id'],
-                                                                              "subject": subject,
-                                                                              "USER": supplier['name'],
-                                                                              "BUYER_COMPANY_NAME": buyer_company_name,
-                                                                              "LOT_NAME": lot['lot_name'],
-                                                                              "LINK_FOR_RFQ": rfq_link})
-            p.start()
+        if len(data['invited_suppliers']) > 0:
+            for supplier in data['invited_suppliers']:
+                suser = SUser(supplier_id=supplier)
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                                  "template": conf.email_endpoints['supplier']['rfq_created']['template_id'],
+                                                                                  "subject": subject,
+                                                                                  "USER": suser.get_first_name(),
+                                                                                  "BUYER_COMPANY_NAME": buyer_company_name,
+                                                                                  "LOT_NAME": lot['lot_name'],
+                                                                                  "LINK_FOR_RFQ": rfq_link})
+                p.start()
 
         return response.customResponse({"suppliers": invited_suppliers, "response": "Supplier(s) invited successfully"})
 

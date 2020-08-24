@@ -81,23 +81,18 @@ class Quotation:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    def remove_quotations(self, quotation_ids):
+    def remove_quotation(self, quotation_id):
         try:
-            if isinstance(quotation_ids, int):
-                self.__cursor.execute("""delete from quotations where quotation_id = %s""",
-                                      (quotation_ids, ))
-            else:
-                self.__cursor.execute("""delete from quotations where quotation_id in %s""",
-                                      (quotation_ids,))
+            self.__cursor.execute("""delete from quotations where quotation_id = %s""", (quotation_id, ))
             self.__sql.commit()
             return True
 
         except mysql.connector.Error as error:
-            log = Logger(module_name='QuotationOps', function_name='remove_quotations()')
+            log = Logger(module_name='QuotationOps', function_name='remove_quotation()')
             log.log(str(error), priority='highest')
             raise exceptions.IncompleteRequestException("Failed to remove quotation, please try again")
         except Exception as e:
-            log = Logger(module_name='QuotationOps', function_name='remove_quotations()')
+            log = Logger(module_name='QuotationOps', function_name='remove_quotation()')
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException("Failed to remove quotation, please try again")
 
@@ -110,7 +105,7 @@ class Quotation:
                 quotation_ids = [x['quotation_id'] for x in res]
             else:
                 quotation_ids = []
-            return tuple(quotation_ids)
+            return quotation_ids
 
         except mysql.connector.Error as error:
             log = Logger(module_name='QuotationOps', function_name='get_quotation_ids()')
