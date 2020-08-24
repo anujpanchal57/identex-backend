@@ -340,6 +340,8 @@ def buyer_forgot_password_verify_token():
         if token.is_valid_token():
             if DBConnectivity.get_redis_key(data['token']):
                 return response.customResponse({"is_valid": True, "response": "Token verified successfully"})
+            token.delete_verification_token()
+            return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
         return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
 
     except Exception as e:
@@ -416,6 +418,8 @@ def supplier_forgot_password_verify_token():
         if token.is_valid_token():
             if DBConnectivity.get_redis_key(data['token']):
                 return response.customResponse({"is_valid": True, "response": "Token verified successfully"})
+            token.delete_verification_token()
+            return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
         return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
 
     except Exception as e:

@@ -59,3 +59,20 @@ class Verification:
 
     def is_valid_token(self):
         return True if self.__verification is not None else False
+
+    def delete_verification_token(self):
+        try:
+            self.__cursor.execute("""delete from verification_tokens where token_id = %s and token_name = %s and user_type = %s""",
+                (self.__id, self.__name, self.__verification['user_type']))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='VerificationOps', function_name='delete_verification_token()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='VerificationOps', function_name='delete_verification_token()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
