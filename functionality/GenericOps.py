@@ -83,9 +83,15 @@ def get_current_timestamp_of_timezone(op_tz):
     offset = datetime.datetime.now(tz).strftime("%z")
     return convert_time_offset_to_timestamp(offset, datetime.datetime.utcnow().timestamp())
 
-def calculate_closing_time(deadline, out_format="%d-%m-%Y %H:%M"):
-    ts = datetime.datetime.fromtimestamp(deadline).strftime(out_format)
-    return ts
+def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_format="%d-%m-%Y %H:%M"):
+    offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
+    dt = datetime.datetime.strptime(utc_deadline, in_format)
+    ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
+    result = datetime.datetime.fromtimestamp(add_offset_to_utc(offset, ts)).strftime(out_format)
+    return result
+
+def add_offset_to_utc(offset, utc_ts):
+    return int(utc_ts + ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
 
 def populate_email_template_for_messages(file_path, details):
     with open(file_path) as html:
