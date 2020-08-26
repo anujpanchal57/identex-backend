@@ -1115,7 +1115,11 @@ def get_buyer_rfq_quotes_summary():
                 for obj in optimal:
                     amount_deviations.append(obj['amount'] - cheapest_amount)
                     delivery_deviations.append(obj['delivery_time'] - fastest_time)
-                sum_deviations = amount_deviations + delivery_deviations
+                # Standardizing the deviations calculated
+                std_amount_deviations = [x/max(amount_deviations) for x in amount_deviations]
+                std_max_del_deviation = [x/max(delivery_deviations) for x in delivery_deviations]
+                # Finding the optimal choice
+                sum_deviations = std_amount_deviations + std_max_del_deviation
                 optimal_choice_ind = sum_deviations.index(min(sum_deviations))
                 products[i]['optimal'] = optimal[optimal_choice_ind]
                 # Calculating totals for the 3 categories
