@@ -86,7 +86,7 @@ class Reports:
                 sheet_counter += 1
             # self.__ws.title = base_sheet_name
             # pprint(supplier)
-        report_path = shortuuid.uuid() + ".xlsx"
+        report_path = "/opt/backend/"+shortuuid.uuid() + ".xlsx"
         self.__wb.save(report_path)
         data = open(report_path, 'rb').read()
         base64_encoded = base64.b64encode(data).decode('UTF-8')
