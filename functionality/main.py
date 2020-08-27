@@ -50,7 +50,7 @@ from database.JoinOps import Join
 from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
-from database.Reports import Reports
+# from database.Reports import Reports
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -339,7 +339,7 @@ def buyer_forgot_password_verify_token():
             return response.emailNotFound()
         token = Verification(data['token'], "forgot_password")
         if token.is_valid_token():
-            if DBConnectivity.get_redis_key(data['token']):
+            if DBConnectivity.get_redis_key(data['_id'] + "forgot_password"):
                 return response.customResponse({"is_valid": True, "response": "Token verified successfully"})
             token.delete_verification_token()
             return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
@@ -417,7 +417,7 @@ def supplier_forgot_password_verify_token():
             return response.emailNotFound()
         token = Verification(data['token'], "forgot_password")
         if token.is_valid_token():
-            if DBConnectivity.get_redis_key(data['token']):
+            if DBConnectivity.get_redis_key(data['_id'] + "forgot_password"):
                 return response.customResponse({"is_valid": True, "response": "Token verified successfully"})
             token.delete_verification_token()
             return response.customResponse({"is_valid": False, "response": "Link seems to be broken"})
@@ -1162,18 +1162,18 @@ def buyer_product_add():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-@app.route("/buyer/rfq/quotes/download", methods=["POST"])
-@validate_buyer_access_token
-def buyer_rfq_quotes_download():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-                                        "response": "Your requested file will be downloaded shortly"})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
+# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_rfq_quotes_download():
+#     try:
+#         data = DictionaryOps.set_primary_key(request.json, "email")
+#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+#                                         "response": "Your requested file will be downloaded shortly"})
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
