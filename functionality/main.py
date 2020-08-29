@@ -1116,8 +1116,18 @@ def get_buyer_rfq_quotes_summary():
                     amount_deviations.append(obj['amount'] - cheapest_amount)
                     delivery_deviations.append(obj['delivery_time'] - fastest_time)
                 # Standardizing the deviations calculated
-                std_amount_deviations = [x/max(amount_deviations) for x in amount_deviations]
-                std_max_del_deviation = [x/max(delivery_deviations) for x in delivery_deviations]
+                std_amount_deviations, std_max_del_deviation = [], []
+                max_amount_deviation, max_delivery_deviation = max(amount_deviations), max(delivery_deviations)
+                for x in amount_deviations:
+                    if max_amount_deviation != 0:
+                        std_amount_deviations.append(x/max_amount_deviation)
+                    else:
+                        std_amount_deviations.append(0)
+                for x in delivery_deviations:
+                    if max_delivery_deviation != 0:
+                        std_max_del_deviation.append(x/max_delivery_deviation)
+                    else:
+                        std_max_del_deviation.append(0)
                 # Finding the optimal choice
                 sum_deviations = std_amount_deviations + std_max_del_deviation
                 optimal_choice_ind = sum_deviations.index(min(sum_deviations))
@@ -1233,7 +1243,7 @@ def supplier_quotation_send():
         supplier_company_name = supplier.get_company_name()
         buyers = Join().get_buyers_for_rfq(data['requisition_id'])
         subject = conf.email_endpoints['supplier']['quotation_submitted']['subject'].replace("{{supplier_company_name}}", supplier_company_name).replace("{{requisition_id}}", str(data['requisition_id']))
-        link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", str(data['requisition_id']))
+        link = conf.ENV_ENDPOINT + conf.email_endpoints['supplier']['quotation_submitted']['page_url'].replace("{{requisition_id}}", str(data['requisition_id']))
         for buyer in buyers:
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
                                                                               "template": conf.email_endpoints['supplier']['quotation_submitted']['template_id'],
