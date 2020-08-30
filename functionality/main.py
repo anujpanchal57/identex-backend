@@ -535,58 +535,6 @@ def supplier_logout():
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
 
-# POST request for adding/inviting suppliers
-@app.route("/buyer/supplier/add", methods=['POST'])
-@validate_buyer_access_token
-def buyer_supplier_add():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        data['_id'] = data['_id'].lower()
-        buser = BUser(data['_id'])
-        buyer_id = buser.get_buyer_id()
-        suppliers = data['supplier_details']
-        for supp in suppliers:
-            supp['email'] = supp['email'].lower()
-
-            # If supplier is present
-            if SUser.is_suser(supp['email']):
-                suser = SUser(supp['email'])
-                SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id())
-                # Send an email to supplier
-                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
-                                                                                  "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
-                                                                                  "SUPPLIER_USER": suser.get_first_name(),
-                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
-                                                                                  "FIRST_INVITE": "none"})
-                p.start()
-            # If supplier is not present
-            else:
-                supplier_id = Supplier().add_supplier(company_name=supp['company_name'])
-                password = GenericOps.generate_user_password()
-                SUser().add_suser(email=supp['email'], name=supp['name'], supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
-                SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
-                # Send an email to supplier
-                suser = SUser(supp['email'])
-                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
-                                                                                  "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
-                                                                                  "SUPPLIER_USER": suser.get_first_name(),
-                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
-                                                                                  "SUPPLIER_USERNAME": suser.get_email(),
-                                                                                  "PASSWORD": password,
-                                                                                  "FIRST_INVITE": "block"})
-                p.start()
-
-        result = Join().get_suppliers_info(buyer_id)
-        return response.customResponse({"response": "Supplier(s) added successfully",
-                                        "suppliers": result})
-
-    except Exception as e:
-        log = Logger(module_name='/buyer/supplier/add', function_name='buyer_supplier_add()')
-        log.log(traceback.format_exc(), priority='highest')
-        return response.errorResponse("Some error occurred please try again later")
-
 # POST request uploading documents
 @app.route('/documents/upload', methods=['POST'])
 @validate_access_token
@@ -814,22 +762,6 @@ def buyer_rfq_suppliers_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for fetching list of suppliers for buyer
-@app.route("/buyer/suppliers/get", methods=["POST"])
-@validate_buyer_access_token
-def buyer_suppliers_get():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        data['_id'] = data['_id'].lower()
-        buyer_id = BUser(data['_id']).get_buyer_id()
-        suppliers = Join().get_suppliers_info(buyer_id=buyer_id)
-        return response.customResponse({"suppliers": suppliers})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/suppliers/get", function_name="buyer_suppliers_get()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
 # POST request for managing supplier abilities in RFQ
 @app.route("/buyer/rfq/suppliers/ops", methods=["POST"])
 @validate_buyer_access_token
@@ -886,21 +818,6 @@ def buyer_rfq_supplier_ops():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/suppliers/ops", function_name="buyer_rfq_suppliers_ops()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
-# POST request for fetching list of suppliers for buyer
-@app.route("/buyer/products/get", methods=["POST"])
-@validate_buyer_access_token
-def buyer_products_get():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        data['_id'] = data['_id'].lower()
-        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'])
-        return response.customResponse({"products": products})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/products/get", function_name="buyer_products_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -1144,30 +1061,6 @@ def get_buyer_rfq_quotes_summary():
 
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/quotes/summary", function_name="get_buyer_rfq_quotes_summary()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
-# POST request for adding new products to the product master of buyer
-@app.route("/buyer/product/add", methods=["POST"])
-@validate_buyer_access_token
-def buyer_product_add():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        data['_id'] = data['_id'].lower()
-        # Check whether the product is existing or not
-        if not ProductMaster().is_product_added(product_name=data['product_name'].lower(),
-                                                product_category=data['product_category'].lower(),
-                                                buyer_id=data['buyer_id']):
-            # Insert the product
-            product_id = ProductMaster().add_product(product_name=data['product_name'], product_category=data['product_category'],
-                                                     buyer_id=data['buyer_id'])
-            return response.customResponse({"response": "Product added successfully", "product_id": product_id})
-        return response.errorResponse("Product already exists in the inventory. Please select it from the products dropdown")
-
-    except exceptions.IncompleteRequestException as e:
-        return response.errorResponse(e.error)
-    except Exception as e:
-        log = Logger(module_name="/buyer/product/add", function_name="buyer_product_add()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -1510,6 +1403,149 @@ def contact_details_submit():
         log = Logger(module_name="/contact-details/submit", function_name="contact_details_submit()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+########################################### SUPPLIERS SECTION #########################################################
+
+# POST request for adding/inviting suppliers
+@app.route("/buyer/supplier/add", methods=['POST'])
+@validate_buyer_access_token
+def buyer_supplier_add():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        buser = BUser(data['_id'])
+        buyer_id = buser.get_buyer_id()
+        suppliers = data['supplier_details']
+        for supp in suppliers:
+            supp['email'] = supp['email'].lower()
+
+            # If supplier is present
+            if SUser.is_suser(supp['email']):
+                suser = SUser(supp['email'])
+                SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id())
+                # Send an email to supplier
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
+                                                                                  "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
+                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                                  "SUPPLIER_USER": suser.get_first_name(),
+                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
+                                                                                  "FIRST_INVITE": "none"})
+                p.start()
+            # If supplier is not present
+            else:
+                supplier_id = Supplier().add_supplier(company_name=supp['company_name'])
+                password = GenericOps.generate_user_password()
+                SUser().add_suser(email=supp['email'], name=supp['name'], supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
+                SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
+                # Send an email to supplier
+                suser = SUser(supp['email'])
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
+                                                                                  "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
+                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                                  "SUPPLIER_USER": suser.get_first_name(),
+                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
+                                                                                  "SUPPLIER_USERNAME": suser.get_email(),
+                                                                                  "PASSWORD": password,
+                                                                                  "FIRST_INVITE": "block"})
+                p.start()
+
+        result = Join().get_suppliers_info(buyer_id)
+        return response.customResponse({"response": "Supplier(s) added successfully",
+                                        "suppliers": result})
+
+    except Exception as e:
+        log = Logger(module_name='/buyer/supplier/add', function_name='buyer_supplier_add()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
+# POST request for fetching list of suppliers for buyer
+@app.route("/buyer/suppliers/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_suppliers_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        buyer_id = BUser(data['_id']).get_buyer_id()
+        suppliers = Join().get_suppliers_info(buyer_id=buyer_id)
+        return response.customResponse({"suppliers": suppliers})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/suppliers/get", function_name="buyer_suppliers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for deleting suppliers
+@app.route("/buyer/suppliers/modify", methods=["POST"])
+@validate_buyer_access_token
+def buyer_suppliers_modify():
+    try:
+        pass
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/product/add", function_name="buyer_product_add()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+########################################### PRODUCTS SECTION ##########################################################
+
+# POST request for fetching list of suppliers for buyer
+@app.route("/buyer/products/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_products_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'])
+        return response.customResponse({"products": products})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/products/get", function_name="buyer_products_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for adding new products to the product master of buyer
+@app.route("/buyer/product/add", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_add():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        # Check whether the product is existing or not
+        if not ProductMaster().is_product_added(product_name=data['product_name'].lower(),
+                                                product_category=data['product_category'].lower(),
+                                                buyer_id=data['buyer_id']):
+            # Insert the product
+            product_id = ProductMaster().add_product(product_name=data['product_name'], product_category=data['product_category'],
+                                                     buyer_id=data['buyer_id'])
+            return response.customResponse({"response": "Product added successfully", "product_id": product_id})
+        return response.errorResponse("Product already exists in the inventory. Please select it from the products dropdown")
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/product/add", function_name="buyer_product_add()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for editing/deleting a buyer product
+@app.route("/buyer/products/modify", methods=["POST"])
+@validate_buyer_access_token
+def buyer_products_modify():
+    try:
+        pass
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/products/modify", function_name="buyer_products_modify()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+########################################### ORDERS SECTION ############################################################
+
+# Code here for orders APIs
 
 ########################################### MISCELLANEOUS SECTION #####################################################
 
