@@ -1,0 +1,15 @@
+{
+	"sql": {
+			"connection_url": "localhost",
+			"user": "root",
+			"password": "root"
+	},
+	"secret": {
+		"jwt": "V9W3kjb57gM7w_I4sUXYOYJZGo4pdlup9ta7BqY3hls",
+		"buyer_activation": "d689f0ddae904928b7a9db72dcbcade5:idntxapp"
+	},
+	"endpoint": "https://app.identex.io",
+	"supplier_endpoint": "https://supplier.identex.io",
+	"environment_name": "development"
+}
+
