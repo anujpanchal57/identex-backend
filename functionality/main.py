@@ -6,8 +6,8 @@ import time
 import traceback
 from pprint import pprint
 
-import flask
-from flask import Flask, request, jsonify
+
+from flask import Flask, request 
 from flask_cors import CORS
 import platform
 import jwt
@@ -36,7 +36,7 @@ from database.AuthorizationOps import Authorization
 from multiprocessing import Process
 from database.VerificationOps import Verification
 from database.SupplierRelationshipOps import SupplierRelationship
-from Integrations.AWSOps import AWS
+#from Integrations.AWSOps import AWS
 from database.InvitedSupplierOps import InviteSupplier
 from database.LotOps import Lot
 from database.ProductOps import Product
