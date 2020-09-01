@@ -132,4 +132,20 @@ class Quotation:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_supplier_quotation_count(self, requisition_id, supplier_id):
+        try:
+            self.__cursor.execute("""select count(*) as quotation_count from quotations where requisition_id = %s and supplier_id = %s""",
+                          (requisition_id, supplier_id, ))
+            res = self.__cursor.fetchall()
+            return res[0]['quotation_count']
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='get_supplier_quotation_count()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='get_supplier_quotation_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
 # pprint(Quotation().get_quotations_count_for_requisition(1000))

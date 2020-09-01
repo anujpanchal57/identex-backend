@@ -3,19 +3,20 @@ import os
 from pprint import pprint
 import platform
 
-
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
+##################################### For UBUNTU ###################################################
 # Reading data from settings.json
-''''with open(app_name + '/settings.json') as f:
-    conf_settings = json.load(f)
+# with open(app_name + '/settings.json') as f:
+#     conf_settings = json.load(f)
 
-with open(app_name + '/conf.json') as f:
-    conf = json.loads(f.read())'''
+# with open(app_name + '/conf.json') as f:
+#     conf = json.loads(f.read())
 
+##################################### For WINDOWS ###################################################
+# Reading data from settings.json
 with open(app_name + 'settings.json') as f:
     conf_settings = json.load(f)
-
 
 with open(app_name + 'conf.json') as f:
     conf = json.loads(f.read())
@@ -42,9 +43,9 @@ SQL_CONNECTION_PASSWORD = conf_settings.get('sql').get('password')
 
 JWT_SECRET_KEY = conf_settings.get('secret').get('jwt')
 
-#PEPIPOST_API_KEY = conf_settings.get('api_keys').get('pepipost')
+PEPIPOST_API_KEY = conf_settings.get('api_keys').get('pepipost')
 
-#MAILGUN_API_KEY = conf_settings.get('api_keys').get('mailgun')
+MAILGUN_API_KEY = conf_settings.get('api_keys').get('mailgun')
 
 ENV_ENDPOINT = conf_settings.get('endpoint')
 
@@ -52,13 +53,13 @@ SUPPLIERS_ENDPOINT = conf_settings.get('supplier_endpoint')
 
 BUYER_ACTIVATION_SECRET_KEY = conf_settings.get('secret').get('buyer_activation')
 
-'''aws = {
+aws = {
     'access_key': conf_settings['aws']['access_key_id'],
     'secret_key': conf_settings['aws']['secret_key'],
     'bucket_name': {
         'uploads': 'uploads-idntx'
     }
-}'''
+}
 
 email_endpoints = {
     "buyer": {
@@ -145,5 +146,8 @@ default_recipient = "archives.identex@gmail.com"
 
 default_founder_email = "utkarsh.dhawan@identex.io"
 
+default_submission_limit = 3
+
 all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
 quotations_summary_excel_sample = app_name + "/templates/Quotation Summary.xlsx"
+

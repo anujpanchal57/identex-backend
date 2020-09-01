@@ -103,6 +103,7 @@ requisition_create_table = """create table if not exists requisitions (
                 request_type varchar(20) not null,
                 status bool not null,
                 created_at int(11) not null,
+                submission_limit int not null default 3,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 

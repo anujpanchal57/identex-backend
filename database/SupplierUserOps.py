@@ -63,6 +63,21 @@ class SUser:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def delete_suser(self, supplier_id):
+        try:
+            self.__cursor.execute("""delete from s_users where supplier_id = %s""", (supplier_id, ))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierUserOps', function_name='delete_suser()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
+        except Exception as e:
+            log = Logger(module_name='SupplierUserOps', function_name='delete_suser()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
+
     @staticmethod
     def is_suser(email, table="suser_table"):
         sql = DBConnectivity.create_sql_connection()

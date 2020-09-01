@@ -6,8 +6,7 @@ import time
 import traceback
 from pprint import pprint
 
-
-from flask import Flask, request 
+from flask import Flask, request
 from flask_cors import CORS
 import platform
 import jwt
@@ -36,7 +35,7 @@ from database.AuthorizationOps import Authorization
 from multiprocessing import Process
 from database.VerificationOps import Verification
 from database.SupplierRelationshipOps import SupplierRelationship
-#from Integrations.AWSOps import AWS
+from Integrations.AWSOps import AWS
 from database.InvitedSupplierOps import InviteSupplier
 from database.LotOps import Lot
 from database.ProductOps import Product
@@ -608,9 +607,10 @@ def buyer_create_rfq():
         if GenericOps.get_current_timestamp_of_timezone(data['timezone']) + Implementations.deadline_change_time_factor > deadline:
             return response.errorResponse("Please set a deadline of more than 30 mins from the current time")
         utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'], op_tz=data['timezone'])
+        data['submission_limit'] = data['submission_limit'] if 'submission_limit' in data else conf.default_submission_limit
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
-                                                         utc_deadline=utc_deadline)
+                                                         utc_deadline=utc_deadline, submission_limit=data['submission_limit'])
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -1095,6 +1095,10 @@ def supplier_quotation_send():
         unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
                                                            operation_type="rfq")
 
+        # Applied the logic of submission limit in a rfq
+        quotation_count = Quotation().get_supplier_quotation_count(requisition_id=data['requisition_id'], supplier_id=supplier_id)
+        submission_limit = requisition.get_submission_limit()
+
         if requisition.get_cancelled():
             return response.errorResponse("You cannot quote against a cancelled RFQ")
 
@@ -1125,7 +1129,8 @@ def supplier_quotation_send():
             return response.errorResponse("Failed to send quotation, please try again")
 
         # Update the unlock_status of supplier
-        InviteSupplier().update_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'], operation_type="rfq", status=False)
+        if submission_limit <= quotation_count + 1 and unlock_status:
+            InviteSupplier().update_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'], operation_type="rfq", status=False)
 
         ActivityLogs("").add_activity(activity="Quotation sent", done_by=data['_id'],
                                       operation_id=data['requisition_id'],
@@ -1474,17 +1479,17 @@ def buyer_suppliers_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for deleting suppliers
-@app.route("/buyer/suppliers/modify", methods=["POST"])
+# POST request for deleting suppliers (parked for now)
+@app.route("/buyer/suppliers/delete", methods=["POST"])
 @validate_buyer_access_token
-def buyer_suppliers_modify():
+def buyer_suppliers_delete():
     try:
         pass
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
-        log = Logger(module_name="/buyer/product/add", function_name="buyer_product_add()")
+        log = Logger(module_name="/buyer/suppliers/delete", function_name="buyer_suppliers_delete()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
