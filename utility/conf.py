@@ -5,12 +5,21 @@ import platform
 
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
+##################################### For UBUNTU ###################################################
 # Reading data from settings.json
 with open(app_name + '/settings.json') as f:
     conf_settings = json.load(f)
 
 with open(app_name + '/conf.json') as f:
     conf = json.loads(f.read())
+
+##################################### For WINDOWS ###################################################
+# Reading data from settings.json
+# with open(app_name + 'settings.json') as f:
+#     conf_settings = json.load(f)
+#
+# with open(app_name + 'conf.json') as f:
+#     conf = json.loads(f.read())
 
 const = conf.get('const')
 
@@ -141,3 +150,4 @@ default_submission_limit = 3
 
 all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
 quotations_summary_excel_sample = app_name + "/templates/Quotation Summary.xlsx"
+

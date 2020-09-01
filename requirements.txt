@@ -26,7 +26,7 @@ six==1.12.0
 swagger-ui-bundle==0.0.3
 typing==3.6.6
 urllib3==1.25.3
-Werkzeug==0.15.4
+Werkzeug==0.15.5
 gunicorn==19.9.0
 python-dateutil==2.7.2
 beautifulsoup4==4.4.1

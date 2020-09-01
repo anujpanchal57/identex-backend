@@ -6,8 +6,7 @@ import time
 import traceback
 from pprint import pprint
 
-import flask
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_cors import CORS
 import platform
 import jwt
