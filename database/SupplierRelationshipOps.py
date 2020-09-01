@@ -4,6 +4,7 @@ import mysql.connector
 from functionality import GenericOps
 from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
+from exceptions import exceptions
 
 class SupplierRelationship:
     def __init__(self, _id="", type="buyer"):
@@ -49,6 +50,22 @@ class SupplierRelationship:
             log = Logger(module_name='SupplierRelationshipOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
             return False
+
+    def delete_supplier_relationship(self, buyer_id, supplier_id):
+        try:
+            self.__cursor.execute("""delete from supplier_relationships where buyer_id = %s and supplier_id = %s""",
+                                  (buyer_id, supplier_id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierRelationshipOps', function_name='delete_supplier_relationship()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
+        except Exception as e:
+            log = Logger(module_name='SupplierRelationshipOps', function_name='delete_supplier_relationship()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
 
 # pprint(SupplierRelationship(1000).get_buyer_suppliers())
 # pprint(SupplierRelationship("").add_supplier_relationship(1000, 1001))

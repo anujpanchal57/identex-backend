@@ -3,7 +3,6 @@ import os
 from pprint import pprint
 import platform
 
-
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
 # Reading data from settings.json
@@ -137,6 +136,8 @@ message_files = {
 default_recipient = "archives.identex@gmail.com"
 
 default_founder_email = "utkarsh.dhawan@identex.io"
+
+default_submission_limit = 3
 
 all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
 quotations_summary_excel_sample = app_name + "/templates/Quotation Summary.xlsx"

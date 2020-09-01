@@ -24,7 +24,7 @@ class Requisition:
             self.__sql.close()
 
     def add_requisition(self, requisition_name, buyer_id, timezone, currency, deadline, utc_deadline, tnc="", request_type="open",
-                        cancelled=False, status=True, supplier_instructions=""):
+                        cancelled=False, status=True, supplier_instructions="", submission_limit=3):
         self.__requisition['requisition_name'] = requisition_name
         self.__requisition['buyer_id'] = buyer_id
         self.__requisition['timezone'] = timezone
@@ -37,6 +37,7 @@ class Requisition:
         self.__requisition['status'] = status
         self.__requisition['created_at'] = GenericOps.get_current_timestamp()
         self.__requisition['utc_deadline'] = utc_deadline
+        self.__requisition['submission_limit'] = submission_limit
         self.__requisition['requisition_id'] = self.insert(self.__requisition)
         return self.__requisition['requisition_id']
 
@@ -45,11 +46,12 @@ class Requisition:
             self.__cursor.execute(Implementations.requisition_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO requisitions (buyer_id, requisition_name, timezone, currency, deadline, 
-            utc_deadline, supplier_instructions, tnc, cancelled, request_type, status, created_at) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            utc_deadline, supplier_instructions, tnc, cancelled, request_type, status, created_at, submission_limit) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['buyer_id'], values['requisition_name'], values['timezone'], values['currency'],
                                    values['deadline'], values['utc_deadline'], values['supplier_instructions'], values['tnc'],
-                                   values['cancelled'], values['request_type'], values['status'], values['created_at']))
+                                   values['cancelled'], values['request_type'], values['status'], values['created_at'],
+                                   values['submission_limit']))
             requisition_id = self.__cursor.lastrowid
 
             # Adding an event for RFQ expiry
@@ -121,6 +123,9 @@ class Requisition:
 
     def get_timezone(self):
         return self.__requisition['timezone']
+
+    def get_submission_limit(self):
+        return self.__requisition['submission_limit']
 
     def update_deadline(self, deadline, utc_deadline):
         try:
