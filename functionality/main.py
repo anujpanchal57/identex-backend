@@ -10,6 +10,7 @@ from flask import Flask, request
 from flask_cors import CORS
 import platform
 import jwt
+import flask
 
 
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
