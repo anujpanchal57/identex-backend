@@ -1490,7 +1490,7 @@ def buyer_suppliers_modify():
 
 ########################################### PRODUCTS SECTION ##########################################################
 
-# POST request for fetching list of suppliers for buyer
+# POST request for fetching list of products for buyer
 @app.route("/buyer/products/get", methods=["POST"])
 @validate_buyer_access_token
 def buyer_products_get():
