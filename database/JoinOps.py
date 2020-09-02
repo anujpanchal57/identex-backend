@@ -152,7 +152,7 @@ class Join:
     def get_supplier_requisitions(self, supplier_id, start_limit, end_limit, cancelled, req_type="open", operation_type="rfq"):
         try:
             self.__cursor.execute("""select r.requisition_id, l.lot_id, l.lot_name, l.lot_description, r.deadline, r.utc_deadline, r.currency, r.timezone, b.company_name as buyer_company_name, 
-                                    b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status
+                                    b.buyer_id, r.supplier_instructions, r.tnc, ins.unlock_status, r.submission_limit
                                     from invited_suppliers as ins 
                                     join requisitions as r
                                     on ins.operation_id = r.requisition_id
