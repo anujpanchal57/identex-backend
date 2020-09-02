@@ -7,19 +7,19 @@ app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
 ##################################### For UBUNTU ###################################################
 # Reading data from settings.json
-# with open(app_name + '/settings.json') as f:
-#     conf_settings = json.load(f)
+with open(app_name + '/settings.json') as f:
+    conf_settings = json.load(f)
 
-# with open(app_name + '/conf.json') as f:
-#     conf = json.loads(f.read())
+with open(app_name + '/conf.json') as f:
+    conf = json.loads(f.read())
 
 ##################################### For WINDOWS ###################################################
 # Reading data from settings.json
-with open(app_name + 'settings.json') as f:
-    conf_settings = json.load(f)
-
-with open(app_name + 'conf.json') as f:
-    conf = json.loads(f.read())
+# with open(app_name + 'settings.json') as f:
+#     conf_settings = json.load(f)
+#
+# with open(app_name + 'conf.json') as f:
+#     conf = json.loads(f.read())
 
 const = conf.get('const')
 

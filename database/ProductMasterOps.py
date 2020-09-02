@@ -107,5 +107,38 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def update_product_details(self, values):
+        try:
+            self.__cursor.execute("""update product_master set product_name = %s, product_category = %s where product_id = %s""",
+                                  (values['product_name'], values['product_category'], self.__id, ))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ProductMasterOps', function_name='update_product_details()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update product details, please try again')
+        except Exception as e:
+            log = Logger(module_name='ProductMasterOps', function_name='update_product_details()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update product details, please try again')
+
+    def delete_product(self):
+        try:
+            self.__cursor.execute("""delete from product_master where product_id = %s""",
+                                  (self.__id,))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ProductMasterOps', function_name='delete_product()')
+            log.log(str(error), priority='highest')
+            pprint(str(error))
+            return exceptions.IncompleteRequestException('Failed to update product, please try again')
+        except Exception as e:
+            log = Logger(module_name='ProductMasterOps', function_name='delete_product()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to delete product, please try again')
+
 # pprint(Product().get_lot_products(1000))
 # pprint(Product("").add_product(1000, "filters", "steel", "filtering filters", "piece", 2))
