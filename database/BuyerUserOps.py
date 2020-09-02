@@ -138,10 +138,20 @@ class BUser:
         return True if self.__buser['role'].lower() == "admin" else False
 
     def set_password(self, password):
-        self.__buser['password'] = password
-        self.__cursor.execute("update b_users set password = %s where email = %s", (password, self.__id))
-        self.__sql.commit()
-        return True
+        try:
+            self.__buser['password'] = password
+            self.__cursor.execute("update b_users set password = %s where email = %s", (password, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='BuyerUserOps', function_name='set_password()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update password, please try again')
+        except Exception as e:
+            log = Logger(module_name='BuyerUserOps', function_name='set_password()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update password, please try again')
 
     def set_status(self, status):
         self.__buser['status'] = status

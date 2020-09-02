@@ -50,7 +50,7 @@ from database.JoinOps import Join
 from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
-from database.Reports import Reports
+# from database.Reports import Reports
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -532,6 +532,30 @@ def supplier_logout():
 
     except Exception as e:
         log = Logger(module_name='/supplier/logout', function_name='supplier_logout()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
+# POST request for changing the password of buyer and supplier
+@app.route("/password/update", methods=['POST'])
+@validate_access_token
+def update_password():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        user = BUser(data['_id']) if data['client_type'].lower() == "buyer" else SUser(data['_id'])
+        current_password = user.get_password()
+        if current_password != data['current_password']:
+            return response.errorResponse("Please ensure that you have entered your current password correctly")
+        if current_password == data['new_password']:
+            return response.errorResponse("Please ensure that your current password and new password are not the same")
+        # Changing the password
+        if user.set_password(data['new_password']):
+            return response.customResponse({"response": "Password changed successfully"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name='/password/update', function_name='update_password()')
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
 
@@ -1066,18 +1090,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-@app.route("/buyer/rfq/quotes/download", methods=["POST"])
-@validate_buyer_access_token
-def buyer_rfq_quotes_download():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-                                        "response": "Your requested file will be downloaded shortly"})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
+# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_rfq_quotes_download():
+#     try:
+#         data = DictionaryOps.set_primary_key(request.json, "email")
+#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+#                                         "response": "Your requested file will be downloaded shortly"})
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1155,7 +1179,13 @@ def supplier_quotation_send():
                                                                               "LINK": link})
             p.start()
 
-        return response.customResponse({"response": "Quotation sent successfully", "unlock_status": 0})
+        # Sending unlock status for handling UI
+        unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
+                                                           operation_type="rfq")
+
+        submissions_left = submission_limit - quotation_count if quotation_count <= submission_limit else 0
+        return response.customResponse({"response": "Quotation sent successfully", "unlock_status": unlock_status,
+                                        "submissions_left": submissions_left})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
