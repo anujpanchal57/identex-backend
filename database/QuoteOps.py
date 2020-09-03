@@ -163,5 +163,37 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
+    def is_product_quote_confirmed(self, charge_id, confirmed=True):
+        try:
+            self.__cursor.execute("select confirmed from quotes where charge_id = %s and confirmed = %s", (charge_id, confirmed, ))
+            res = self.__cursor.fetchall()
+            return True if len(res) > 0 else False
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='is_product_quote_confirmed()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='is_product_quote_confirmed()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+    def set_confirmed(self, confirmed):
+        try:
+            self.__quote['confirmed'] = confirmed
+            self.__cursor.execute("""update quotes set confirmed = %s where quote_id = %s""", (confirmed, self.__id, ))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='set_confirmed()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update product confirmation, please try again')
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='set_confirmed()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update product confirmation, please try again')
+
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))
+# pprint(Quote(1023).is_quote_confirmed())

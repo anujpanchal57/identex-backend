@@ -50,7 +50,10 @@ from database.JoinOps import Join
 from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
+from database.OrderOps import Order
 from database.Reports import Reports
+
+##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
 # Validates access token for buyer
 def validate_buyer_access_token(f):
@@ -165,6 +168,8 @@ def validate_access_token(f):
         except Exception as e:
             return response.errorResponse(e)
     return wrapped
+
+################################### AUTHENTICATION SECTION ############################################################
 
 # POST request for buyer signup authentication
 @app.route("/buyer/signup", methods=["POST"])
@@ -1018,6 +1023,9 @@ def get_buyer_rfq_quotes():
             for i in range(0, len(products)):
                 products[i]['quotes'] = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
                                                                                     charge_id=products[i]['reqn_product_id'])
+
+                # Setting the is_confirmed key for a product
+                products[i]['is_confirmed'] = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
             return response.customResponse({"quotes_received": products, "suppliers": invited_suppliers})
         return response.errorResponse("No products found in this lot")
 
@@ -1045,10 +1053,18 @@ def get_buyer_rfq_quotes_summary():
         if len(products) > 0:
             quote = Quote()
             optimal_total, cheapest_total, fastest_total = 0, 0, 0
+            qt_not_found_counter = 0
             for i in range(0, len(products)):
+                # Setting the is_confirmed key for a product
+                products[i]['is_confirmed'] = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
+
                 # Fetching the cheapest and optimal rates
                 products[i]['cheapest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'])
                 products[i]['fastest'] = quote.get_quotes_by_category(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'], category="fastest")
+                products[i]['optimal'] = []
+                if len(products[i]['cheapest']) == 0 or len(products[i]['fastest']) == 0:
+                    qt_not_found_counter += 1
+                    continue
                 # Fetching and calculating the optimal rates
                 cheapest_amount, fastest_time = products[i]['cheapest']['amount'], products[i]['fastest']['delivery_time']
                 optimal = quote.get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'])
@@ -1078,6 +1094,13 @@ def get_buyer_rfq_quotes_summary():
                 optimal_total += products[i]['optimal']['amount']
                 cheapest_total += products[i]['cheapest']['amount']
                 fastest_total += products[i]['fastest']['amount']
+            # If no quotes are available
+            if qt_not_found_counter <= len(products):
+                return response.customResponse({"summary": products,
+                                                "optimal_total": GenericOps.round_of(optimal_total),
+                                                "cheapest_total": GenericOps.round_of(cheapest_total),
+                                                "fastest_total": GenericOps.round_of(fastest_total)})
+            # If quotes are available
             return response.customResponse({"summary": products,
                                             "optimal_total": GenericOps.round_of(optimal_total),
                                             "cheapest_total": GenericOps.round_of(cheapest_total),
@@ -1629,14 +1652,52 @@ def buyer_products_modify():
 ########################################### ORDERS SECTION ############################################################
 
 # POST request for adding orders
-@app.route("/buyer/order/add", methods=['POST'])
+@app.route("/buyer/order/create", methods=['POST'])
 @validate_buyer_access_token
-def buyer_order_add():
+def buyer_order_create():
     try:
-        pass
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        details = data['details']
+        if details['acquisition_type'].lower() == "rfq":
+            requisition = Requisition(details['acquisition_id'])
+            lot = Lot().get_lot_for_requisition(requisition_id=details['acquisition_id'])
+            # If no lot is found
+            if len(lot) == 0:
+                return response.errorResponse("No lot found against this RFQ")
+            products = Product().get_lot_products(lot_id=lot['lot_id'])
 
+            if len(products) > 0:
+                approved_counter = 0
+                # Iterate over the products
+                for i in range(0, len(products)):
+                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
+                    if product_confirmed:
+                        approved_counter += 1
+
+                # Create an order for the product if not
+                order_created = Order().add_order(buyer_id=data['buyer_id'], supplier_id=details['supplier_id'],
+                                                  po_no=details['po_no'],
+                                                  acquisition_id=details['acquisition_id'],
+                                                  acquisition_type=details['acquisition_type'],
+                                                  quote_id=details['quote_id'],
+                                                  reqn_product_id=details['reqn_product_id'],
+                                                  remarks=details['remarks'])
+                # Mark the particular quote as confirmed
+                if order_created:
+                    Quote(details['quote_id']).set_confirmed(True)
+                    approved_counter += 1
+                # If all the products are ordered then set the requisition status as approved
+                if approved_counter == len(products):
+                    requisition.set_request_type(request_type="approved")
+                    requisition.drop_sql_event()
+                return response.customResponse({"response": "Order created successfully"})
+            return response.errorResponse("No products found in this lot")
+        return response.errorResponse("Invalid acquisition type")
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
-        log = Logger(module_name="/buyer/order/add", function_name="buyer_order_add()")
+        log = Logger(module_name="/buyer/order/create", function_name="buyer_order_create()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

@@ -164,6 +164,40 @@ class Requisition:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to update deadline, please try again')
 
+    def set_request_type(self, request_type):
+        try:
+            self.__requisition['request_type'] = request_type
+            self.__cursor.execute("""update requisitions set request_type = %s where requisition_id = %s""", (request_type, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='RequisitionOps', function_name='set_request_type()')
+            log.log(str(error), priority='highest')
+            raise exceptions.IncompleteRequestException('Failed to update RFQ type, please try again')
+        except Exception as e:
+            log = Logger(module_name='RequisitionOps', function_name='set_request_type()')
+            log.log(traceback.format_exc(), priority='highest')
+            raise exceptions.IncompleteRequestException('Failed to update RFQ type, please try again')
+
+    # Can be called in case when all the orders get created before the deadline ends
+    def drop_sql_event(self):
+        try:
+            # Drop the existing mysql event for updating the request type
+            event_id = 'rfq_' + str(self.__id)
+            drop_query = "DROP EVENT if exists " + event_id
+            self.__cursor.execute(drop_query)
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='RequisitionOps', function_name='cancel_sql_event()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='RequisitionOps', function_name='cancel_sql_event()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
 # pprint(Requisition(1000).cancel_rfq())
 # pprint(Requisition().get_rfq(1000))
 # pprint(Requisition().add_requisition(requisition_name="ABC", buyer_id=1000, timezone="asia/calcutta", currency="inr", deadline=6513216854))
