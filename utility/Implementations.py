@@ -232,6 +232,26 @@ message_documents_create_table = """create table if not exists message_documents
                 uploader varchar(50) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
+orders_create_table = """create table if not exists orders (
+                order_id int primary key not null auto_increment,
+                buyer_id int not null, 
+                supplier_id int not null,
+                po_no varchar(50) not null,
+                acquisition_id int not null default 0, 
+                acquisition_type varchar(20) not null default '',
+                quote_id int not null,
+                reqn_product_id int not null,
+                payment_status varchar(20) not null default 'unpaid', 
+                order_status varchar(20) not null default 'active',
+                cancelled bool not null default false,
+                paid bool not null default false,
+                grn_uploaded bool not null default false,
+                payment_date int(11) not null default 0,
+                transaction_ref_no varchar(50) not null default '',
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,
                 function_name varchar(50) not null,

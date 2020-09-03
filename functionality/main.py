@@ -1628,7 +1628,41 @@ def buyer_products_modify():
 
 ########################################### ORDERS SECTION ############################################################
 
-# Code here for orders APIs
+# POST request for adding orders
+@app.route("/buyer/order/add", methods=['POST'])
+@validate_buyer_access_token
+def buyer_order_add():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/order/add", function_name="buyer_order_add()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for listing orders for buyer
+@app.route("/buyer/orders/list", methods=['POST'])
+@validate_buyer_access_token
+def buyer_orders_list():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/orders/list", function_name="buyer_orders_list()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for listing orders for supplier
+@app.route("/supplier/orders/list", methods=['POST'])
+@validate_supplier_access_token
+def supplier_orders_list():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/supplier/orders/list", function_name="supplier_orders_list()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### MISCELLANEOUS SECTION #####################################################
 
