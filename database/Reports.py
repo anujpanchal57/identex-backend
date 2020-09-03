@@ -91,7 +91,7 @@ class Reports:
         data = open(report_path, 'rb').read()
         base64_encoded = base64.b64encode(data).decode('UTF-8')
         os.remove(report_path)
-        return base64_encoded
+        return "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{}".format(str(base64_encoded))
 
     def generate_summary_report(self):
         if self.__operation_type == "rfq":
