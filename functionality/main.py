@@ -51,7 +51,7 @@ from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
-# from database.Reports import Reports
+from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1113,18 +1113,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
-# @validate_buyer_access_token
-# def buyer_rfq_quotes_download():
-#     try:
-#         data = DictionaryOps.set_primary_key(request.json, "email")
-#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-#                                         "response": "Your requested file will be downloaded shortly"})
-#
-#     except Exception as e:
-#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-#         log.log(traceback.format_exc())
-#         return response.errorResponse("Some error occurred please try again!")
+@app.route("/buyer/rfq/quotes/download", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_quotes_download():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+                                        "response": "Your requested file will be downloaded shortly"})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1715,9 +1715,11 @@ def buyer_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        return response.customResponse({"orders": Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
-                                                                     start_limit=start_limit, end_limit=end_limit)})
+        return response.customResponse({"orders": Order().get_orders(client_id=data['buyer_id'], client_type="buyer"
+                                                                     , request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/orders/get", function_name="buyer_orders_get()")
         log.log(traceback.format_exc())
@@ -1733,9 +1735,15 @@ def supplier_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        return response.customResponse({"orders": Order().get_orders(client_id=data['supplier_id'], client_type="supplier",
-                                                                     start_limit=start_limit, end_limit=end_limit)})
+        orders = Order().get_orders(client_id=data['supplier_id'], client_type="supplier", request_type=data['type'].lower(),
+                                    start_limit=start_limit, end_limit=end_limit)
+        for order in orders:
+            if order['grn_uploaded']:
+                order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'], operation_type="order")
+        return response.customResponse({"orders": orders})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/supplier/orders/get", function_name="supplier_orders_get()")
         log.log(traceback.format_exc())
@@ -1816,7 +1824,7 @@ def buyer_order_payment_status_update():
                                                 "payment_status": order.get_payment_status(),
                                                 "payment_date": order.get_payment_date(),
                                                 "transaction_ref_no": order.get_transaction_ref_no()})
-
+        return response.errorResponse("Invalid payment status")
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)

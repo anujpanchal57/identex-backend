@@ -85,6 +85,15 @@ class Document:
         self.__sql.commit()
         return res
 
+    def get_order_docs_url(self, operation_id, operation_type, document_type='grn'):
+        self.__cursor.execute("""select document_url from documents where operation_id = %s and operation_type = %s and document_type = %s
+                                order by uploaded_on desc""",
+                              (operation_id, operation_type, document_type))
+        res = self.__cursor.fetchall()
+        return res[0]['document_url'] if len(res) > 0 else ""
+
+
+
 # pprint(Document().insert_many([(1000, "rfq", "adsfdsafdsaf", "product", "product", 351321651, 1000, "buyer"),
 #                                (1000, "rfq", "adsfdsafdsaf", "product", "product", 351321651, 1000, "buyer")]))
 
