@@ -165,8 +165,7 @@ invited_suppliers_create_table = """create table if not exists invited_suppliers
 quotations_create_table = """create table if not exists quotations (
                 quotation_id int primary key auto_increment,
                 supplier_id int not null, 
-                requisition_id int not null, 
-                remarks varchar(500) not null, 
+                requisition_id int not null,  
                 total_amount float(11, 2) not null, 
                 total_gst float(11, 2) not null,
                 quote_validity int(11) not null, 

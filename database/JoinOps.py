@@ -213,6 +213,40 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
+    def get_buyer_orders_count(self, buyer_id, req_type="active"):
+        try:
+            self.__cursor.execute("""select count(*) as orders_count
+                                    from orders
+                                    where buyer_id = %s and order_status = %s""", (buyer_id, req_type))
+            res = self.__cursor.fetchone()['orders_count']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_orders_count()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_orders_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_supplier_orders_count(self, supplier_id, req_type="active"):
+        try:
+            self.__cursor.execute("""select count(*) as orders_count
+                                    from orders where supplier_id = %s and order_status = %s""",
+                                  (supplier_id, req_type))
+            res = self.__cursor.fetchone()['orders_count']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_supplier_orders_count()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_supplier_orders_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
 
 # pprint(Join().get_supplier_requisitions_count(supplier_id=1000))
 # pprint(Join().get_buyer_requisitions_count(buyer_id=1000, req_type="cancelled"))

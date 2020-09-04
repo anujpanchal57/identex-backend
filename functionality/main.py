@@ -1160,7 +1160,7 @@ def supplier_quotation_send():
 
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
-                                                 remarks=quotation['remarks'], total_amount=quotation['total_amount'],
+                                                 total_amount=quotation['total_amount'],
                                                  total_gst=quotation['total_gst'], quote_validity=quotation['quote_validity'])
 
 
@@ -1206,7 +1206,7 @@ def supplier_quotation_send():
         unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
                                                            operation_type="rfq")
 
-        submissions_left = submission_limit - quotation_count if quotation_count <= submission_limit else 0
+        submissions_left = submission_limit - (quotation_count + 1) if quotation_count <= submission_limit else 0
         return response.customResponse({"response": "Quotation sent successfully", "unlock_status": unlock_status,
                                         "submissions_left": submissions_left})
 
@@ -1715,8 +1715,17 @@ def buyer_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        return response.customResponse({"orders": Order().get_orders(client_id=data['buyer_id'], client_type="buyer"
-                                                                     , request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)})
+        orders =  Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
+                                     request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)
+
+        # Fetching the orders count for different categories
+        join_obj = Join()
+        count = {
+            "active": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="active"),
+            "delivered": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="delivered"),
+            "cancelled": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="cancelled")
+        }
+        return response.customResponse({"orders": orders, "count": count})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -1740,7 +1749,15 @@ def supplier_orders_get():
         for order in orders:
             if order['grn_uploaded']:
                 order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'], operation_type="order")
-        return response.customResponse({"orders": orders})
+
+        # Fetching the orders count for different categories
+        join_obj = Join()
+        count = {
+            "active": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="active"),
+            "delivered": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="delivered"),
+            "cancelled": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="cancelled")
+        }
+        return response.customResponse({"orders": orders, "count": count})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
