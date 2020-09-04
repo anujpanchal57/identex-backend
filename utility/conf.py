@@ -105,7 +105,7 @@ email_endpoints = {
         },
         "message_received": {
             "page_url": "/{{operation}}/live-{{operation}}?id={{operation_id}}&action={{action_type}}",
-            "subject": "You have received a new message for RFQ: #{{requisition_id}}",
+            "subject": "You have received a new message for {{operation_type}}: #{{requisition_id}}",
             "template_id": "message_received"
         }
     },
@@ -132,7 +132,7 @@ email_endpoints = {
         },
         "message_received": {
             "page_url": "/{{operation}}?type=open",
-            "subject": "You have received a new message for RFQ: #{{requisition_id}}",
+            "subject": "You have received a new message for {{operation_type}}: #{{requisition_id}}",
             "template_id": "message_received"
         }
     }

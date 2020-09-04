@@ -51,7 +51,7 @@ from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
-from database.Reports import Reports
+# from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1113,18 +1113,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-@app.route("/buyer/rfq/quotes/download", methods=["POST"])
-@validate_buyer_access_token
-def buyer_rfq_quotes_download():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-                                        "response": "Your requested file will be downloaded shortly"})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
+# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_rfq_quotes_download():
+#     try:
+#         data = DictionaryOps.set_primary_key(request.json, "email")
+#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+#                                         "response": "Your requested file will be downloaded shortly"})
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1307,6 +1307,7 @@ def send_message():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        type_of_request = data['operation_type'].split("_")[0].upper()
         # Insert the documents
         documents, document_ids = [], []
 
@@ -1328,8 +1329,8 @@ def send_message():
             buyer = Buyer(data['client_id'])
             buser = BUser(data['_id'])
             suser = SUser(supplier_id=data['receiver_id'])
-            subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
-            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
+            subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
+            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower())
             lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
             sender = buser.get_name() + " (" + buyer.get_company_name() + ")"
             p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [suser.get_email()],
@@ -1337,7 +1338,7 @@ def send_message():
                                                                               "subject": subject,
                                                                               "LINK_FOR_REPLY": link,
                                                                               "USER": suser.get_first_name(),
-                                                                              "TYPE_OF_REQUEST": data['operation_type'].split(" ")[0].upper(),
+                                                                              "TYPE_OF_REQUEST": type_of_request,
                                                                               "REQUEST_ID": str(data['operation_id']),
                                                                               "LOT_NAME": lot['lot_name'],
                                                                               "SENDER": sender,
@@ -1348,8 +1349,8 @@ def send_message():
             supplier = Supplier(data['client_id'])
             suser = SUser(data['_id'])
             busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
-            subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id']))
-            link = conf.ENV_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", data['operation_type'])
+            subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
+            link = conf.ENV_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower()).replace("{{action_type}}", "quotes").replace("{{operation_id}}", str(data['operation_id']))
             lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
             sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
             for user in busers:
@@ -1358,7 +1359,7 @@ def send_message():
                                                                                   "template": conf.email_endpoints['buyer']['message_received']['template_id'],
                                                                                   "LINK_FOR_REPLY": link,
                                                                                   "USER": user['name'].split(" ")[0],
-                                                                                  "TYPE_OF_REQUEST": data['operation_type'].split(" ")[0].upper(),
+                                                                                  "TYPE_OF_REQUEST": type_of_request,
                                                                                   "REQUEST_ID": str(data['operation_id']),
                                                                                   "LOT_NAME": lot['lot_name'],
                                                                                   "SENDER": sender,
@@ -1670,6 +1671,7 @@ def buyer_order_create():
                 approved_counter = 0
                 # Iterate over the products
                 for i in range(0, len(products)):
+                    # Check whether the product is confirmed or not
                     product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
                     if product_confirmed:
                         approved_counter += 1
@@ -1690,6 +1692,8 @@ def buyer_order_create():
                 if approved_counter == len(products):
                     requisition.set_request_type(request_type="approved")
                     requisition.drop_sql_event()
+                # Email to supplier
+
                 return response.customResponse({"response": "Order created successfully"})
             return response.errorResponse("No products found in this lot")
         return response.errorResponse("Invalid acquisition type")
@@ -1702,26 +1706,122 @@ def buyer_order_create():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for listing orders for buyer
-@app.route("/buyer/orders/list", methods=['POST'])
+@app.route("/buyer/orders/get", methods=['POST'])
 @validate_buyer_access_token
-def buyer_orders_list():
+def buyer_orders_get():
     try:
-        pass
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        return response.customResponse({"orders": Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
+                                                                     start_limit=start_limit, end_limit=end_limit)})
 
     except Exception as e:
-        log = Logger(module_name="/buyer/orders/list", function_name="buyer_orders_list()")
+        log = Logger(module_name="/buyer/orders/get", function_name="buyer_orders_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for listing orders for supplier
-@app.route("/supplier/orders/list", methods=['POST'])
+@app.route("/supplier/orders/get", methods=['POST'])
 @validate_supplier_access_token
-def supplier_orders_list():
+def supplier_orders_get():
     try:
-        pass
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        return response.customResponse({"orders": Order().get_orders(client_id=data['supplier_id'], client_type="supplier",
+                                                                     start_limit=start_limit, end_limit=end_limit)})
 
     except Exception as e:
-        log = Logger(module_name="/supplier/orders/list", function_name="supplier_orders_list()")
+        log = Logger(module_name="/supplier/orders/get", function_name="supplier_orders_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for cancelling an order
+@app.route("/buyer/order/cancel", methods=['POST'])
+@validate_buyer_access_token
+def buyer_order_cancel():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        order = Order(data['order_id'])
+        quote_id = order.get_quote_id()
+        quote = Quote(quote_id)
+        if quote.set_confirmed(confirmed=False):
+            order.set_order_status(order_status="cancelled")
+            # Email to supplier
+            return response.customResponse({"response": "Order cancelled successfully"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/order/cancel", function_name="buyer_order_cancel()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for uploading GRN against an order
+@app.route("/buyer/order/grn/upload", methods=['POST'])
+@validate_buyer_access_token
+def buyer_order_grn_upload():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        order = Order(data['order_id'])
+
+        # If GRN copy is uploaded
+        if len(data['documents']) > 0:
+            documents, document_ids = [], []
+            for document in data['documents']:
+                doc = [data['order_id'], "order", document['document_url'], "grn", document['document_name'],
+                       document['uploaded_on'], data['_id'], "buyer"]
+                doc = tuple(doc)
+                documents.append(doc)
+            document_ids += Document("").insert_many(documents)
+
+        # Update the status of grn_uploaded in orders table
+        grn_uploaded = order.set_grn_uploaded(grn_uploaded=True)
+        delivery_date_ts = GenericOps.convert_datestring_to_timestamp(data['delivery_date'])
+        delivery_date = order.set_delivery_date(delivery_date=delivery_date_ts)
+        order_status = order.set_order_status(order_status="delivered")
+        # Success response
+        if grn_uploaded and delivery_date and order_status:
+            # Email to supplier
+            return response.customResponse({"response": "GRN uploaded successfully", "grn_uploaded": order.get_grn_uploaded()})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/order/grn/upload", function_name="buyer_order_grn_upload()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for updating payment status of an order
+@app.route("/buyer/order/payment-status/update", methods=['POST'])
+@validate_buyer_access_token
+def buyer_order_payment_status_update():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        order = Order(data['order_id'])
+        if data['payment_status']:
+            payment_status = order.set_payment_status(payment_status="paid")
+            transaction_ref_no = order.set_transaction_ref_no(transaction_ref_no=data['transaction_ref_no'])
+            payment_date_ts = GenericOps.convert_datestring_to_timestamp(data['payment_date'])
+            payment_date = order.set_payment_date(payment_date=payment_date_ts)
+            if payment_status and transaction_ref_no and payment_date:
+                # Email to supplier
+                return response.customResponse({"response": "Order payment status updated successfully",
+                                                "payment_status": order.get_payment_status(),
+                                                "payment_date": order.get_payment_date(),
+                                                "transaction_ref_no": order.get_transaction_ref_no()})
+
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/order/payment-status/update", function_name="buyer_order_payment_status_update()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

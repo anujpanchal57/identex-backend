@@ -25,6 +25,24 @@ class Order:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_order(self):
+        return self.__order
+
+    def get_grn_uploaded(self):
+        return self.__order['grn_uploaded']
+
+    def get_transaction_ref_no(self):
+        return self.__order['transaction_ref_no']
+
+    def get_payment_date(self):
+        return self.__order['payment_date']
+
+    def get_payment_status(self):
+        return self.__order['payment_status']
+
+    def get_quote_id(self):
+        return self.__order['quote_id']
+
     def add_order(self, buyer_id, supplier_id, quote_id, reqn_product_id, remarks="", acquisition_id=0, acquisition_type="", po_no=""):
         self.__order['buyer_id'] = buyer_id
         self.__order['supplier_id'] = supplier_id
@@ -58,5 +76,173 @@ class Order:
             log = Logger(module_name='OrderOps', function_name='insert()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to create order, please try again")
+
+    def get_orders(self, client_id, client_type, request_type, start_limit=0, end_limit=5):
+        try:
+            if client_type.lower() == "buyer":
+                self.__cursor.execute("""select o.supplier_id, o.order_id, o.po_no, o.acquisition_id, o.acquisition_type, qu.delivery_time,
+                                        o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
+                                        o.created_at, o.remarks, s.company_name as supplier_company_name, pm.product_name, pm.product_category, p.product_description, 
+                                        qu.amount, qu.per_unit, qu.gst
+                                        from orders as o
+                                        join suppliers as s 
+                                        on o.supplier_id = s.supplier_id
+                                        join quotes as qu
+                                        on o.quote_id = qu.quote_id
+                                        join products as p
+                                        on o.reqn_product_id = p.reqn_product_id
+                                        join product_master as pm
+                                        on p.product_id = pm.product_id
+                                        where o.buyer_id = %s and o.order_status = %s
+                                        order by o.created_at desc
+                                        limit %s, %s;""", (client_id, request_type, start_limit, end_limit))
+
+                res = self.__cursor.fetchall()
+                return res
+            else:
+                self.__cursor.execute("""select o.buyer_id, b.company_name as buyer_company_name, o.order_id, o.po_no, o.acquisition_id, o.acquisition_type, qu.delivery_time,
+                                        o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
+                                        o.created_at, o.remarks, pm.product_name, pm.product_category, p.product_description, 
+                                        qu.amount, qu.per_unit, qu.gst
+                                        from orders as o
+                                        join buyers as b 
+                                        on o.buyer_id = b.buyer_id
+                                        join quotes as qu
+                                        on o.quote_id = qu.quote_id
+                                        join products as p
+                                        on o.reqn_product_id = p.reqn_product_id
+                                        join product_master as pm
+                                        on p.product_id = pm.product_id
+                                        where o.supplier_id = %s and o.order_status = %s
+                                        order by o.created_at desc
+                                        limit %s, %s;""", (client_id, request_type, start_limit, end_limit))
+
+                res = self.__cursor.fetchall()
+                return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='get_orders()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch orders, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='get_orders()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch orders, please try again")
+
+    def set_cancelled(self, cancelled):
+        try:
+            self.__order['cancelled'] = 1 if cancelled else 0
+            self.__cursor.execute("""update orders set cancelled = %s where order_id = %s""", (cancelled, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_cancelled()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to cancel order, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_cancelled()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to cancel order, please try again")
+
+    def set_grn_uploaded(self, grn_uploaded):
+        try:
+            self.__order['grn_uploaded'] = 1 if grn_uploaded else 0
+            self.__cursor.execute("""update orders set grn_uploaded = %s where order_id = %s""", (grn_uploaded, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_grn_uploaded()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update GRN, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_grn_uploaded()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update GRN, please try again")
+
+    def set_delivery_date(self, delivery_date):
+        try:
+            self.__order['delivery_date'] = delivery_date
+            self.__cursor.execute("""update orders set delivery_date = %s where order_id = %s""", (delivery_date, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_delivery_date()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update GRN, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_delivery_date()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update GRN, please try again")
+
+    def set_order_status(self, order_status):
+        try:
+            self.__order['order_status'] = order_status
+            self.__cursor.execute("""update orders set order_status = %s where order_id = %s""", (order_status, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_order_status()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update order status, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_order_status()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update order status, please try again")
+
+    def set_payment_status(self, payment_status):
+        try:
+            self.__order['payment_status'] = payment_status
+            self.__cursor.execute("""update orders set payment_status = %s where order_id = %s""", (payment_status, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_payment_status()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update payment status, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_payment_status()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update payment status, please try again")
+
+    def set_payment_date(self, payment_date):
+        try:
+            self.__order['payment_date'] = payment_date
+            self.__cursor.execute("""update orders set payment_date = %s where order_id = %s""", (payment_date, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_payment_date()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update payment date, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_payment_date()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update payment date, please try again")
+
+    def set_transaction_ref_no(self, transaction_ref_no):
+        try:
+            self.__order['transaction_ref_no'] = transaction_ref_no
+            self.__cursor.execute("""update orders set transaction_ref_no = %s where order_id = %s""", (transaction_ref_no, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_transaction_ref_no()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update transaction reference number, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_transaction_ref_no()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update transaction reference number, please try again")
+
+
+
+
 
 
