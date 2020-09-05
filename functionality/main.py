@@ -1592,7 +1592,7 @@ def buyer_suppliers_delete():
 def supplier_buyers_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"buyers": SupplierRelationship(_id=data['supplier_id'], type="supplier").get_supplier_buyers_list()})
+        return response.customResponse({"buyers": Order().get_supplier_buyers_list_for_orders(supplier_id=data['supplier_id'])})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)

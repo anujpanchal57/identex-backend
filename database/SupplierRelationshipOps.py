@@ -67,25 +67,5 @@ class SupplierRelationship:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
 
-    def get_supplier_buyers_list(self):
-        try:
-            self.__cursor.execute("""select sr.buyer_id, b.company_name
-                                    from supplier_relationships as sr
-                                    join buyers as b
-                                    on sr.buyer_id = b.buyer_id
-                                    where sr.supplier_id = %s""",
-                                  (self.__id, ))
-            res = self.__cursor.fetchall()
-            return res
-
-        except mysql.connector.Error as error:
-            log = Logger(module_name='SupplierRelationshipOps', function_name='get_supplier_buyers_list()')
-            log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException('Failed to fetch list of buyers, please try again')
-        except Exception as e:
-            log = Logger(module_name='SupplierRelationshipOps', function_name='get_supplier_buyers_list()')
-            log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException('Failed to fetch list of buyers, please try again')
-
 # pprint(SupplierRelationship(1000).get_buyer_suppliers())
 # pprint(SupplierRelationship("").add_supplier_relationship(1000, 1001))

@@ -175,6 +175,26 @@ class Order:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch invoices, please try again")
 
+    def get_supplier_buyers_list_for_orders(self, supplier_id):
+        try:
+            self.__cursor.execute("""select distinct o.buyer_id, b.company_name
+                                    from orders as o
+                                    join buyers as b
+                                    on o.buyer_id = b.buyer_id
+                                    where o.supplier_id = %s""",
+                                  (supplier_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='get_supplier_buyers_list_for_orders()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to fetch list of buyers, please try again')
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='get_supplier_buyers_list_for_orders()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to fetch list of buyers, please try again')
+
     def set_cancelled(self, cancelled):
         try:
             self.__order['cancelled'] = 1 if cancelled else 0
