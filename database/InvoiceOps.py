@@ -36,7 +36,7 @@ class Invoice:
 
     def insert(self, values):
         try:
-            self.__cursor.execute(Implementations.quotations_create_table)
+            self.__cursor.execute(Implementations.invoices_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO invoices (invoice_no, supplier_id, buyer_id,
                         total_gst, total_amount, created_at, status) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
