@@ -252,6 +252,32 @@ orders_create_table = """create table if not exists orders (
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
+invoices_create_table = """create table if not exists invoices (
+                invoice_id int not null primary key auto_increment,
+                invoice_no varchar(100) not null,
+                supplier_id int not null,
+                buyer_id int not null,
+                total_gst float(11, 2) not null,
+                total_amount float(11, 2) not null,
+                created_at int(11) not null,
+                status bool not null,
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+invoice_line_items_create_table = """create table if not exists invoice_line_items (
+                line_item_id int primary key not null auto_increment,
+                invoice_id int not null, 
+                order_id int not null, 
+                quantity float(11, 2) not null, 
+                gst float(11, 2) not null, 
+                per_unit float(11, 2) not null, 
+                amount float(11, 2) not null,
+                unit_currency varchar(3) not null, 
+                FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id),
+                FOREIGN KEY (order_id) REFERENCES orders(order_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,
                 function_name varchar(50) not null,

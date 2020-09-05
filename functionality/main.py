@@ -51,7 +51,9 @@ from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
-from database.Reports import Reports
+from database.InvoiceOps import Invoice
+from database.InvoiceLineItemOps import InvoiceLineItem
+# from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1113,18 +1115,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-@app.route("/buyer/rfq/quotes/download", methods=["POST"])
-@validate_buyer_access_token
-def buyer_rfq_quotes_download():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-                                        "response": "Your requested file will be downloaded shortly"})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
+# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_rfq_quotes_download():
+#     try:
+#         data = DictionaryOps.set_primary_key(request.json, "email")
+#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+#                                         "response": "Your requested file will be downloaded shortly"})
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1942,6 +1944,39 @@ def get_supplier_buyer_orders():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/supplier/buyer-orders/get", function_name="get_supplier_buyer_orders()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for raising an invoice
+@app.route("/supplier/invoice/add", methods=["POST"])
+@validate_supplier_access_token
+def supplier_invoice_add():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        invoice_details = data['invoice_details']
+        # Considering default unit currency as INR, if not present
+        invoice_details['unit_currency'] = invoice_details['unit_currency'] if 'unit_currency' in invoice_details else "inr"
+        # Add invoice
+        invoice_id = Invoice().add_invoice(invoice_no=invoice_details['invoice_no'], supplier_id=invoice_details['supplier_id'],
+                                        buyer_id=invoice_details['buyer_id'], total_gst=invoice_details['total_gst'],
+                                        total_amount=invoice_details['total_amount'])
+
+        # Adding invoice line items
+        if len(invoice_details) > 0:
+            lts = []
+            for lt in invoice_details['line_items']:
+                lt = [invoice_id, lt['order_id'], lt['quantity'], lt['gst'], lt['per_unit'], lt['amount'], invoice_details['unit_currency']]
+                lt = tuple(lt)
+                lts.append(lt)
+            invoice_lt_ids = InvoiceLineItem().insert_many(lts)
+
+        # Email to buyer
+        return response.customResponse({"response": "Invoice raised to buyer successfully"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/supplier/invoice/add", function_name="supplier_invoice_add()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
