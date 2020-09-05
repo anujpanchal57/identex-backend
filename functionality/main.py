@@ -51,7 +51,7 @@ from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
-from database.Reports import Reports
+# from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1113,18 +1113,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-@app.route("/buyer/rfq/quotes/download", methods=["POST"])
-@validate_buyer_access_token
-def buyer_rfq_quotes_download():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-                                        "response": "Your requested file will be downloaded shortly"})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
+# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_rfq_quotes_download():
+#     try:
+#         data = DictionaryOps.set_primary_key(request.json, "email")
+#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+#                                         "response": "Your requested file will be downloaded shortly"})
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1586,6 +1586,38 @@ def buyer_suppliers_delete():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching the supplier order distribution for buyer
+@app.route("/buyer/supplier-order-distribution/get", methods=["POST"])
+@validate_buyer_access_token
+def get_supplier_order_distribution():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+
+        # Commented for time being
+        # data['offset'] = data['offset'] if 'offset' in data else 0
+        # data['limit'] = data['limit'] if 'limit' in data else 5
+        # start_limit = data['offset']
+        # end_limit = data['offset'] + data['limit']
+
+        # Total procurement till now
+        buyer_total_procurement = Order().get_buyer_total_procurement(buyer_id=data['buyer_id'])
+        # Fetching the distribution by querying the database
+        suppliers =  Join().get_buyer_supplier_order_distribution(buyer_id=data['buyer_id'])
+        # Calculating the metrics required for chart
+        if len(suppliers) > 0:
+            for supplier in suppliers:
+                suser = SUser(supplier_id=supplier['supplier_id'])
+                supplier['name'], supplier['email'] = suser.get_name(), suser.get_email()
+                supplier['percentage'] = GenericOps.round_of((supplier['total_procurement']/buyer_total_procurement) * 100)
+        return response.customResponse({"suppliers": suppliers})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/supplier-order-distribution/get", function_name="get_supplier_order_distribution()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 ########################################### PRODUCTS SECTION ##########################################################
 
 # POST request for fetching list of products for buyer
@@ -1647,6 +1679,36 @@ def buyer_products_modify():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/products/modify", function_name="buyer_products_modify()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the product order distribution for buyer
+@app.route("/buyer/product-order-distribution/get", methods=["POST"])
+@validate_buyer_access_token
+def get_product_order_distribution():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+
+        # Commented for time being
+        # data['offset'] = data['offset'] if 'offset' in data else 0
+        # data['limit'] = data['limit'] if 'limit' in data else 5
+        # start_limit = data['offset']
+        # end_limit = data['offset'] + data['limit']
+
+        # Total procurement till now
+        buyer_total_procurement = Order().get_buyer_total_procurement(buyer_id=data['buyer_id'])
+        # Fetching the distribution by querying the database
+        products =  Join().get_buyer_product_order_distribution(buyer_id=data['buyer_id'])
+        # Calculating the metrics required for chart
+        if len(products) > 0:
+            for product in products:
+                product['percentage'] = GenericOps.round_of((product['total_procurement']/buyer_total_procurement) * 100)
+        return response.customResponse({"products": products})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/product-order-distribution/get", function_name="get_product_order_distribution()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

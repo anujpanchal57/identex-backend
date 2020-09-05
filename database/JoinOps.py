@@ -247,6 +247,53 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return 0
 
+    def get_buyer_product_order_distribution(self, buyer_id, start_limit=0, end_limit=5):
+        try:
+            self.__cursor.execute("""select pm.product_id, pm.product_name, pm.product_category, sum(qu.amount) as total_procurement
+                                    from product_master as pm
+                                    join products as p
+                                    on pm.product_id = p.product_id
+                                    join quotes as qu
+                                    on p.reqn_product_id = qu.charge_id
+                                    join orders as o
+                                    on qu.quote_id = o.quote_id
+                                    where p.buyer_id = %s and o.order_status in ('active', 'delivered')
+                                    group by p.product_id
+                                    order by total_procurement desc""", (buyer_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_product_order_distribution()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_product_order_distribution()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
+
+    def get_buyer_supplier_order_distribution(self, buyer_id, start_limit=0, end_limit=5):
+        try:
+            self.__cursor.execute("""select s.supplier_id, s.company_name as supplier_company_name, sum(qu.amount) as total_procurement
+                                    from suppliers as s
+                                    join orders as o
+                                    on s.supplier_id = o.supplier_id
+                                    join quotes as qu
+                                    on o.quote_id = qu.quote_id
+                                    where buyer_id = %s and o.order_status in ('active', 'delivered') 
+                                    group by o.supplier_id
+                                    order by total_procurement desc""", (buyer_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_supplier_order_distribution()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_supplier_order_distribution()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
 
 # pprint(Join().get_supplier_requisitions_count(supplier_id=1000))
 # pprint(Join().get_buyer_requisitions_count(buyer_id=1000, req_type="cancelled"))

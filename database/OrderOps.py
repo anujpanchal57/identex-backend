@@ -129,6 +129,25 @@ class Order:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch orders, please try again")
 
+    def get_buyer_total_procurement(self, buyer_id):
+        try:
+            self.__cursor.execute("""select sum(qu.amount) as total_procurement
+                                    from quotes as qu
+                                    join orders as o
+                                    on qu.quote_id = o.quote_id
+                                    where o.buyer_id = %s""", (buyer_id, ))
+            res = self.__cursor.fetchone()['total_procurement']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='get_buyer_total_procurement()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to get total procurement, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='get_buyer_total_procurement()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to get total procurement, please try again")
+
     def set_cancelled(self, cancelled):
         try:
             self.__order['cancelled'] = 1 if cancelled else 0
