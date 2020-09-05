@@ -135,7 +135,7 @@ class Order:
                                     from quotes as qu
                                     join orders as o
                                     on qu.quote_id = o.quote_id
-                                    where o.buyer_id = %s""", (buyer_id, ))
+                                    where o.buyer_id = %s and o.order_status in ('active', 'delivered')""", (buyer_id, ))
             res = self.__cursor.fetchone()['total_procurement']
             return res
 
@@ -147,6 +147,33 @@ class Order:
             log = Logger(module_name='OrderOps', function_name='get_buyer_total_procurement()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to get total procurement, please try again")
+
+    def get_supplier_orders_for_invoicing(self, buyer_id, supplier_id):
+        try:
+            self.__cursor.execute("""select o.order_id, o.buyer_id, o.po_no, qu.delivery_time, 
+                                    o.created_at, pm.product_name, pm.product_category, p.product_description, qu.quantity, p.unit
+                                    from orders as o
+                                    join suppliers as s 
+                                    on o.supplier_id = s.supplier_id
+                                    join quotes as qu
+                                    on o.quote_id = qu.quote_id
+                                    join products as p
+                                    on o.reqn_product_id = p.reqn_product_id
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    where o.buyer_id = %s and o.supplier_id = %s and o.order_status in ('active', 'delivered')
+                                    order by o.created_at desc""", (buyer_id, supplier_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='get_supplier_orders_for_invoicing()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch invoices, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='get_supplier_orders_for_invoicing()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch invoices, please try again")
 
     def set_cancelled(self, cancelled):
         try:

@@ -51,7 +51,7 @@ from database.MessageOps import Message
 from database.MessageDocumentOps import MessageDocument
 from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
-# from database.Reports import Reports
+from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1113,18 +1113,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
-# @validate_buyer_access_token
-# def buyer_rfq_quotes_download():
-#     try:
-#         data = DictionaryOps.set_primary_key(request.json, "email")
-#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-#                                         "response": "Your requested file will be downloaded shortly"})
-#
-#     except Exception as e:
-#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-#         log.log(traceback.format_exc())
-#         return response.errorResponse("Some error occurred please try again!")
+@app.route("/buyer/rfq/quotes/download", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_quotes_download():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+                                        "response": "Your requested file will be downloaded shortly"})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1586,6 +1586,21 @@ def buyer_suppliers_delete():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching buyers associated with a supplier
+@app.route("/supplier/buyers/get", methods=["POST"])
+@validate_supplier_access_token
+def supplier_buyers_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"buyers": SupplierRelationship(_id=data['supplier_id'], type="supplier").get_supplier_buyers_list()})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/supplier/buyers/get", function_name="supplier_buyers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for fetching the supplier order distribution for buyer
 @app.route("/buyer/supplier-order-distribution/get", methods=["POST"])
 @validate_buyer_access_token
@@ -1911,6 +1926,25 @@ def buyer_order_payment_status_update():
         log = Logger(module_name="/buyer/order/payment-status/update", function_name="buyer_order_payment_status_update()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+########################################### INVOICE SECTION ###########################################################
+
+# POST request for fetching the list of orders for a buyer
+@app.route("/supplier/buyer-orders/get", methods=['POST'])
+@validate_supplier_access_token
+def get_supplier_buyer_orders():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"orders": Order().get_supplier_orders_for_invoicing(buyer_id=data['buyer_id'],
+                                                                                            supplier_id=data['supplier_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/supplier/buyer-orders/get", function_name="get_supplier_buyer_orders()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 ########################################### MISCELLANEOUS SECTION #####################################################
 
