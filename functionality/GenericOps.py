@@ -35,7 +35,7 @@ def convert_datetime_to_utc_datetimestring(datetime_str, op_tz, in_format="%d-%m
     # ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
     date_obj = datetime.datetime.strptime(datetime_str, in_format)
-    ts = date_obj.replace(tzinfo=timezone.utc).timestamp()
+    ts = int(date_obj.replace(tzinfo=timezone.utc).timestamp())
     actual = convert_time_offset_to_timestamp(offset, ts)
     return datetime.datetime.fromtimestamp(actual).strftime(out_format)
 
@@ -66,22 +66,22 @@ def generate_user_password(length=7):
 def get_calculated_timestamp(date_time, op_tz):
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
     date_obj = datetime.datetime.strptime(date_time, "%d-%m-%Y %H:%M")
-    ts = date_obj.replace(tzinfo=timezone.utc).timestamp()
+    ts = int(date_obj.replace(tzinfo=timezone.utc).timestamp())
     return convert_time_offset_to_timestamp(offset, ts)
 
 def convert_time_offset_to_timestamp(offset, utc_timestamp):
     return int(utc_timestamp - ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
 
 def calculate_operation_deadline(utc_deadline):
-    utc_timestamp = datetime.datetime.utcnow().timestamp()
-    deadline_ts = datetime.datetime.strptime(utc_deadline, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp()
+    utc_timestamp = int(datetime.datetime.utcnow().timestamp())
+    deadline_ts = int(datetime.datetime.strptime(utc_deadline, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp())
     time_remaining = deadline_ts - utc_timestamp
     return time_remaining
 
 def get_current_timestamp_of_timezone(op_tz):
     tz = pytz.timezone(op_tz)
     offset = datetime.datetime.now(tz).strftime("%z")
-    return convert_time_offset_to_timestamp(offset, datetime.datetime.utcnow().timestamp())
+    return convert_time_offset_to_timestamp(offset, int(datetime.datetime.utcnow().timestamp()))
 
 def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_format="%d-%m-%Y %H:%M"):
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")

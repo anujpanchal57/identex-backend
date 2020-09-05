@@ -1879,7 +1879,9 @@ def supplier_operations_count():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         count = {}
-        count['open_requisitions_count'] = Join().get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="open", operation_type="rfq")
+        join = Join()
+        count['open_requisitions_count'] = join.get_supplier_requisitions_count(supplier_id=data['supplier_id'], req_type="open", operation_type="rfq")
+        count['active_orders_count'] = join.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="active")
         return response.customResponse({"operations_count": count})
 
     except Exception as e:
@@ -1894,7 +1896,9 @@ def buyer_operations_count():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         count = {}
-        count['open_requisitions_count'] = Join().get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="open")
+        join = Join()
+        count['open_requisitions_count'] = join.get_buyer_requisitions_count(buyer_id=data['buyer_id'], req_type="open")
+        count['active_orders_count'] = join.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="active")
         return response.customResponse({"operations_count": count})
 
     except Exception as e:
