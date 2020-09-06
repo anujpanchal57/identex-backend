@@ -53,7 +53,7 @@ from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
 from database.InvoiceOps import Invoice
 from database.InvoiceLineItemOps import InvoiceLineItem
-from database.Reports import Reports
+# from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1119,18 +1119,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-@app.route("/buyer/rfq/quotes/download", methods=["POST"])
-@validate_buyer_access_token
-def buyer_rfq_quotes_download():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-                                        "response": "Your requested file will be downloaded shortly"})
-
-    except Exception as e:
-        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
+# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
+# @validate_buyer_access_token
+# def buyer_rfq_quotes_download():
+#     try:
+#         data = DictionaryOps.set_primary_key(request.json, "email")
+#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+#                                         "response": "Your requested file will be downloaded shortly"})
+#
+#     except Exception as e:
+#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+#         log.log(traceback.format_exc())
+#         return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1958,10 +1958,12 @@ def supplier_invoice_add():
         invoice_details = data['invoice_details']
         # Considering default unit currency as INR, if not present
         invoice_details['unit_currency'] = invoice_details['unit_currency'] if 'unit_currency' in invoice_details else "inr"
+
         # Add invoice
         invoice_id = Invoice().add_invoice(invoice_no=invoice_details['invoice_no'], supplier_id=invoice_details['supplier_id'],
                                         buyer_id=invoice_details['buyer_id'], total_gst=invoice_details['total_gst'],
-                                        total_amount=invoice_details['total_amount'], payment_details=invoice_details['payment_details'])
+                                        total_amount=invoice_details['total_amount'], payment_details=invoice_details['payment_details'],
+                                        due_date=invoice_details['due_date'])
 
         # Adding invoice line items
         if len(invoice_details) > 0:
@@ -1979,6 +1981,46 @@ def supplier_invoice_add():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/supplier/invoice/add", function_name="supplier_invoice_add()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the list of invoices for a buyer
+@app.route("/buyer/invoices/get", methods=['POST'])
+@validate_buyer_access_token
+def buyer_invoices_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        invoices = Invoice().get_invoices(client_id=data['buyer_id'], client_type="buyer", start_limit=start_limit, end_limit=end_limit)
+        return response.customResponse({"invoices": invoices})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/invoices/get", function_name="buyer_invoices_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the list of invoices for a supplier
+@app.route("/supplier/invoices/get", methods=['POST'])
+@validate_supplier_access_token
+def supplier_invoices_get():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
+        invoices = Invoice().get_invoices(client_id=data['supplier_id'], client_type="supplier", start_limit=start_limit, end_limit=end_limit)
+        return response.customResponse({"invoices": invoices})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/supplier/invoices/get", function_name="supplier_invoices_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
