@@ -166,4 +166,3 @@ class Invoice:
         return "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{}".format(str(base64_encoded))
 
 # print(Invoice(_id='1000').download_invoice())
-
