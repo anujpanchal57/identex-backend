@@ -1961,7 +1961,7 @@ def supplier_invoice_add():
         # Add invoice
         invoice_id = Invoice().add_invoice(invoice_no=invoice_details['invoice_no'], supplier_id=invoice_details['supplier_id'],
                                         buyer_id=invoice_details['buyer_id'], total_gst=invoice_details['total_gst'],
-                                        total_amount=invoice_details['total_amount'])
+                                        total_amount=invoice_details['total_amount'], payment_details=invoice_details['payment_details'])
 
         # Adding invoice line items
         if len(invoice_details) > 0:

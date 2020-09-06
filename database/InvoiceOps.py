@@ -23,14 +23,14 @@ class Invoice:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_invoice(self, invoice_no, supplier_id, buyer_id, total_gst, total_amount, status=False):
+    def add_invoice(self, invoice_no, supplier_id, buyer_id, total_gst, total_amount, payment_details):
         self.__invoice['invoice_no'] = invoice_no
         self.__invoice['supplier_id'] = supplier_id
         self.__invoice['buyer_id'] = buyer_id
         self.__invoice['total_gst'] = total_gst
         self.__invoice['total_amount'] = total_amount
         self.__invoice['created_at'] = GenericOps.get_current_timestamp()
-        self.__invoice['status'] = status
+        self.__invoice['payment_details'] = payment_details
         self.__invoice['invoice_id'] = self.insert(self.__invoice)
         return self.__invoice['invoice_id']
 
@@ -39,10 +39,10 @@ class Invoice:
             self.__cursor.execute(Implementations.invoices_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO invoices (invoice_no, supplier_id, buyer_id,
-                        total_gst, total_amount, created_at, status) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                        total_gst, total_amount, created_at, payment_details) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                                   (values['invoice_no'], values['supplier_id'],
                                    values['buyer_id'], values['total_gst'], values['total_amount'],
-                                   values['created_at'], values['status']))
+                                   values['created_at'], values['payment_details']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 

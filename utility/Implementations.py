@@ -260,7 +260,8 @@ invoices_create_table = """create table if not exists invoices (
                 total_gst float(11, 2) not null,
                 total_amount float(11, 2) not null,
                 created_at int(11) not null,
-                status bool not null,
+                payment_details varchar(500) not null,
+                payment_status varchar(20) not null default 'outstanding',
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
             ) ENGINE=InnoDB auto_increment=1000"""

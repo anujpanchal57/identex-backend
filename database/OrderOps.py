@@ -77,14 +77,16 @@ class Order:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to create order, please try again")
 
-    def get_orders(self, client_id, client_type, request_type, start_limit=0, end_limit=5):
+    def get_orders(self, client_id, client_type, request_type, acquisition_type="rfq", start_limit=0, end_limit=5):
         try:
             if client_type.lower() == "buyer":
                 self.__cursor.execute("""select o.supplier_id, o.order_id, o.po_no, o.acquisition_id, o.acquisition_type, qu.delivery_time,
-                                        o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
+                                        r.currency, o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
                                         o.created_at, o.remarks, s.company_name as supplier_company_name, pm.product_name, pm.product_category, p.product_description, 
                                         qu.amount, qu.per_unit, qu.gst
                                         from orders as o
+                                        join requisitions as r
+                                        on r.requisition_id = o.acquisition_id
                                         join suppliers as s 
                                         on o.supplier_id = s.supplier_id
                                         join quotes as qu
@@ -93,18 +95,21 @@ class Order:
                                         on o.reqn_product_id = p.reqn_product_id
                                         join product_master as pm
                                         on p.product_id = pm.product_id
-                                        where o.buyer_id = %s and o.order_status = %s
+                                        where o.buyer_id = %s and o.order_status = %s and o.acquisition_type = %s
                                         order by o.created_at desc
-                                        limit %s, %s;""", (client_id, request_type, start_limit, end_limit))
+                                        limit %s, %s;""", (client_id, request_type, acquisition_type, start_limit, end_limit))
 
                 res = self.__cursor.fetchall()
                 return res
             else:
-                self.__cursor.execute("""select o.buyer_id, b.company_name as buyer_company_name, o.order_id, o.po_no, o.acquisition_id, o.acquisition_type, qu.delivery_time,
+                self.__cursor.execute("""select o.buyer_id, b.company_name as buyer_company_name, o.order_id, o.po_no, o.acquisition_id, 
+                                        r.currency, o.acquisition_type, qu.delivery_time,
                                         o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
                                         o.created_at, o.remarks, pm.product_name, pm.product_category, p.product_description, 
                                         qu.amount, qu.per_unit, qu.gst
                                         from orders as o
+                                        join requisitions as r
+                                        on o.acquisition_id = r.requisition_id
                                         join buyers as b 
                                         on o.buyer_id = b.buyer_id
                                         join quotes as qu
@@ -113,9 +118,9 @@ class Order:
                                         on o.reqn_product_id = p.reqn_product_id
                                         join product_master as pm
                                         on p.product_id = pm.product_id
-                                        where o.supplier_id = %s and o.order_status = %s
+                                        where o.supplier_id = %s and o.order_status = %s and o.acquisition_type = %s
                                         order by o.created_at desc
-                                        limit %s, %s;""", (client_id, request_type, start_limit, end_limit))
+                                        limit %s, %s;""", (client_id, request_type, acquisition_type, start_limit, end_limit))
 
                 res = self.__cursor.fetchall()
                 return res
@@ -151,8 +156,11 @@ class Order:
     def get_supplier_orders_for_invoicing(self, buyer_id, supplier_id):
         try:
             self.__cursor.execute("""select o.order_id, o.buyer_id, o.po_no, qu.delivery_time, 
+                                    qu.per_unit, qu.amount, qu.gst,
                                     o.created_at, pm.product_name, pm.product_category, p.product_description, qu.quantity, p.unit
                                     from orders as o
+                                    join requisitions as r
+                                    on o.acquisition_id = r.requisition_id
                                     join suppliers as s 
                                     on o.supplier_id = s.supplier_id
                                     join quotes as qu
