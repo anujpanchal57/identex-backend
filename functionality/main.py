@@ -53,7 +53,7 @@ from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
 from database.InvoiceOps import Invoice
 from database.InvoiceLineItemOps import InvoiceLineItem
-# from database.Reports import Reports
+from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -640,9 +640,13 @@ def buyer_create_rfq():
             return response.errorResponse("Please set a deadline of more than 30 mins from the current time")
         utc_deadline = GenericOps.convert_datetime_to_utc_datetimestring(data['deadline'], op_tz=data['timezone'])
         data['submission_limit'] = data['submission_limit'] if 'submission_limit' in data else conf.default_submission_limit
+        data['supplier_instructions'] = data['supplier_instructions'] if 'supplier_instructions' in data else ""
+        data['tnc'] = data['tnc'] if 'tnc' in data else ""
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
-                                                         utc_deadline=utc_deadline, submission_limit=data['submission_limit'])
+                                                         utc_deadline=utc_deadline, submission_limit=data['submission_limit'],
+                                                         supplier_instructions=data['supplier_instructions'],
+                                                         tnc=data['tnc'])
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -1115,18 +1119,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
-# @validate_buyer_access_token
-# def buyer_rfq_quotes_download():
-#     try:
-#         data = DictionaryOps.set_primary_key(request.json, "email")
-#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-#                                         "response": "Your requested file will be downloaded shortly"})
-#
-#     except Exception as e:
-#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-#         log.log(traceback.format_exc())
-#         return response.errorResponse("Some error occurred please try again!")
+@app.route("/buyer/rfq/quotes/download", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_quotes_download():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+                                        "response": "Your requested file will be downloaded shortly"})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1279,20 +1283,18 @@ def supplier_rfq_last_quote_get():
             return response.errorResponse("No lot found against this RFQ")
         products = Product().get_lot_products(lot_id=lot['lot_id'])
         if len(products) > 0:
-            result = []
             for i in range(0, len(products)):
                 quotes = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
-                                                                                    charge_id=products[i]['reqn_product_id'])
+                                                                     charge_id=products[i]['reqn_product_id'])
 
                 # Getting rank of the supplier
                 for i in range(0, len(quotes)):
                     if quotes[i]['supplier_id'] == data['supplier_id']:
                         quotes[i]['rank'] = i+1
                         products[i]['quote'] = quotes[i]
-                if 'quote' not in products[i]:
-                    products[i]['quote'] = {}
-                result.append(products[i])
-            return response.customResponse({"products": result})
+
+
+            return response.customResponse({"products": products})
         return response.errorResponse("No products found in this lot")
 
     except Exception as e:
