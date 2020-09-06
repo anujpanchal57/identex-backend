@@ -149,5 +149,6 @@ default_founder_email = "utkarsh.dhawan@identex.io"
 default_submission_limit = 3
 
 all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
+invoice_excel_sample = app_name + "/templates/Invoice.xlsx"
 quotations_summary_excel_sample = app_name + "/templates/Quotation Summary.xlsx"
 

@@ -1,11 +1,19 @@
+import base64
+import os
 import traceback
+from datetime import datetime
+
+import shortuuid
+from openpyxl import load_workbook
 
 from functionality import GenericOps
 from utility import DBConnectivity, conf, Implementations
 from functionality.Logger import Logger
 from pprint import pprint
+from openpyxl.styles import Alignment, Font
 import mysql.connector
 from exceptions import exceptions
+
 
 class Invoice:
     def __init__(self, _id=""):
@@ -14,7 +22,7 @@ class Invoice:
         self.__cursor = self.__sql.cursor(dictionary=True)
         self.__invoice = {}
         if self.__id != "":
-            self.__cursor.execute("""select * from invoices where invoice_id = %s""", (self.__id, ))
+            self.__cursor.execute("""select * from invoices where invoice_id = %s""", (self.__id,))
             self.__invoice = self.__cursor.fetchone()
 
     # For closing the connection
@@ -101,3 +109,61 @@ class Invoice:
             log = Logger(module_name='InvoiceOps', function_name='get_invoices()')
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException("Failed to get invoices, please try again")
+
+    def download_invoice(self):
+        app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
+        self.__cursor.execute("""select invoice.invoice_id, invoice.invoice_no, s.company_name as supplier_company, b.company_name as buyer_company, invoice.created_at, invoice.due_date, pm.product_name, pm.product_category, p.product_description, line_items.quantity, p.unit, line_items.gst, line_items.amount, line_items.per_unit, invoice.payment_details 
+        from invoices as invoice join invoice_line_items as line_items join buyers as b join orders as o join products as p join product_master as pm join suppliers as s join quotes as q on q.quote_id=o.quote_id and p.reqn_product_id=o.reqn_product_id and pm.product_id=p.product_id and invoice.invoice_id=line_items.invoice_id and invoice.buyer_id=b.buyer_id and line_items.order_id=o.order_id and invoice.supplier_id=s.supplier_id where invoice.invoice_id = %s""", (self.__id,))
+        self.__wb = load_workbook(conf.invoice_excel_sample, data_only=True)
+        self.__ws = self.__wb.get_sheet_by_name(self.__wb.sheetnames[0])
+        count = 0
+        product_line = 11
+        total_gst=0
+        sub_total=0
+        payment_details = ""
+        for line_item in self.__cursor.fetchall():
+            if count == 0:
+                self.__ws.title = "Invoice - #" + str(line_item['invoice_no'])
+                self.__ws.cell(3, 2).value = line_item['supplier_company']
+                self.__ws.cell(5, 2).value = self.__ws.cell(5, 2).value.replace("{{DATE_OF_CREATION}}", datetime.fromtimestamp(line_item['created_at']).strftime("%d/%m/%Y"))
+                self.__ws.cell(7, 2).value = line_item['buyer_company']
+                self.__ws.cell(7, 4).value = line_item['invoice_no']
+                self.__ws.cell(7, 6).value = datetime.fromtimestamp(line_item['due_date']).strftime("%d/%m/%Y")
+                payment_details = line_item['payment_details']
+            else:
+                self.__ws.insert_rows(product_line+count)
+                # self.__ws.merge_cells('B{}:C{}'.format(str(product_line+count), str(product_line+count)))
+            self.__ws.cell(product_line+count, 2).value = "{}-{}".format(line_item['product_name'],line_item['product_description'])
+            self.__ws.cell(product_line+count, 2).alignment = Alignment(horizontal='left', vertical='center')
+            self.__ws.cell(product_line+count, 2).font = Font(color='000000', size=10)
+            self.__ws.cell(product_line+count, 4).value = str(int(line_item['quantity'])) + " " + line_item['unit']
+            self.__ws.cell(product_line+count, 4).alignment = Alignment(horizontal='center', vertical='center')
+            self.__ws.cell(product_line+count, 4).font = Font(color='000000')
+            self.__ws.cell(product_line+count, 5).value = "{:,.2f}".format(line_item['per_unit'])
+            self.__ws.cell(product_line+count, 5).alignment = Alignment(horizontal='center', vertical='center')
+            self.__ws.cell(product_line+count, 5).font = Font(color='000000')
+            self.__ws.cell(product_line+count, 6).value = "{:,.2f}%".format(line_item['gst'])
+            self.__ws.cell(product_line+count, 6).font = Font(color='000000')
+            self.__ws.cell(product_line+count, 6).alignment = Alignment(horizontal='center', vertical='center')
+            self.__ws.cell(product_line+count, 7).value = "{:,.2f}".format(line_item['amount'])
+            self.__ws.cell(product_line+count, 7).font = Font(color='000000')
+            self.__ws.cell(product_line+count, 7).alignment = Alignment(horizontal='right', vertical='center')
+            sub_total += line_item['amount']
+            total_gst += line_item['amount']/(1+line_item['gst']/100)
+            count += 1
+        self.__ws.cell(product_line+count, 7).value = "{:,.2f}".format(sub_total)
+        self.__ws.cell(product_line+count, 7).alignment = Alignment(horizontal='right', vertical='center')
+        self.__ws.cell(product_line+count+1, 7).value = "{:,.2f}".format(total_gst)
+        self.__ws.cell(product_line+count+1, 7).alignment = Alignment(horizontal='right', vertical='center')
+        self.__ws.cell(product_line+count+2, 7).value = "{:,.2f}".format(sub_total + total_gst)
+        self.__ws.cell(product_line+count+2, 7).alignment = Alignment(horizontal='right', vertical='center')
+        self.__ws.cell(product_line+count+4, 2).value = "Not Available" if payment_details=="" else payment_details
+        invoice_path = app_name+"/"+shortuuid.uuid() + ".xlsx"
+        self.__wb.save(invoice_path)
+        data = open(invoice_path, 'rb').read()
+        base64_encoded = base64.b64encode(data).decode('UTF-8')
+        os.remove(invoice_path)
+        return "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{}".format(str(base64_encoded))
+
+# print(Invoice(_id='1000').download_invoice())
+

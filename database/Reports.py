@@ -16,6 +16,7 @@ class Reports:
         self.__cursor = self.__sql.cursor(dictionary=True)
 
     def generate_all_quotations_report(self):
+        app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
         if self.__operation_type == 'rfq':
             self.__cursor.execute(
                 "SELECT s.company_name, s.supplier_id, qs.quotation_id, qs.created_at, quote_validity, l.lot_name, l.lot_description, qs.requisition_id, q.charge_name, q.quantity, q.gst, q.per_unit, q.amount "
@@ -86,7 +87,7 @@ class Reports:
                 sheet_counter += 1
             # self.__ws.title = base_sheet_name
             # pprint(supplier)
-        report_path = "/opt/backend/"+shortuuid.uuid() + ".xlsx"
+        report_path = app_name+"/"+shortuuid.uuid() + ".xlsx"
         self.__wb.save(report_path)
         data = open(report_path, 'rb').read()
         base64_encoded = base64.b64encode(data).decode('UTF-8')
