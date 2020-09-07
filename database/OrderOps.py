@@ -43,6 +43,15 @@ class Order:
     def get_quote_id(self):
         return self.__order['quote_id']
 
+    def get_supplier_id(self):
+        return self.__order['supplier_id']
+
+    def get_po_no(self):
+        return self.__order['po_no']
+
+    def get_buyer_id(self):
+        return self.__order['buyer_id']
+
     def add_order(self, buyer_id, supplier_id, quote_id, reqn_product_id, remarks="", acquisition_id=0, acquisition_type="", po_no=""):
         self.__order['buyer_id'] = buyer_id
         self.__order['supplier_id'] = supplier_id
@@ -133,6 +142,27 @@ class Order:
             log = Logger(module_name='OrderOps', function_name='get_orders()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch orders, please try again")
+
+    def get_order_product_details(self):
+        try:
+            self.__cursor.execute("""select o.reqn_product_id, p.product_id, pm.product_name, pm.product_category, p.product_description
+                                    from orders as o
+                                    join products as p
+                                    on o.reqn_product_id = p.reqn_product_id
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    where o.order_id = %s""", (self.__id, ))
+            res = self.__cursor.fetchone()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='get_order_product_details()')
+            log.log(str(error), priority='highest')
+            return {}
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='get_order_product_details()')
+            log.log(traceback.format_exc(), priority='highest')
+            return {}
 
     def get_buyer_total_procurement(self, buyer_id):
         try:
@@ -314,6 +344,25 @@ class Order:
             log = Logger(module_name='OrderOps', function_name='set_transaction_ref_no()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to update transaction reference number, please try again")
+
+    def get_order_lot(self):
+        try:
+            self.__cursor.execute("""select l.lot_name from orders as o
+                                    join lots as l
+                                    on o.acquisition_id = l.requisition_id
+                                    where o.order_id = %s""", (self.__id, ))
+            res = self.__cursor.fetchone()['lot_name']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='get_order_lot()')
+            log.log(str(error), priority='highest')
+            return ""
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='get_order_lot()')
+            log.log(traceback.format_exc(), priority='highest')
+            return ""
+
 
 
 

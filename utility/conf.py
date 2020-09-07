@@ -107,6 +107,21 @@ email_endpoints = {
             "page_url": "/{{operation}}/live-{{operation}}?id={{operation_id}}&action={{action_type}}",
             "subject": "You have received a new message for {{operation_type}}: #{{requisition_id}}",
             "template_id": "message_received"
+        },
+        "cancel_order": {
+            "page_url": "",
+            "subject": "",
+            "template_id": "cancel_order"
+        },
+        "order_created": {
+            "page_url": "/orders?type=active",
+            "subject": "",
+            "template_id": "order_created"
+        },
+        "order_delivered": {
+            "page_url": "/orders?type=delivered",
+            "subject": "",
+            "template_id": "order_delivered"
         }
     },
     "supplier": {

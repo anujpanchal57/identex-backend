@@ -1774,7 +1774,31 @@ def buyer_order_create():
                     requisition.set_request_type(request_type="approved")
                     requisition.drop_sql_event()
                 # Email to supplier
-
+                order_obj = Order(order_created)
+                suser = SUser(supplier_id=details['supplier_id'])
+                buyer = Buyer(details['buyer_id'])
+                product = order_obj.get_order_product_details()
+                lot_name = order_obj.get_order_lot()
+                po_number = order_obj.get_po_no()
+                po_no_toggle = "block" if po_number != "" else "none"
+                link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
+                # Framing the subject of email
+                if po_number != "":
+                    subject = "Order confirmed for " + product['product_name'] + " with PO Number: " + po_number + " by " + buyer.get_company_name()
+                else:
+                    subject = "Order confirmed for " + product['product_name'] + " by " + buyer.get_company_name()
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                                  "subject": subject,
+                                                                                  "template": conf.email_endpoints['buyer']['order_created']['template_id'],
+                                                                                  "USER": suser.get_first_name(),
+                                                                                  "PO_NUMBER_DISPLAY": po_no_toggle,
+                                                                                  "PO_NUMBER": po_number,
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                                  "OPERATION": details['acquisition_type'].upper(),
+                                                                                  "OPERATION_ID": str(details['acquisition_id']),
+                                                                                  "LOT_NAME": lot_name,
+                                                                                  "LINK": link})
+                p.start()
                 return response.customResponse({"response": "Order created successfully"})
             return response.errorResponse("No products found in this lot")
         return response.errorResponse("Invalid acquisition type")
@@ -1859,6 +1883,26 @@ def buyer_order_cancel():
         if quote.set_confirmed(confirmed=False):
             order.set_order_status(order_status="cancelled")
             # Email to supplier
+            suser = SUser(supplier_id=order.get_supplier_id())
+            po_number = order.get_po_no()
+            po_no_toggle = "block" if po_number != "" else "none"
+            product = order.get_order_product_details()
+            lot_name = order.get_order_lot()
+            buyer = Buyer(order.get_buyer_id())
+            # Framing the subject of email
+            if po_number != "":
+                subject = "Order with PO Number: " + po_number + " has been cancelled by " + buyer.get_company_name() + " | Product: " + product['product_name']
+            else:
+                subject = "Order cancelled by " + buyer.get_company_name() + " | Product: " + product['product_name']
+            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                              "subject": subject,
+                                                                              "template": conf.email_endpoints['buyer']['cancel_order']['template_id'],
+                                                                              "PO_NUMBER_DISPLAY": po_no_toggle,
+                                                                              "PO_NUMBER": po_number,
+                                                                              "USER": suser.get_first_name(),
+                                                                              "LOT_NAME": lot_name,
+                                                                              "BUYER_COMPANY_NAME": buyer.get_company_name()})
+            p.start()
             return response.customResponse({"response": "Order cancelled successfully"})
 
     except exceptions.IncompleteRequestException as e:
@@ -1895,6 +1939,27 @@ def buyer_order_grn_upload():
         # Success response
         if grn_uploaded and delivery_date and order_status:
             # Email to supplier
+            suser = SUser(supplier_id=order.get_supplier_id())
+            po_number = order.get_po_no()
+            po_no_toggle = "block" if po_number != "" else "none"
+            product = order.get_order_product_details()
+            buyer = Buyer(order.get_buyer_id())
+            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_delivered']['page_url']
+            # Framing the subject of email
+            if po_number != "":
+                subject = "Order with PO Number: " + po_number + " has been received by " + buyer.get_company_name() + " | Product: " + \
+                          product['product_name']
+            else:
+                subject = "Order received by " + buyer.get_company_name() + " | Product: " + product['product_name']
+            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                              "subject": subject,
+                                                                              "template": conf.email_endpoints['buyer']['order_delivered']['template_id'],
+                                                                              "PO_NUMBER_DISPLAY": po_no_toggle,
+                                                                              "PO_NUMBER": po_number,
+                                                                              "USER": suser.get_first_name(),
+                                                                              "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                              "LINK": link})
+            p.start()
             return response.customResponse({"response": "GRN uploaded successfully", "grn_uploaded": order.get_grn_uploaded()})
 
     except exceptions.IncompleteRequestException as e:
