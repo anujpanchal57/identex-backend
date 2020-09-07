@@ -64,42 +64,79 @@ class Invoice:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException("Failed to add invoice, please try again")
 
-    def get_invoices(self, client_id, client_type, start_limit=0, end_limit=5):
+    def get_invoices(self, client_id, client_type, req_type, start_limit=0, end_limit=5):
         try:
+            payment_status = ['outstanding', 'overdue'] if req_type.lower() == "pending" else ['paid']
             if client_type.lower() == "buyer":
-                self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
-                                        p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
-                                        from invoices as i
-                                        join invoice_line_items as il
-                                        on i.invoice_id = il.invoice_id
-                                        join orders as o
-                                        on il.order_id = o.order_id
-                                        join products as p
-                                        on o.reqn_product_id = p.reqn_product_id
-                                        join product_master as pm
-                                        on p.product_id = pm.product_id
-                                        where i.buyer_id = %s
-                                        order by i.due_date asc
-                                        limit %s, %s""", (client_id, start_limit, end_limit))
-                res = self.__cursor.fetchall()
-                return res
+                if req_type.lower() == "pending":
+                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
+                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
+                                            from invoices as i
+                                            join invoice_line_items as il
+                                            on i.invoice_id = il.invoice_id
+                                            join orders as o
+                                            on il.order_id = o.order_id
+                                            join products as p
+                                            on o.reqn_product_id = p.reqn_product_id
+                                            join product_master as pm
+                                            on p.product_id = pm.product_id
+                                            where i.buyer_id = %s and i.payment_status in (%s, %s)
+                                            order by i.due_date asc
+                                            limit %s, %s""", (client_id, payment_status[0], payment_status[1], start_limit, end_limit))
+                    res = self.__cursor.fetchall()
+                    return res
+                if req_type.lower() == "paid":
+                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
+                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
+                                            from invoices as i
+                                            join invoice_line_items as il
+                                            on i.invoice_id = il.invoice_id
+                                            join orders as o
+                                            on il.order_id = o.order_id
+                                            join products as p
+                                            on o.reqn_product_id = p.reqn_product_id
+                                            join product_master as pm
+                                            on p.product_id = pm.product_id
+                                            where i.buyer_id = %s and i.payment_status = %s
+                                            order by i.due_date asc
+                                            limit %s, %s""", (client_id, payment_status[0], start_limit, end_limit))
+                    res = self.__cursor.fetchall()
+                    return res
             else:
-                self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
-                                        p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
-                                        from invoices as i
-                                        join invoice_line_items as il
-                                        on i.invoice_id = il.invoice_id
-                                        join orders as o
-                                        on il.order_id = o.order_id
-                                        join products as p
-                                        on o.reqn_product_id = p.reqn_product_id
-                                        join product_master as pm
-                                        on p.product_id = pm.product_id
-                                        where i.supplier_id = %s
-                                        order by i.due_date asc
-                                        limit %s, %s""", (client_id, start_limit, end_limit))
-                res = self.__cursor.fetchall()
-                return res
+                if req_type.lower() == "pending":
+                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
+                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
+                                            from invoices as i
+                                            join invoice_line_items as il
+                                            on i.invoice_id = il.invoice_id
+                                            join orders as o
+                                            on il.order_id = o.order_id
+                                            join products as p
+                                            on o.reqn_product_id = p.reqn_product_id
+                                            join product_master as pm
+                                            on p.product_id = pm.product_id
+                                            where i.supplier_id = %s and i.payment_status in (%s, %s)
+                                            order by i.due_date asc
+                                            limit %s, %s""", (client_id, payment_status[0], payment_status[1], start_limit, end_limit))
+                    res = self.__cursor.fetchall()
+                    return res
+                if req_type.lower() == "paid":
+                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
+                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
+                                            from invoices as i
+                                            join invoice_line_items as il
+                                            on i.invoice_id = il.invoice_id
+                                            join orders as o
+                                            on il.order_id = o.order_id
+                                            join products as p
+                                            on o.reqn_product_id = p.reqn_product_id
+                                            join product_master as pm
+                                            on p.product_id = pm.product_id
+                                            where i.supplier_id = %s and i.payment_status = %s
+                                            order by i.due_date asc
+                                            limit %s, %s""", (client_id, payment_status[0], start_limit, end_limit))
+                    res = self.__cursor.fetchall()
+                    return res
 
         except mysql.connector.Error as error:
             log = Logger(module_name='InvoiceOps', function_name='get_invoices()')
