@@ -53,7 +53,7 @@ from database.ProductMasterOps import ProductMaster
 from database.OrderOps import Order
 from database.InvoiceOps import Invoice
 from database.InvoiceLineItemOps import InvoiceLineItem
-# from database.Reports import Reports
+from database.Reports import Reports
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1119,18 +1119,18 @@ def get_buyer_rfq_quotes_summary():
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for downloading excel of quotations received
-# @app.route("/buyer/rfq/quotes/download", methods=["POST"])
-# @validate_buyer_access_token
-# def buyer_rfq_quotes_download():
-#     try:
-#         data = DictionaryOps.set_primary_key(request.json, "email")
-#         return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
-#                                         "response": "Your requested file will be downloaded shortly"})
-#
-#     except Exception as e:
-#         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
-#         log.log(traceback.format_exc())
-#         return response.errorResponse("Some error occurred please try again!")
+@app.route("/buyer/rfq/quotes/download", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_quotes_download():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"base64": Reports(operation_id=data['requisition_id']).generate_all_quotations_report(),
+                                        "response": "Your requested file will be downloaded shortly"})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
@@ -1995,6 +1995,9 @@ def buyer_invoices_get():
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         invoices = Invoice().get_invoices(client_id=data['buyer_id'], client_type="buyer", start_limit=start_limit, end_limit=end_limit)
+        if len(invoices) > 0:
+            for inv in invoices:
+                inv['products'] = InvoiceLineItem().get_invoice_lt_products(invoice_id=inv['invoice_id'])
         return response.customResponse({"invoices": invoices})
 
     except exceptions.IncompleteRequestException as e:
@@ -2015,12 +2018,29 @@ def supplier_invoices_get():
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         invoices = Invoice().get_invoices(client_id=data['supplier_id'], client_type="supplier", start_limit=start_limit, end_limit=end_limit)
+        if len(invoices) > 0:
+            for inv in invoices:
+                inv['products'] = InvoiceLineItem().get_invoice_lt_products(invoice_id=inv['invoice_id'])
         return response.customResponse({"invoices": invoices})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/supplier/invoices/get", function_name="supplier_invoices_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for downloading the invoice for a buyer
+@app.route("/buyer/invoice/download", methods=['POST'])
+@validate_buyer_access_token
+def buyer_download_invoice():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        return response.customResponse({"base64": Invoice(_id=data['invoice_id']).download_invoice(),
+                                        "response": "File you have requested will be downloaded shortly"})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/invoice/download", function_name="buyer_download_invoice()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

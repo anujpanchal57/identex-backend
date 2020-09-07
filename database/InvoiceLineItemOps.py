@@ -78,3 +78,28 @@ class InvoiceLineItem:
             log = Logger(module_name='InvoiceLineItemOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to add line item(s), please try again')
+
+    def get_invoice_lt_products(self, invoice_id):
+        try:
+            self.__cursor.execute("""select il.order_id, il.per_unit, il.quantity, il.gst, il.amount, il.unit_currency, 
+                                    p.reqn_product_id, p.product_description, pm.product_name, pm.product_category, 
+                                    p.unit
+                                    from invoice_line_items as il
+                                    join orders as o
+                                    on il.order_id = o.order_id
+                                    join products as p
+                                    on o.reqn_product_id = p.reqn_product_id
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    where il.invoice_id = %s""", (invoice_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvoiceLineItemOps', function_name='get_invoice_lt_products()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
+        except Exception as e:
+            log = Logger(module_name='InvoiceLineItemOps', function_name='get_invoice_lt_products()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
