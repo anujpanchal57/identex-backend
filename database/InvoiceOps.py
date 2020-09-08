@@ -69,71 +69,35 @@ class Invoice:
             payment_status = ['outstanding', 'overdue'] if req_type.lower() == "pending" else ['paid']
             if client_type.lower() == "buyer":
                 if req_type.lower() == "pending":
-                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
-                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
-                                            from invoices as i
-                                            join invoice_line_items as il
-                                            on i.invoice_id = il.invoice_id
-                                            join orders as o
-                                            on il.order_id = o.order_id
-                                            join products as p
-                                            on o.reqn_product_id = p.reqn_product_id
-                                            join product_master as pm
-                                            on p.product_id = pm.product_id
-                                            where i.buyer_id = %s and i.payment_status in (%s, %s)
-                                            order by i.due_date asc
+                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                                            from invoices
+                                            where buyer_id = %s and payment_status in (%s, %s)
+                                            order by due_date asc
                                             limit %s, %s""", (client_id, payment_status[0], payment_status[1], start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
                 if req_type.lower() == "paid":
-                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
-                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
-                                            from invoices as i
-                                            join invoice_line_items as il
-                                            on i.invoice_id = il.invoice_id
-                                            join orders as o
-                                            on il.order_id = o.order_id
-                                            join products as p
-                                            on o.reqn_product_id = p.reqn_product_id
-                                            join product_master as pm
-                                            on p.product_id = pm.product_id
-                                            where i.buyer_id = %s and i.payment_status = %s
-                                            order by i.due_date asc
+                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                                            from invoices
+                                            where buyer_id = %s and payment_status = %s
+                                            order by due_date asc
                                             limit %s, %s""", (client_id, payment_status[0], start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
             else:
                 if req_type.lower() == "pending":
-                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
-                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
-                                            from invoices as i
-                                            join invoice_line_items as il
-                                            on i.invoice_id = il.invoice_id
-                                            join orders as o
-                                            on il.order_id = o.order_id
-                                            join products as p
-                                            on o.reqn_product_id = p.reqn_product_id
-                                            join product_master as pm
-                                            on p.product_id = pm.product_id
-                                            where i.supplier_id = %s and i.payment_status in (%s, %s)
-                                            order by i.due_date asc
+                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                                            from invoices
+                                            where supplier_id = %s and payment_status in (%s, %s)
+                                            order by due_date asc
                                             limit %s, %s""", (client_id, payment_status[0], payment_status[1], start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
                 if req_type.lower() == "paid":
-                    self.__cursor.execute("""select i.invoice_id, i.invoice_no, pm.product_id, pm.product_name, pm.product_category, 
-                                            p.product_description, p.reqn_product_id, i.payment_status, i.due_date, i.total_amount
-                                            from invoices as i
-                                            join invoice_line_items as il
-                                            on i.invoice_id = il.invoice_id
-                                            join orders as o
-                                            on il.order_id = o.order_id
-                                            join products as p
-                                            on o.reqn_product_id = p.reqn_product_id
-                                            join product_master as pm
-                                            on p.product_id = pm.product_id
-                                            where i.supplier_id = %s and i.payment_status = %s
-                                            order by i.due_date asc
+                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                                            from invoices
+                                            where supplier_id = %s and payment_status = %s
+                                            order by due_date asc
                                             limit %s, %s""", (client_id, payment_status[0], start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res

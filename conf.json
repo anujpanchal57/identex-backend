@@ -38,6 +38,7 @@
             "quotation_table": "quotations",
             "quotes_table": "quotes",
             "constants_table": "constants",
+            "mcx_spot_rate_table": "mcx_spot_rate",
             "log_table": "logs"
         },
         "debug": "False"

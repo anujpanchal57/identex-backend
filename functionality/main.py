@@ -54,6 +54,7 @@ from database.OrderOps import Order
 from database.InvoiceOps import Invoice
 from database.InvoiceLineItemOps import InvoiceLineItem
 from database.Reports import Reports
+from database.MCXSpotRateOps import MCXSpotRate
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1776,7 +1777,7 @@ def buyer_order_create():
                 # Email to supplier
                 order_obj = Order(order_created)
                 suser = SUser(supplier_id=details['supplier_id'])
-                buyer = Buyer(details['buyer_id'])
+                buyer = Buyer(data['buyer_id'])
                 product = order_obj.get_order_product_details()
                 lot_name = order_obj.get_order_lot()
                 po_number = order_obj.get_po_no()
@@ -2059,11 +2060,18 @@ def buyer_invoices_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        invoices = Invoice().get_invoices(client_id=data['buyer_id'], client_type="buyer", start_limit=start_limit, end_limit=end_limit)
+        invoices = Invoice().get_invoices(client_id=data['buyer_id'], client_type="buyer", req_type=data['type'].lower(),
+                                          start_limit=start_limit, end_limit=end_limit)
         if len(invoices) > 0:
             for inv in invoices:
                 inv['products'] = InvoiceLineItem().get_invoice_lt_products(invoice_id=inv['invoice_id'])
-        return response.customResponse({"invoices": invoices})
+
+        join_obj = Join()
+        count = {
+            "pending": join_obj.get_buyer_invoices_count(buyer_id=data['buyer_id'], req_type='pending'),
+            "paid": join_obj.get_buyer_invoices_count(buyer_id=data['buyer_id'], req_type="paid")
+        }
+        return response.customResponse({"invoices": invoices, "count": count})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -2082,11 +2090,18 @@ def supplier_invoices_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        invoices = Invoice().get_invoices(client_id=data['supplier_id'], client_type="supplier", start_limit=start_limit, end_limit=end_limit)
+        invoices = Invoice().get_invoices(client_id=data['supplier_id'], client_type="supplier", req_type=data['type'].lower(),
+                                          start_limit=start_limit, end_limit=end_limit)
         if len(invoices) > 0:
             for inv in invoices:
                 inv['products'] = InvoiceLineItem().get_invoice_lt_products(invoice_id=inv['invoice_id'])
-        return response.customResponse({"invoices": invoices})
+
+        join_obj = Join()
+        count = {
+            "pending": join_obj.get_supplier_invoices_count(supplier_id=data['supplier_id'], req_type='pending'),
+            "paid": join_obj.get_supplier_invoices_count(supplier_id=data['supplier_id'], req_type="paid")
+        }
+        return response.customResponse({"invoices": invoices, "count": count})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -2095,17 +2110,17 @@ def supplier_invoices_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for downloading the invoice for a buyer
-@app.route("/buyer/invoice/download", methods=['POST'])
-@validate_buyer_access_token
-def buyer_download_invoice():
+# POST request for downloading the invoice
+@app.route("/invoice/download", methods=['POST'])
+@validate_access_token
+def download_invoice():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         return response.customResponse({"base64": Invoice(_id=data['invoice_id']).download_invoice(),
                                         "response": "File you have requested will be downloaded shortly"})
 
     except Exception as e:
-        log = Logger(module_name="/buyer/invoice/download", function_name="buyer_download_invoice()")
+        log = Logger(module_name="/invoice/download", function_name="download_invoice()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -2163,6 +2178,18 @@ def buyer_operations_count():
 
     except Exception as e:
         log = Logger(module_name="/buyer-operations/count", function_name="buyer_operations_count()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching MCX spot rates
+@app.route("/mcx/spot-rates/get", methods=["POST"])
+@validate_access_token
+def mcx_spot_rates_get():
+    try:
+        return response.customResponse({"spot_rates": MCXSpotRate().get_all_spot_rates()})
+
+    except Exception as e:
+        log = Logger(module_name="/mcx/spot-rates/get", function_name="mcx_spot_rates_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

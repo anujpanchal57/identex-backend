@@ -295,6 +295,52 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
 
+    def get_supplier_invoices_count(self, supplier_id, req_type="pending"):
+        try:
+            payment_type = "paid"
+            if req_type.lower() == "pending":
+                self.__cursor.execute("""select count(*) as invoices_count
+                                        from invoices where supplier_id = %s and payment_status != %s""",
+                                      (supplier_id, payment_type))
+            else:
+                self.__cursor.execute("""select count(*) as invoices_count
+                                        from invoices where supplier_id = %s and payment_status = %s""",
+                                      (supplier_id, payment_type))
+            res = self.__cursor.fetchone()['invoices_count']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_supplier_invoices_count()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_supplier_invoices_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_buyer_invoices_count(self, buyer_id, req_type="pending"):
+        try:
+            payment_type = "paid"
+            if req_type.lower() == "pending":
+                self.__cursor.execute("""select count(*) as invoices_count
+                                        from invoices where buyer_id = %s and payment_status != %s""",
+                                      (buyer_id, payment_type))
+            else:
+                self.__cursor.execute("""select count(*) as invoices_count
+                                        from invoices where buyer_id = %s and payment_status = %s""",
+                                      (buyer_id, payment_type))
+            res = self.__cursor.fetchone()['invoices_count']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_invoices_count()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_invoices_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
 # pprint(Join().get_supplier_requisitions_count(supplier_id=1000))
 # pprint(Join().get_buyer_requisitions_count(buyer_id=1000, req_type="cancelled"))
 # pprint(Join().get_suppliers_for_buyers(1000))
