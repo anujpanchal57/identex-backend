@@ -1,10 +1,15 @@
 import json
+import os
 import re
+import sys
 from pprint import pprint
 import traceback
 
 import requests
 from bs4 import BeautifulSoup
+app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
+
+sys.path.append(app_name)
 
 from utility import DBConnectivity
 
