@@ -300,12 +300,12 @@ class Join:
             payment_type = "paid"
             if req_type.lower() == "pending":
                 self.__cursor.execute("""select count(*) as invoices_count
-                                        from invoices where supplier_id = %s and payment_status != %s""",
-                                      (supplier_id, payment_type))
+                                        from invoices where supplier_id = %s and paid = %s""",
+                                      (supplier_id, False))
             else:
                 self.__cursor.execute("""select count(*) as invoices_count
-                                        from invoices where supplier_id = %s and payment_status = %s""",
-                                      (supplier_id, payment_type))
+                                        from invoices where supplier_id = %s and paid = %s""",
+                                      (supplier_id, True))
             res = self.__cursor.fetchone()['invoices_count']
             return res
 
@@ -323,12 +323,12 @@ class Join:
             payment_type = "paid"
             if req_type.lower() == "pending":
                 self.__cursor.execute("""select count(*) as invoices_count
-                                        from invoices where buyer_id = %s and payment_status != %s""",
-                                      (buyer_id, payment_type))
+                                        from invoices where buyer_id = %s and paid = %s""",
+                                      (buyer_id, False))
             else:
                 self.__cursor.execute("""select count(*) as invoices_count
-                                        from invoices where buyer_id = %s and payment_status = %s""",
-                                      (buyer_id, payment_type))
+                                        from invoices where buyer_id = %s and paid = %s""",
+                                      (buyer_id, True))
             res = self.__cursor.fetchone()['invoices_count']
             return res
 

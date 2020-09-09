@@ -2065,6 +2065,13 @@ def buyer_invoices_get():
         if len(invoices) > 0:
             for inv in invoices:
                 inv['products'] = InvoiceLineItem().get_invoice_lt_products(invoice_id=inv['invoice_id'])
+                if inv['paid']:
+                    inv['payment_status'] = "paid"
+                else:
+                    if GenericOps.get_current_timestamp() > inv['due_date']:
+                        inv['payment_status'] = "overdue"
+                    else:
+                        inv['payment_status'] = "outstanding"
 
         join_obj = Join()
         count = {
@@ -2095,6 +2102,13 @@ def supplier_invoices_get():
         if len(invoices) > 0:
             for inv in invoices:
                 inv['products'] = InvoiceLineItem().get_invoice_lt_products(invoice_id=inv['invoice_id'])
+                if inv['paid']:
+                    inv['payment_status'] = "paid"
+                else:
+                    if GenericOps.get_current_timestamp() > inv['due_date']:
+                        inv['payment_status'] = "overdue"
+                    else:
+                        inv['payment_status'] = "outstanding"
 
         join_obj = Join()
         count = {

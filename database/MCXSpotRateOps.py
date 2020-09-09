@@ -25,9 +25,9 @@ class MCXSpotRate:
             self.__cursor.close()
             self.__sql.close()
 
-    def get_all_spot_rates(self):
+    def get_all_spot_rates(self, status=True):
         try:
-            self.__cursor.execute("""select * from mcx_spot_rate""")
+            self.__cursor.execute("""select * from mcx_spot_rate where status = %s""", (status, ))
             res = self.__cursor.fetchall()
             return res
 

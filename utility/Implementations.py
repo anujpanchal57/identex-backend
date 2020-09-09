@@ -262,7 +262,7 @@ invoices_create_table = """create table if not exists invoices (
                 created_at int(11) not null,
                 payment_details varchar(500) not null,
                 due_date int(11) not null default 0,
-                payment_status varchar(20) not null default 'outstanding',
+                paid bool not null default false,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
             ) ENGINE=InnoDB auto_increment=1000"""

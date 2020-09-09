@@ -66,39 +66,38 @@ class Invoice:
 
     def get_invoices(self, client_id, client_type, req_type, start_limit=0, end_limit=5):
         try:
-            payment_status = ['outstanding', 'overdue'] if req_type.lower() == "pending" else ['paid']
             if client_type.lower() == "buyer":
                 if req_type.lower() == "pending":
-                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                    self.__cursor.execute("""select invoice_id, invoice_no, paid, due_date, total_amount
                                             from invoices
-                                            where buyer_id = %s and payment_status in (%s, %s)
+                                            where buyer_id = %s and paid = %s
                                             order by due_date asc
-                                            limit %s, %s""", (client_id, payment_status[0], payment_status[1], start_limit, end_limit))
+                                            limit %s, %s""", (client_id, False, start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
                 if req_type.lower() == "paid":
-                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                    self.__cursor.execute("""select invoice_id, invoice_no, paid, due_date, total_amount
                                             from invoices
-                                            where buyer_id = %s and payment_status = %s
+                                            where buyer_id = %s and paid = %s
                                             order by due_date asc
-                                            limit %s, %s""", (client_id, payment_status[0], start_limit, end_limit))
+                                            limit %s, %s""", (client_id, True, start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
             else:
                 if req_type.lower() == "pending":
-                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                    self.__cursor.execute("""select invoice_id, invoice_no, paid, due_date, total_amount
                                             from invoices
-                                            where supplier_id = %s and payment_status in (%s, %s)
+                                            where supplier_id = %s and paid = %s
                                             order by due_date asc
-                                            limit %s, %s""", (client_id, payment_status[0], payment_status[1], start_limit, end_limit))
+                                            limit %s, %s""", (client_id, False, start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
                 if req_type.lower() == "paid":
-                    self.__cursor.execute("""select invoice_id, invoice_no, payment_status, due_date, total_amount
+                    self.__cursor.execute("""select invoice_id, invoice_no, paid, due_date, total_amount
                                             from invoices
-                                            where supplier_id = %s and payment_status = %s
+                                            where supplier_id = %s and paid = %s
                                             order by due_date asc
-                                            limit %s, %s""", (client_id, payment_status[0], start_limit, end_limit))
+                                            limit %s, %s""", (client_id, True, start_limit, end_limit))
                     res = self.__cursor.fetchall()
                     return res
 
