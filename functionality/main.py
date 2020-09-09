@@ -2041,6 +2041,21 @@ def supplier_invoice_add():
             invoice_lt_ids = InvoiceLineItem().insert_many(lts)
 
         # Email to buyer
+        supplier = Supplier(_id=invoice_details['supplier_id'])
+        buyers = BUser().get_busers_for_buyer_id(buyer_id=invoice_details['buyer_id'])
+        subject = conf.email_endpoints['supplier']['invoice_raised']['subject'].replace("{{supplier_name}}", supplier.get_company_name())
+        link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['invoice_raised']['page_url']
+        for buyer in buyers:
+            p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
+                                                                              "template": conf.email_endpoints['supplier']['invoice_raised']['template_id'],
+                                                                              "subject": subject,
+                                                                              "USER": buyer['name'],
+                                                                              "SUPPLIER_COMPANY_NAME": supplier.get_company_name(),
+                                                                              "INVOICE_NO": invoice_details['invoice_no'],
+                                                                              "LINK": link})
+            p.start()
+
+
         return response.customResponse({"response": "Invoice raised to buyer successfully"})
 
     except exceptions.IncompleteRequestException as e:

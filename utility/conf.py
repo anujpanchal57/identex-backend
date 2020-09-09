@@ -122,6 +122,11 @@ email_endpoints = {
             "page_url": "/orders?type=delivered",
             "subject": "",
             "template_id": "order_delivered"
+        },
+        "invoice_paid": {
+            "page_url": "/invoices?type=pending",
+            "subject": "Invoice raised by {{supplier_name}}",
+            "template_id": "invoice_paid"
         }
     },
     "supplier": {
@@ -149,6 +154,11 @@ email_endpoints = {
             "page_url": "/{{operation}}?type=open",
             "subject": "You have received a new message for {{operation_type}}: #{{requisition_id}}",
             "template_id": "message_received"
+        },
+        "invoice_raised": {
+            "page_url": "/invoices?type=pending",
+            "subject": "Invoice raised by {{supplier_name}}",
+            "template_id": "invoice_raised"
         }
     }
 }
