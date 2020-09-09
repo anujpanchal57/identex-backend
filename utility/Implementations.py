@@ -248,6 +248,7 @@ orders_create_table = """create table if not exists orders (
                 transaction_ref_no varchar(50) not null default '',
                 created_at int(11) not null,
                 remarks varchar(200) not null default '',
+                saved_amount float(11, 2) not null default 0,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
             ) ENGINE=InnoDB auto_increment=1000"""

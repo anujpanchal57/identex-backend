@@ -1749,12 +1749,21 @@ def buyer_order_create():
                 return response.errorResponse("No lot found against this RFQ")
             products = Product().get_lot_products(lot_id=lot['lot_id'])
 
+            # Creating a single quote obj to avoid multiple db connections
+            quote_obj = Quote()
+            # Calculate the amount saved
+            highest_quote = quote_obj.get_highest_quote_for_product(requisition_id=data['acquisition_id'], buyer_id=data['buyer_id'],
+                                                                    charge_id=details['reqn_product_id'])
+
+            quote_amount = Quote(details['quote_id']).get_amount()
+            details['saved_amount'] = highest_quote - quote_amount
+
             if len(products) > 0:
                 approved_counter = 0
                 # Iterate over the products
                 for i in range(0, len(products)):
                     # Check whether the product is confirmed or not
-                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
+                    product_confirmed = quote_obj.is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
                     if product_confirmed:
                         approved_counter += 1
 
@@ -1765,7 +1774,8 @@ def buyer_order_create():
                                                   acquisition_type=details['acquisition_type'],
                                                   quote_id=details['quote_id'],
                                                   reqn_product_id=details['reqn_product_id'],
-                                                  remarks=details['remarks'])
+                                                  remarks=details['remarks'],
+                                                  saved_amount=details['saved_amount'])
                 # Mark the particular quote as confirmed
                 if order_created:
                     Quote(details['quote_id']).set_confirmed(True)
@@ -2153,6 +2163,33 @@ def download_invoice():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+########################################### DASHBOARD SECTION #####################################################
+
+# POST request for fetching dashboard metrics on the buyer end
+@app.route("/buyer/dashboard-metrics/get", methods=['POST'])
+@validate_buyer_access_token
+def buyer_dashobard_metrics_get():
+    try:
+        data = request.json
+        buyer_id = data['buyer_id']
+        metrics = {}
+        join = Join()
+        # Total procurements
+        metrics['total_procurements'] = join.get_buyer_total_procurements(buyer_id=buyer_id)
+        # Total savings
+        metrics['total_savings'] = join.get_buyer_total_savings(buyer_id=buyer_id)
+        # Amount due
+        metrics['amount_due'] = join.get_buyer_total_amount_due(buyer_id=buyer_id)
+        # Total orders
+        metrics['total_orders'] = join.get_buyer_total_orders(buyer_id=buyer_id)
+        # Total suppliers
+        metrics['total_suppliers'] = join.get_buyer_total_suppliers(buyer_id=buyer_id)
+        return response.customResponse({"dashboard_metrics": metrics})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/dashboard-metrics/get", function_name="buyer_dashobard_metrics_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
 
 ########################################### MISCELLANEOUS SECTION #####################################################
 

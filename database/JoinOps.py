@@ -341,6 +341,107 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return 0
 
+    def get_buyer_total_procurements(self, buyer_id):
+        try:
+            self.__cursor.execute("""select count(*) as total_procurements
+                                    from requisitions where buyer_id = %s and request_type != 'cancelled'""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchone()['total_procurements']
+            if res is None:
+                res = 0
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_procurements()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_procurements()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_buyer_total_orders(self, buyer_id):
+        try:
+            self.__cursor.execute("""select count(*) as total_orders
+                                    from orders where buyer_id = %s and order_status != 'cancelled'""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchone()['total_orders']
+            if res is None:
+                res = 0
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_orders()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_orders()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_buyer_total_amount_due(self, buyer_id):
+        try:
+            self.__cursor.execute("""select sum(total_amount) as total_amount_due
+                                    from invoices where buyer_id = %s and paid = 0""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchone()['total_amount_due']
+            if res is None:
+                res = 0
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_amount_due()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_amount_due()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_buyer_total_suppliers(self, buyer_id):
+        try:
+            self.__cursor.execute("""select count(*) as total_suppliers
+                                    from supplier_relationships
+                                    where buyer_id = %s""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchone()['total_suppliers']
+            if res is None:
+                res = 0
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_suppliers()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_suppliers()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_buyer_total_savings(self, buyer_id):
+        try:
+            self.__cursor.execute("""select sum(saved_amount) as total_savings
+                                    from orders
+                                    where buyer_id = %s and order_status != 'cancelled'""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchone()['total_savings']
+            if res is None:
+                res = 0
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_savings()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_buyer_total_savings()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+# pprint(Join().get_buyer_total_savings(1000))
+# pprint(Join().get_buyer_total_suppliers(1001))
+# pprint(Join().get_buyer_total_amount_due(1000))
+# pprint(Join().get_buyer_total_orders(1000))
 # pprint(Join().get_supplier_requisitions_count(supplier_id=1000))
 # pprint(Join().get_buyer_requisitions_count(buyer_id=1000, req_type="cancelled"))
 # pprint(Join().get_suppliers_for_buyers(1000))

@@ -23,6 +23,9 @@ class Quote:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_amount(self):
+        return self.__quote['amount']
+
     def add_quote(self, quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time, confirmed=False):
         self.__quote['quotation_id'] = quotation_id
         self.__quote['charge_id'] = charge_id
@@ -121,6 +124,28 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_highest_quote_for_product(self, requisition_id, buyer_id, charge_id):
+        try:
+            self.__cursor.execute("""select max(qu.amount)
+                                    from requisitions as r
+                                    join quotations as q
+                                    on r.requisition_id = q.requisition_id
+                                    join quotes as qu
+                                    on q.quotation_id = qu.quotation_id
+                                    where r.requisition_id = %s and r.buyer_id = %s and qu.charge_id = %s""",
+                                  (requisition_id, buyer_id, charge_id))
+            res = self.__cursor.fetchone()['max_amount']
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='get_quotes_for_product()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='get_quotes_for_product()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
     def get_quotes_by_category(self, requisition_id, charge_id, category="cheapest", status=True):
         try:
             if category.lower() == "cheapest":
@@ -193,6 +218,7 @@ class Quote:
             log = Logger(module_name='QuoteOps', function_name='set_confirmed()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to update product confirmation, please try again')
+
 
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))

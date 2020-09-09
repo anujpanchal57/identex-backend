@@ -52,7 +52,7 @@ class Order:
     def get_buyer_id(self):
         return self.__order['buyer_id']
 
-    def add_order(self, buyer_id, supplier_id, quote_id, reqn_product_id, remarks="", acquisition_id=0, acquisition_type="", po_no=""):
+    def add_order(self, buyer_id, supplier_id, quote_id, reqn_product_id, remarks="", acquisition_id=0, acquisition_type="", po_no="", saved_amount=0):
         self.__order['buyer_id'] = buyer_id
         self.__order['supplier_id'] = supplier_id
         self.__order['quote_id'] = quote_id
@@ -62,6 +62,7 @@ class Order:
         self.__order['po_no'] = po_no
         self.__order['created_at'] = GenericOps.get_current_timestamp()
         self.__order['remarks'] = remarks
+        self.__order['saved_amount'] = saved_amount
         self.__order['order_id']  =self.insert(self.__order)
         return self.__order['order_id']
 
@@ -70,10 +71,10 @@ class Order:
             self.__cursor.execute(Implementations.orders_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO orders (buyer_id, supplier_id, po_no, acquisition_id, acquisition_type, 
-                                    quote_id, reqn_product_id, created_at, remarks) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                    quote_id, reqn_product_id, created_at, remarks, saved_amount) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['buyer_id'], values['supplier_id'], values['po_no'],
                                    values['acquisition_id'], values['acquisition_type'], values['quote_id'],
-                                   values['reqn_product_id'], values['created_at'], values['remarks']))
+                                   values['reqn_product_id'], values['created_at'], values['remarks'], values['saved_amount']))
             self.__sql.commit()
             return True
 
