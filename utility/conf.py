@@ -124,8 +124,8 @@ email_endpoints = {
             "template_id": "order_delivered"
         },
         "invoice_paid": {
-            "page_url": "/invoices?type=pending",
-            "subject": "Invoice raised by {{supplier_name}}",
+            "page_url": "/invoices?type=paid",
+            "subject": "Invoice paid by {{buyer_company_name}}",
             "template_id": "invoice_paid"
         }
     },

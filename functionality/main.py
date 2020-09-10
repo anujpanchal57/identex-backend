@@ -1536,9 +1536,11 @@ def buyer_supplier_add():
                 p.start()
             # If supplier is not present
             else:
+                supp['mobile_no'] = supp['mobile_no'] if 'mobile_no' in supp else ""
                 supplier_id = Supplier().add_supplier(company_name=supp['company_name'])
                 password = GenericOps.generate_user_password()
-                SUser().add_suser(email=supp['email'], name=supp['name'], supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
+                SUser().add_suser(email=supp['email'], name=supp['name'], mobile_no=supp['mobile_no'],
+                                  supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
                 SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
                 # Send an email to supplier
                 suser = SUser(supp['email'])
@@ -2054,7 +2056,7 @@ def supplier_invoice_add():
         supplier = Supplier(_id=invoice_details['supplier_id'])
         buyers = BUser().get_busers_for_buyer_id(buyer_id=invoice_details['buyer_id'])
         subject = conf.email_endpoints['supplier']['invoice_raised']['subject'].replace("{{supplier_name}}", supplier.get_company_name())
-        link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['invoice_raised']['page_url']
+        link = conf.ENV_ENDPOINT + conf.email_endpoints['supplier']['invoice_raised']['page_url']
         for buyer in buyers:
             p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [buyer['email']],
                                                                               "template": conf.email_endpoints['supplier']['invoice_raised']['template_id'],
@@ -2170,6 +2172,14 @@ def update_invoice_payment_status():
     try:
         data = request.json
         invoice = Invoice(data['invoice_id'])
+
+        # Fetching ID of buyer and supplier as per the client who is marking the invoice as paid
+        if data['client_type'].lower() == "buyer":
+            supplier_id = invoice.get_supplier_id()
+        else:
+            buyer_id = invoice.get_buyer_id()
+
+        # Logic of marking the invoice as paid
         data['payment_date'] = GenericOps.convert_datestring_to_timestamp(data['payment_date']) if 'payment_date' in data else GenericOps.get_current_timestamp()
         data['transaction_ref_no'] = data['transaction_ref_no'] if 'transaction_ref_no' in data else ""
         if invoice.update_paid(paid=data['paid']):
@@ -2178,6 +2188,19 @@ def update_invoice_payment_status():
                 for order in order_ids:
                     Order(order['order_id']).update_payment(payment_date=data['payment_date'], transaction_ref_no=data['transaction_ref_no'],
                                                             payment_status="paid")
+
+            # Email to supplier
+            if data['client_type'].lower() == "buyer":
+                suser = SUser(supplier_id=supplier_id)
+                buyer = Buyer(data['client_id'])
+                subject = conf.email_endpoints['buyer']['invoice_paid']['subject'].replace("{{buyer_company_name}}", buyer.get_company_name())
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                                  "subject": subject,
+                                                                                  "template": conf.email_endpoints['buyer']['invoice_paid']['template_id'],
+                                                                                  "USER": suser.get_first_name(),
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                                  "INVOICE_NO": str(data['invoice_id'])})
+                p.start()
 
         return response.customResponse({"response": "Payment status updated successfully",
                                         "paid": data['paid']})

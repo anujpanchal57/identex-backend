@@ -31,6 +31,12 @@ class Invoice:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_buyer_id(self):
+        return self.__invoice['buyer_id']
+
+    def get_supplier_id(self):
+        return self.__invoice['supplier_id']
+
     def add_invoice(self, invoice_no, supplier_id, buyer_id, total_gst, total_amount, payment_details, due_date):
         self.__invoice['invoice_no'] = invoice_no
         self.__invoice['supplier_id'] = supplier_id
