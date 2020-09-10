@@ -2179,8 +2179,9 @@ def update_invoice_payment_status():
                     Order(order['order_id']).update_payment(payment_date=data['payment_date'], transaction_ref_no=data['transaction_ref_no'],
                                                             payment_status="paid")
 
+        payment_status = "paid" if data['paid'] else "unpaid"
         return response.customResponse({"response": "Payment status updated successfully",
-                                        "paid": data['paid']})
+                                        "paid": data['paid'], "payment_status": payment_status})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
