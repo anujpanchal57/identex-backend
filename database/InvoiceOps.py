@@ -64,6 +64,22 @@ class Invoice:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException("Failed to add invoice, please try again")
 
+    def update_paid(self, paid=True):
+        try:
+            self.__cursor.execute("""update invoices set paid = %s where invoice_id = %s""", (paid, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvoiceOps', function_name='update_paid()')
+            log.log(str(error), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update payment status, please try again")
+        except Exception as e:
+            log = Logger(module_name='InvoiceOps', function_name='update_paid()')
+            log.log(traceback.format_exc(), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update payment status, please try again")
+
+
     def get_invoices(self, client_id, client_type, req_type, start_limit=0, end_limit=5):
         try:
             if client_type.lower() == "buyer":

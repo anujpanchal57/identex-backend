@@ -364,6 +364,22 @@ class Order:
             log.log(traceback.format_exc(), priority='highest')
             return ""
 
+    def update_payment(self, payment_date, transaction_ref_no, payment_status="paid"):
+        try:
+            self.__cursor.execute("""update orders set payment_date = %s, transaction_ref_no = %s, payment_status = %s
+                                    where order_id = %s""", (payment_date, transaction_ref_no, payment_status, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='update_payment()')
+            log.log(str(error), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update order status, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='update_payment()')
+            log.log(traceback.format_exc(), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update order status, please try again")
+
 
 
 

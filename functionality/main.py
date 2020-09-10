@@ -2163,6 +2163,32 @@ def download_invoice():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for marking an invoice as paid
+@app.route("/invoice/payment-status/update", methods=['POST'])
+@validate_access_token
+def update_invoice_payment_status():
+    try:
+        data = request.json
+        invoice = Invoice(data['invoice_id'])
+        data['payment_date'] = GenericOps.convert_datestring_to_timestamp(data['payment_date']) if 'payment_date' in data else GenericOps.get_current_timestamp()
+        data['transaction_ref_no'] = data['transaction_ref_no'] if 'transaction_ref_no' in data else ""
+        if invoice.update_paid(paid=data['paid']):
+            order_ids = InvoiceLineItem().get_order_ids_for_invoice(invoice_id=data['invoice_id'])
+            if len(order_ids) > 0:
+                for order in order_ids:
+                    Order(order['order_id']).update_payment(payment_date=data['payment_date'], transaction_ref_no=data['transaction_ref_no'],
+                                                            payment_status="paid")
+
+        return response.customResponse({"response": "Payment status updated successfully",
+                                        "paid": data['paid']})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/invoice/payment-status/update", function_name="update_invoice_payment_status()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 ########################################### DASHBOARD SECTION #####################################################
 
 # POST request for fetching dashboard metrics on the buyer end

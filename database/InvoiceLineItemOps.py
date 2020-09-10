@@ -79,6 +79,22 @@ class InvoiceLineItem:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to add line item(s), please try again')
 
+    def get_order_ids_for_invoice(self, invoice_id):
+        try:
+            self.__cursor.execute("""select order_id from invoice_line_items where invoice_id = %s""",
+                                  (invoice_id, ))
+            res = self.__cursor.fetchall()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='InvoiceLineItemOps', function_name='get_order_ids_for_invoice()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='InvoiceLineItemOps', function_name='get_order_ids_for_invoice()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
     def get_invoice_lt_products(self, invoice_id):
         try:
             self.__cursor.execute("""select il.order_id, il.per_unit, il.quantity, il.gst, il.amount, il.unit_currency, 
