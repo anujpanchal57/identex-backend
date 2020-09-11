@@ -126,7 +126,7 @@ class Quote:
 
     def get_highest_quote_for_product(self, requisition_id, buyer_id, charge_id):
         try:
-            self.__cursor.execute("""select max(qu.amount)
+            self.__cursor.execute("""select max(qu.amount) as max_amount
                                     from requisitions as r
                                     join quotations as q
                                     on r.requisition_id = q.requisition_id

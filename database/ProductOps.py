@@ -94,5 +94,25 @@ class Product:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_product_details(self):
+        try:
+            self.__cursor.execute("""select pm.product_id, pm.product_name, pm.product_category
+                                    from products as p 
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    where p.reqn_product_id = %s;""", (self.__id, ))
+            res = self.__cursor.fetchone()
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ProductOps', function_name='get_product_details()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='ProductOps', function_name='get_product_details()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
+pprint(Product(1000).get_product_details())
 # pprint(Product().get_lot_products(1000))
 # pprint(Product("").add_product(1000, "filters", "steel", "filtering filters", "piece", 2))

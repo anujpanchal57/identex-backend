@@ -1283,19 +1283,20 @@ def supplier_rfq_last_quote_get():
         if len(lot) == 0:
             return response.errorResponse("No lot found against this RFQ")
         products = Product().get_lot_products(lot_id=lot['lot_id'])
+        result = []
         if len(products) > 0:
             for i in range(0, len(products)):
                 quotes = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
                                                                      charge_id=products[i]['reqn_product_id'])
-
+                product = products[i]
                 # Getting rank of the supplier
                 for i in range(0, len(quotes)):
                     if quotes[i]['supplier_id'] == data['supplier_id']:
                         quotes[i]['rank'] = i+1
-                        products[i]['quote'] = quotes[i]
+                        product['quote'] = quotes[i]
+                        result.append(product)
 
-
-            return response.customResponse({"products": products})
+            return response.customResponse({"products": result})
         return response.errorResponse("No products found in this lot")
 
     except Exception as e:
@@ -1336,7 +1337,11 @@ def send_message():
             suser = SUser(supplier_id=data['receiver_id'])
             subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
             link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower())
-            lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
+            if type_of_request == "RFQ":
+                lot_name = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])['lot_name']
+            else:
+                reqn_product_id = Order(data['operation_id']).get_reqn_product_id()
+                lot_name = Product(reqn_product_id).get_product_details()['product_name']
             sender = buser.get_name() + " (" + buyer.get_company_name() + ")"
             p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [suser.get_email()],
                                                                               "template": conf.email_endpoints['supplier']['message_received']['template_id'],
@@ -1345,7 +1350,7 @@ def send_message():
                                                                               "USER": suser.get_first_name(),
                                                                               "TYPE_OF_REQUEST": type_of_request,
                                                                               "REQUEST_ID": str(data['operation_id']),
-                                                                              "LOT_NAME": lot['lot_name'],
+                                                                              "LOT_NAME": lot_name,
                                                                               "SENDER": sender,
                                                                               "MESSAGE": data['message'],
                                                                               "documents": data['documents']})
@@ -1356,7 +1361,11 @@ def send_message():
             busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
             subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
             link = conf.ENV_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower()).replace("{{action_type}}", "quotes").replace("{{operation_id}}", str(data['operation_id']))
-            lot = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])
+            if type_of_request == "RFQ":
+                lot_name = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])['lot_name']
+            else:
+                reqn_product_id = Order(data['operation_id']).get_reqn_product_id()
+                lot_name = Product(reqn_product_id).get_product_details()['product_name']
             sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
             for user in busers:
                 p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [user['email']],
@@ -1366,7 +1375,7 @@ def send_message():
                                                                                   "USER": user['name'].split(" ")[0],
                                                                                   "TYPE_OF_REQUEST": type_of_request,
                                                                                   "REQUEST_ID": str(data['operation_id']),
-                                                                                  "LOT_NAME": lot['lot_name'],
+                                                                                  "LOT_NAME": lot_name,
                                                                                   "SENDER": sender,
                                                                                   "MESSAGE": data['message'],
                                                                                   "documents": data['documents']})
@@ -1751,12 +1760,9 @@ def buyer_order_create():
                 return response.errorResponse("No lot found against this RFQ")
             products = Product().get_lot_products(lot_id=lot['lot_id'])
 
-            # Creating a single quote obj to avoid multiple db connections
-            quote_obj = Quote()
             # Calculate the amount saved
-            highest_quote = quote_obj.get_highest_quote_for_product(requisition_id=data['acquisition_id'], buyer_id=data['buyer_id'],
-                                                                    charge_id=details['reqn_product_id'])
-
+            highest_quote = Quote().get_highest_quote_for_product(requisition_id=details['acquisition_id'], buyer_id=data['buyer_id'],
+                                                                  charge_id=details['reqn_product_id'])
             quote_amount = Quote(details['quote_id']).get_amount()
             details['saved_amount'] = highest_quote - quote_amount
 
@@ -1765,7 +1771,7 @@ def buyer_order_create():
                 # Iterate over the products
                 for i in range(0, len(products)):
                     # Check whether the product is confirmed or not
-                    product_confirmed = quote_obj.is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
+                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
                     if product_confirmed:
                         approved_counter += 1
 
@@ -1787,6 +1793,7 @@ def buyer_order_create():
                     requisition.set_request_type(request_type="approved")
                     requisition.drop_sql_event()
                 # Email to supplier
+                pprint(order_created)
                 order_obj = Order(order_created)
                 suser = SUser(supplier_id=details['supplier_id'])
                 buyer = Buyer(data['buyer_id'])

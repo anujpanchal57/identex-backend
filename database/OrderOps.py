@@ -52,6 +52,9 @@ class Order:
     def get_buyer_id(self):
         return self.__order['buyer_id']
 
+    def get_reqn_product_id(self):
+        return self.__order['reqn_product_id']
+
     def add_order(self, buyer_id, supplier_id, quote_id, reqn_product_id, remarks="", acquisition_id=0, acquisition_type="", po_no="", saved_amount=0):
         self.__order['buyer_id'] = buyer_id
         self.__order['supplier_id'] = supplier_id
@@ -63,7 +66,7 @@ class Order:
         self.__order['created_at'] = GenericOps.get_current_timestamp()
         self.__order['remarks'] = remarks
         self.__order['saved_amount'] = saved_amount
-        self.__order['order_id']  =self.insert(self.__order)
+        self.__order['order_id'] = self.insert(self.__order)
         return self.__order['order_id']
 
     def insert(self, values):
@@ -76,7 +79,7 @@ class Order:
                                    values['acquisition_id'], values['acquisition_type'], values['quote_id'],
                                    values['reqn_product_id'], values['created_at'], values['remarks'], values['saved_amount']))
             self.__sql.commit()
-            return True
+            return self.__cursor.lastrowid
 
         except mysql.connector.Error as error:
             log = Logger(module_name='OrderOps', function_name='insert()')
@@ -352,6 +355,8 @@ class Order:
                                     join lots as l
                                     on o.acquisition_id = l.requisition_id
                                     where o.order_id = %s""", (self.__id, ))
+
+            pprint(self.__cursor.fetchone())
             res = self.__cursor.fetchone()['lot_name']
             return res
 
