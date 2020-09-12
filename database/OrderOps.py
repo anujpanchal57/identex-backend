@@ -349,6 +349,22 @@ class Order:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to update transaction reference number, please try again")
 
+    def set_po_no(self, po_no):
+        try:
+            self.__order['po_no'] = po_no
+            self.__cursor.execute("""update orders set po_no = %s where order_id = %s""", (po_no, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='OrderOps', function_name='set_po_no()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update PO number, please try again")
+        except Exception as e:
+            log = Logger(module_name='OrderOps', function_name='set_po_no()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update PO number, please try again")
+
     def get_order_lot(self):
         try:
             self.__cursor.execute("""select l.lot_name from orders as o

@@ -113,6 +113,6 @@ class Product:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-pprint(Product(1000).get_product_details())
+# pprint(Product(1000).get_product_details())
 # pprint(Product().get_lot_products(1000))
 # pprint(Product("").add_product(1000, "filters", "steel", "filtering filters", "piece", 2))

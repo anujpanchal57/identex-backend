@@ -20,7 +20,7 @@ def errorResponse(e,status=400):
     return jsonify(response), status
 
 def unknownuser():
-    return jsonify({"response": "User not present"}), 400
+    return jsonify({"response": "User not present"}), 403
 
 def emailNotFound():
     return jsonify({"response": "We cannot find an account with this email address"}), 400

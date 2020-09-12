@@ -1296,6 +1296,12 @@ def supplier_rfq_last_quote_get():
                         product['quote'] = quotes[i]
                         result.append(product)
 
+                if len(result) == 0:
+                    result.append(product)
+                else:
+                    if result[-1]['reqn_product_id'] != product['reqn_product_id']:
+                        result.append(product)
+
             return response.customResponse({"products": result})
         return response.errorResponse("No products found in this lot")
 
@@ -2013,6 +2019,24 @@ def buyer_order_payment_status_update():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/order/payment-status/update", function_name="buyer_order_payment_status_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for updating PO number of an order
+@app.route("/order/po-number/update", methods=['POST'])
+@validate_access_token
+def update_order_po_number():
+    try:
+        data = request.json
+        order = Order(data['order_id'])
+        if order.set_po_no(data['po_number']):
+            return response.customResponse({"response": "PO number updated successfully",
+                                            "po_number": data['po_number']})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/order/po-number/update", function_name="update_order_po_number()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
