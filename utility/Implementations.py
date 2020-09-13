@@ -64,6 +64,7 @@ authorizations_create_table = """create table if not exists authorizations (
                 action_type varchar(20) not null default ""
             )"""
 
+# Not done now
 reqn_history_create_table = """create table if not exists requisition_history (
                 reqn_id int primary key auto_increment not null,
                 buyer_id int not null,
@@ -123,7 +124,7 @@ products_create_table = """create table if not exists products (
                 lot_id int not null,
                 buyer_id int not null,  
                 product_description varchar(500) not null, 
-                quantity int not null, 
+                quantity float not null, 
                 unit varchar(40) not null,
                 FOREIGN KEY (lot_id) REFERENCES lots(lot_id),
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
@@ -180,8 +181,8 @@ quotes_create_table = """create table if not exists quotes (
                 quotation_id int not null, 
                 charge_id int not null, 
                 charge_name varchar(50) not null, 
-                quantity int not null, 
-                gst int not null, 
+                quantity float(11,2) not null, 
+                gst float(5,2) not null, 
                 per_unit float(11, 2) not null, 
                 amount float(11, 2) not null,
                 delivery_time int not null, 
@@ -279,6 +280,18 @@ invoice_line_items_create_table = """create table if not exists invoice_line_ite
                 unit_currency varchar(3) not null, 
                 FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id),
                 FOREIGN KEY (order_id) REFERENCES orders(order_id)
+            ) ENGINE=InnoDB auto_increment=1000"""
+
+ratings_create_table = """create table if not exists ratings (
+                rating_id int primary key not null auto_increment,
+                client_id int not null,
+                client_type varchar(20) not null,
+                receiver_id int not null,
+                receiver_type varchar(20) not null,
+                acquisition_id int not null,
+                acquisition_type varchar(20) not null,
+                rating float not null,
+                updated_at int(11) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
 logs_create_table = """create table if not exists logs (
