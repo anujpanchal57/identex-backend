@@ -24,7 +24,11 @@ supplier_create_table = """create table if not exists suppliers (
                 company_logo varchar(100) not null,
                 activation_status bool not null, 
                 created_at int(11) not null,
-                updated_at int(11) not null
+                updated_at int(11) not null,
+                city varchar(30) not null default '',
+                business_address varchar(500) not null default '',
+                annual_revenue varchar(20) not null default '',
+                industry varchar(50) not null default ''
             ) ENGINE=InnoDB auto_increment=1000"""
 
 buser_create_table = """create table if not exists b_users (
