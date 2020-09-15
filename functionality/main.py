@@ -55,6 +55,7 @@ from database.InvoiceOps import Invoice
 from database.InvoiceLineItemOps import InvoiceLineItem
 from database.Reports import Reports
 from database.MCXSpotRateOps import MCXSpotRate
+from database.RatingOps import Rating
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1946,7 +1947,7 @@ def buyer_order_grn_upload():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         order = Order(data['order_id'])
-
+        client_id, client_type, receiver_id, receiver_type = order.get_buyer_id(), "buyer", order.get_supplier_id(), "supplier"
         # If GRN copy is uploaded
         if len(data['documents']) > 0:
             documents, document_ids = [], []
@@ -1962,6 +1963,12 @@ def buyer_order_grn_upload():
         delivery_date_ts = GenericOps.convert_datestring_to_timestamp(data['delivery_date'])
         delivery_date = order.set_delivery_date(delivery_date=delivery_date_ts)
         order_status = order.set_order_status(order_status="delivered")
+        # Adding the rating against an order
+        if 'rating' in data:
+            data['review'] = data['review'] if 'review' in data else ''
+            Rating().add_rating(client_id=client_id, client_type=client_type, receiver_id=receiver_id, receiver_type=receiver_type,
+                                acquisition_id=data['order_id'], acquisition_type="order", rating=data['rating'], review=data['review'])
+
         # Success response
         if grn_uploaded and delivery_date and order_status:
             # Email to supplier

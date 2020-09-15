@@ -291,7 +291,8 @@ ratings_create_table = """create table if not exists ratings (
                 acquisition_id int not null,
                 acquisition_type varchar(20) not null,
                 rating float not null,
-                updated_at int(11) not null
+                updated_at int(11) not null,
+                review varchar(500) not null default ''
             ) ENGINE=InnoDB auto_increment=1000"""
 
 logs_create_table = """create table if not exists logs (

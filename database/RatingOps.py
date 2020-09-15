@@ -23,11 +23,12 @@ class Rating:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_rating(self, client_id, client_type, receiver_id, receiver_type, acquisition_id, acquisition_type, rating):
+    def add_rating(self, client_id, client_type, receiver_id, receiver_type, acquisition_id, acquisition_type, rating, review=""):
         self.__rating['client_id'], self.__rating['client_type'] = client_id, client_type
         self.__rating['receiver_id'], self.__rating['receiver_type'] = receiver_id, receiver_type
         self.__rating['acquisition_id'], self.__rating['acquisition_type'] = acquisition_id, acquisition_type
         self.__rating['rating'] = rating
+        self.__rating['review'] = review
         self.__rating['updated_at'] = GenericOps.get_current_timestamp()
         self.__rating['rating_id'] = self.insert(self.__rating)
         return self.__rating['rating_id']
@@ -37,10 +38,10 @@ class Rating:
             self.__cursor.execute(Implementations.ratings_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO ratings (client_id, client_type, receiver_id, receiver_type, acquisition_id, 
-                                    acquisition_type, rating, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                                    acquisition_type, rating, updated_at, review) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['client_id'], values['client_type'], values['receiver_id'],
                                    values['receiver_type'], values['acquisition_id'], values['acquisition_type'],
-                                   values['rating'], values['updated_at']))
+                                   values['rating'], values['updated_at'], values['review']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
