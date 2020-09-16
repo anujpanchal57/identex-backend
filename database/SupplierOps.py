@@ -85,6 +85,23 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
 
+    def update_supplier_profile(self, city, business_address, annual_revenue, industry):
+        try:
+            self.__cursor.execute("""update suppliers set city = %s, business_address = %s, annual_revenue = %s, industry = %s 
+                                    where supplier_id = %s;""", (city, business_address, annual_revenue, industry, self.__id))
+            self.__sql.commit()
+            return True
 
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierOps', function_name='update_supplier_profile()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update profile details, please try again')
+        except Exception as e:
+            log = Logger(module_name='SupplierOps', function_name='update_supplier_profile()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update profile details, please try again')
+
+
+# pprint(Supplier(1000).update_supplier_profile("Thane", "Mumbai, Thane", "10-15cr", "Engineering"))
 # pprint(Supplier(1000))
 # pprint(Supplier("").add_supplier("Bhavani"))

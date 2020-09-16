@@ -244,8 +244,18 @@ def supplier_signup_auth():
 @validate_supplier_access_token
 def supplier_profile_update():
     try:
-        pass
+        data = request.json
+        details = data['details']
+        if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['industry'] == "":
+            return response.errorResponse("Please fill all the required fields")
+        if Supplier(data['supplier_id']).update_supplier_profile(city=details['city'], business_address=details['business_address'],
+                                                                 annual_revenue=details['annual_revenue'], industry=details['industry']):
+            return response.customResponse({"response": "Profile details updated successfully",
+                                            "city": details['city'], "business_address": details['business_address'],
+                                            "annual_revenue":details['annual_revenue'], "industry": details['industry']})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name='/supplier/profile/update', function_name='supplier_profile_update()')
         log.log(traceback.format_exc(), priority='highest')
