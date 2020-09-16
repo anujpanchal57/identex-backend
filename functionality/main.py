@@ -228,6 +228,29 @@ def buyer_signup_auth():
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
 
+# POST request for supplier signup authentication
+@app.route("/supplier/signup", methods=["POST"])
+def supplier_signup_auth():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name='/supplier/signup', function_name='supplier_signup_auth()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
+# POST request for updating supplier profile
+@app.route("/supplier/profile/update", methods=["POST"])
+@validate_supplier_access_token
+def supplier_profile_update():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name='/supplier/profile/update', function_name='supplier_profile_update()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
 # POST request for verifying buyer business email
 @app.route("/buyer/is-business-email", methods=["POST"])
 def is_business_email_buyer():
@@ -701,6 +724,7 @@ def buyer_create_rfq():
                                                                               "USER": supplier['name'],
                                                                               "BUYER_COMPANY_NAME": buyer_company_name,
                                                                               "LOT_NAME": data['lot']['lot_name'],
+                                                                              "MAX_RESPONSES": str(data['submission_limit']),
                                                                               "LINK_FOR_RFQ": rfq_link})
             p.start()
 
