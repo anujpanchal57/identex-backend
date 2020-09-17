@@ -48,6 +48,24 @@ class Supplier:
     def get_activation_status(self):
         return self.__supplier['activation_status']
 
+    def get_profile_completed(self):
+        return self.__supplier['profile_completed']
+
+    def get_city(self):
+        return self.__supplier['city']
+
+    def get_business_address(self):
+        return self.__supplier['business_address']
+
+    def get_annual_revenue(self):
+        return self.__supplier['annual_revenue']
+
+    def get_industry(self):
+        return self.__supplier['industry']
+
+    def get_pincode(self):
+        return self.__supplier['pincode']
+
     def insert(self, values):
         try:
             self.__cursor.execute(Implementations.supplier_create_table)
@@ -70,6 +88,12 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def set_activation_status(self, status):
+        self.__supplier['activation_status'] = status
+        self.__cursor.execute("update suppliers set activation_status = %s where supplier_id = %s", (status, self.__id))
+        self.__sql.commit()
+        return True
+
     def delete_supplier(self):
         try:
             self.__cursor.execute("""delete from suppliers where supplier_id = %s""", (self.__id, ))
@@ -85,10 +109,16 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
 
-    def update_supplier_profile(self, city, business_address, annual_revenue, industry):
+    def update_supplier_profile(self, city, business_address, annual_revenue, industry, pincode, company_name,
+                                profile_completed=True):
         try:
-            self.__cursor.execute("""update suppliers set city = %s, business_address = %s, annual_revenue = %s, industry = %s 
-                                    where supplier_id = %s;""", (city, business_address, annual_revenue, industry, self.__id))
+            self.__supplier['city'], self.__supplier['business_address'] = city, business_address
+            self.__supplier['annual_revenue'], self.__supplier['industry'] = annual_revenue, industry
+            self.__supplier['pincode'], self.__supplier['company_name'] = pincode, company_name
+            self.__supplier['profile_completed'] = 1 if profile_completed else 0
+            self.__cursor.execute("""update suppliers set city = %s, business_address = %s, annual_revenue = %s, industry = %s, 
+                                    pincode = %s, company_name = %s, profile_completed = %s  where supplier_id = %s;""",
+                                  (city, business_address, annual_revenue, industry, pincode, company_name, profile_completed, self.__id))
             self.__sql.commit()
             return True
 

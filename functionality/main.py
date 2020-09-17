@@ -232,7 +232,28 @@ def buyer_signup_auth():
 @app.route("/supplier/signup", methods=["POST"])
 def supplier_signup_auth():
     try:
-        pass
+        data = request.json
+        data['email'] = data['email'].lower()
+        is_suser = SUser.is_suser(data['email'])
+        # Checking whether the supplier already exists of not
+        if not is_suser:
+            # Add supplier
+            supplier_id = Supplier().add_supplier(company_name=data['company_name'], activation_status=False)
+            # Add supplier user
+            SUser().add_suser(email=data['email'], name=data['name'], supplier_id=supplier_id, password=data['password'],
+                              mobile_no=data['mobile_no'], status=False)
+            # Generate the verification token and send an email
+            token = GenericOps.generate_email_verification_token()
+            if Verification(name="verify_email").add_auth_token(token_id=token, user_id=data['email'], user_type="supplier"):
+                link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['email_verification']['page_url'] + "?id=" + data['email'] + "&token=" + token
+                p = Process(target=EmailNotifications.send_template_mail, kwargs={
+                    "template": conf.email_endpoints['supplier']['email_verification']['template_id'],
+                    "subject": conf.email_endpoints['supplier']['email_verification']['subject'],
+                    "verification_link": link,
+                    "recipients": [data['email']]})
+                p.start()
+            return response.customResponse({"response": "Thank you for signing up with Identex. We have sent you a verification link on your email"})
+        return response.errorResponse("User already exists. Try logging in instead")
 
     except Exception as e:
         log = Logger(module_name='/supplier/signup', function_name='supplier_signup_auth()')
@@ -245,14 +266,36 @@ def supplier_signup_auth():
 def supplier_profile_update():
     try:
         data = request.json
+        data['_id'] = data['_id'].lower()
         details = data['details']
-        if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['industry'] == "":
+        suser = SUser(data['_id'])
+        supplier = Supplier(data['supplier_id'])
+        if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['industry'] == "" or details['pincode'] == "":
             return response.errorResponse("Please fill all the required fields")
-        if Supplier(data['supplier_id']).update_supplier_profile(city=details['city'], business_address=details['business_address'],
-                                                                 annual_revenue=details['annual_revenue'], industry=details['industry']):
-            return response.customResponse({"response": "Profile details updated successfully",
-                                            "city": details['city'], "business_address": details['business_address'],
-                                            "annual_revenue":details['annual_revenue'], "industry": details['industry']})
+        if supplier.update_supplier_profile(city=details['city'], business_address=details['business_address'],
+                                                                 annual_revenue=details['annual_revenue'], industry=details['industry'],
+                                                                 pincode=details['pincode'], company_name=details['company_name']):
+            if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
+                return response.customResponse({"response": "Profile details updated successfully",
+                                                "details": {
+                                                    "supplier_id": suser.get_supplier_id(),
+                                                    "email": data['_id'],
+                                                    "name": suser.get_name(),
+                                                    "mobile_no": suser.get_mobile_no(),
+                                                    "company_name": supplier.get_company_name(),
+                                                    "company_logo": supplier.get_company_logo(),
+                                                    "status": suser.get_status(),
+                                                    "role": suser.get_role(),
+                                                    "activation_status": supplier.get_activation_status(),
+                                                    "created_at": suser.get_created_at(),
+                                                    "profile_completed": supplier.get_profile_completed(),
+                                                    "city": supplier.get_city(),
+                                                    "business_address": supplier.get_business_address(),
+                                                    "annual_revenue": supplier.get_annual_revenue(),
+                                                    "industry": supplier.get_industry(),
+                                                    "pincode": supplier.get_pincode(),
+                                                    "updated_at": suser.get_updated_at()
+                                                }})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -341,6 +384,27 @@ def buyer_verify_email():
 
     except Exception as e:
         log = Logger(module_name='/buyer/verify-email', function_name='buyer_verify_email()')
+        log.log(traceback.format_exc(), priority='highest')
+        return response.errorResponse("Some error occurred please try again later")
+
+# POST request for email verification of supplier
+@app.route("/supplier/verify-email", methods=["POST"])
+def supplier_verify_email():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        is_suser = SUser.is_suser(data['_id'])
+        supplier_id = SUser(data['_id']).get_supplier_id()
+        if is_suser:
+            if Verification(_id=data['token'], name="verify_email").verify_auth_token(user_type="supplier"):
+                SUser(data['_id']).set_status(status=True)
+                Supplier(supplier_id).set_activation_status(True)
+                return response.customResponse({"response": "Your email has been verified successfully"})
+            return response.errorResponse("Link seems to be broken")
+        return response.emailNotFound()
+
+    except Exception as e:
+        log = Logger(module_name='/supplier/verify-email', function_name='supplier_verify_email()')
         log.log(traceback.format_exc(), priority='highest')
         return response.errorResponse("Some error occurred please try again later")
 
@@ -534,6 +598,12 @@ def supplier_login_verify():
                                                 "role": suser.get_role(),
                                                 "activation_status": supplier.get_activation_status(),
                                                 "created_at": suser.get_created_at(),
+                                                "profile_completed": supplier.get_profile_completed(),
+                                                "city": supplier.get_city(),
+                                                "business_address": supplier.get_business_address(),
+                                                "annual_revenue": supplier.get_annual_revenue(),
+                                                "industry": supplier.get_industry(),
+                                                "pincode": supplier.get_pincode(),
                                                 "updated_at": suser.get_updated_at()
                                             }})
         return response.errorResponse("Invalid credentials")

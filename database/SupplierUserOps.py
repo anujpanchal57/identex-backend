@@ -138,11 +138,33 @@ class SUser:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to update password, please try again')
 
+    def update_suser_details(self, name, mobile_no):
+        try:
+            self.__suser['name'], self.__suser['mobile_no'] = name, mobile_no
+            self.__cursor.execute("update s_users set name = %s, mobile_no = %s where email = %s", (name, mobile_no, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierUserOps', function_name='update_suser_details()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update user details, please try again')
+        except Exception as e:
+            log = Logger(module_name='SupplierUserOps', function_name='update_suser_details()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update user details, please try again')
+
     def get_supplier_id(self):
         return self.__suser['supplier_id']
 
     def get_email(self):
         return self.__suser['email']
+
+    def set_status(self, status):
+        self.__suser['status'] = status
+        self.__cursor.execute("update s_users set status = %s where email = %s", (status, self.__id))
+        self.__sql.commit()
+        return True
 
     # Encoding JWT token with an expiration time of 3 days
     def encode_auth_token(self):
