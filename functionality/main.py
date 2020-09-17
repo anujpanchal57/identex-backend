@@ -395,11 +395,13 @@ def supplier_verify_email():
         data['_id'] = data['_id'].lower()
         is_suser = SUser.is_suser(data['_id'])
         supplier_id = SUser(data['_id']).get_supplier_id()
+        supplier = Supplier(supplier_id)
         if is_suser:
             if Verification(_id=data['token'], name="verify_email").verify_auth_token(user_type="supplier"):
                 SUser(data['_id']).set_status(status=True)
-                Supplier(supplier_id).set_activation_status(True)
-                return response.customResponse({"response": "Your email has been verified successfully"})
+                supplier.set_activation_status(True)
+                return response.customResponse({"response": "Your email has been verified successfully",
+                                                "activation_status": supplier.get_activation_status()})
             return response.errorResponse("Link seems to be broken")
         return response.emailNotFound()
 
