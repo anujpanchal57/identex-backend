@@ -75,8 +75,8 @@ class Product:
 
     def get_lot_products(self, lot_id):
         try:
-            self.__cursor.execute("""select p.reqn_product_id, pm.product_id, pm.product_name, idc.category_name, p.product_description, 
-                                    p.quantity, p.unit, idsc.sub_category_name
+            self.__cursor.execute("""select p.reqn_product_id, pm.product_id, pm.product_name, idc.category_name as product_category, 
+                                    p.product_description, p.quantity, p.unit, idsc.sub_category_name as product_sub_category
                                     from products as p 
                                     join product_master as pm
                                     on p.product_id = pm.product_id
