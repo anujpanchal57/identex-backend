@@ -1820,7 +1820,8 @@ def buyer_product_add():
         data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else ''
         # Check whether the product is existing or not
         if not ProductMaster().is_product_added(product_name=data['product_name'].lower(),
-                                                product_category=data['product_category'].lower(),
+                                                product_category=data['product_category'],
+                                                product_sub_category=data['product_sub_category'],
                                                 buyer_id=data['buyer_id']):
             # Insert the product
             product_id = ProductMaster().add_product(product_name=data['product_name'], product_category=data['product_category'],
@@ -2153,9 +2154,9 @@ def buyer_order_grn_upload():
                 doc = tuple(doc)
                 documents.append(doc)
             document_ids += Document("").insert_many(documents)
+            order.set_grn_uploaded(grn_uploaded=True)
 
         # Update the status of grn_uploaded in orders table
-        grn_uploaded = order.set_grn_uploaded(grn_uploaded=True)
         delivery_date_ts = GenericOps.convert_datestring_to_timestamp(data['delivery_date'])
         delivery_date = order.set_delivery_date(delivery_date=delivery_date_ts)
         order_status = order.set_order_status(order_status="delivered")
@@ -2166,7 +2167,7 @@ def buyer_order_grn_upload():
                                 acquisition_id=data['order_id'], acquisition_type="order", rating=data['rating'], review=data['review'])
 
         # Success response
-        if grn_uploaded and delivery_date and order_status:
+        if delivery_date and order_status:
             # Email to supplier
             suser = SUser(supplier_id=order.get_supplier_id())
             po_number = order.get_po_no()

@@ -75,8 +75,8 @@ class ProductMaster:
 
     def is_product_added(self, product_name, product_category, product_sub_category, buyer_id):
         try:
-            self.__cursor.execute("""select * from product_master where lower(product_name) = %s and lower(product_category) = %s 
-                                    and buyer_id = %s and lower(product_sub_category) = %s""",
+            self.__cursor.execute("""select * from product_master where lower(product_name) = %s and product_category = %s 
+                                    and buyer_id = %s and product_sub_category = %s""",
                                   (product_name, product_category, buyer_id, product_sub_category))
             res = self.__cursor.fetchone()
             return res
@@ -92,8 +92,14 @@ class ProductMaster:
 
     def get_buyer_products(self, buyer_id):
         try:
-            self.__cursor.execute("""select product_id, product_name, product_category, product_sub_category, created_at 
-                        from product_master where buyer_id = %s order by created_at desc""", (buyer_id,))
+            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name as product_category, 
+                                    idsc.sub_category_name as product_sub_category, pm.created_at 
+                                    from product_master as pm
+                                    join idntx_category as idc
+                                    on pm.product_category = idc.category_id
+                                    join idntx_sub_categories as idsc
+                                    on pm.product_sub_category = idsc.sub_category_id
+                                    where buyer_id = %s order by created_at desc""", (buyer_id,))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res
