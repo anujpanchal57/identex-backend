@@ -249,7 +249,8 @@ class Join:
 
     def get_buyer_product_order_distribution(self, buyer_id, start_limit=0, end_limit=5):
         try:
-            self.__cursor.execute("""select pm.product_id, pm.product_name, pm.product_category, sum(qu.amount) as total_procurement
+            self.__cursor.execute("""select pm.product_id, pm.product_name, pm.product_category, pm.product_sub_category, 
+                                    sum(qu.amount) as total_procurement
                                     from product_master as pm
                                     join products as p
                                     on pm.product_id = p.product_id
@@ -289,11 +290,11 @@ class Join:
         except mysql.connector.Error as error:
             log = Logger(module_name='JoinOps', function_name='get_buyer_supplier_order_distribution()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
+            return exceptions.IncompleteRequestException("Failed to fetch suppliers, please try again")
         except Exception as e:
             log = Logger(module_name='JoinOps', function_name='get_buyer_supplier_order_distribution()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch products, please try again")
+            return exceptions.IncompleteRequestException("Failed to fetch suppliers, please try again")
 
     def get_supplier_invoices_count(self, supplier_id, req_type="pending"):
         try:

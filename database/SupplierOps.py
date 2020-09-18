@@ -102,16 +102,16 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
 
-    def update_supplier_profile(self, city, business_address, annual_revenue, industry, pincode, company_name,
+    def update_supplier_profile(self, city, business_address, annual_revenue, pincode, company_name,
                                 profile_completed=True):
         try:
             self.__supplier['city'], self.__supplier['business_address'] = city, business_address
-            self.__supplier['annual_revenue'], self.__supplier['industry'] = annual_revenue, industry
+            self.__supplier['annual_revenue'] = annual_revenue
             self.__supplier['pincode'], self.__supplier['company_name'] = pincode, company_name
             self.__supplier['profile_completed'] = 1 if profile_completed else 0
-            self.__cursor.execute("""update suppliers set city = %s, business_address = %s, annual_revenue = %s, industry = %s, 
+            self.__cursor.execute("""update suppliers set city = %s, business_address = %s, annual_revenue = %s, 
                                     pincode = %s, company_name = %s, profile_completed = %s  where supplier_id = %s;""",
-                                  (city, business_address, annual_revenue, industry, pincode, company_name, profile_completed, self.__id))
+                                  (city, business_address, annual_revenue, pincode, company_name, profile_completed, self.__id))
             self.__sql.commit()
             return True
 

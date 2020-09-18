@@ -56,6 +56,11 @@ from database.InvoiceLineItemOps import InvoiceLineItem
 from database.Reports import Reports
 from database.MCXSpotRateOps import MCXSpotRate
 from database.RatingOps import Rating
+from database.PincodeOps import Pincode
+from database.IdntxCategoryOps import IdntxCategory
+from database.IdntxSubCategoryOps import IdntxSubCategory
+from database.IdntxProductMasterOps import IdntxProductMaster
+from database.SupplierIndustriesOps import SupplierIndustries
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -268,34 +273,43 @@ def supplier_profile_update():
         data = request.json
         data['_id'] = data['_id'].lower()
         details = data['details']
-        suser = SUser(data['_id'])
-        supplier = Supplier(data['supplier_id'])
         if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['industry'] == "" or details['pincode'] == "":
             return response.errorResponse("Please fill all the required fields")
+        if len(details['industry']) == 0:
+            return response.errorResponse("Please select atleast one industry")
+        suser = SUser(data['_id'])
+        supplier = Supplier(data['supplier_id'])
+
+        # Converting the list of industries into tuples for inserting them together
+        supplier_inds = []
+        for ind in details['industry']:
+            sample = [data['supplier_id'], ind]
+            supplier_inds.append(tuple(sample))
         if supplier.update_supplier_profile(city=details['city'], business_address=details['business_address'],
-                                                                 annual_revenue=details['annual_revenue'], industry=details['industry'],
+                                                                 annual_revenue=details['annual_revenue'],
                                                                  pincode=details['pincode'], company_name=details['company_name']):
-            if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
-                return response.customResponse({"response": "Profile details updated successfully",
-                                                "details": {
-                                                    "supplier_id": suser.get_supplier_id(),
-                                                    "email": data['_id'],
-                                                    "name": suser.get_name(),
-                                                    "mobile_no": suser.get_mobile_no(),
-                                                    "company_name": supplier.get_company_name(),
-                                                    "company_logo": supplier.get_company_logo(),
-                                                    "status": suser.get_status(),
-                                                    "role": suser.get_role(),
-                                                    "activation_status": supplier.get_activation_status(),
-                                                    "created_at": suser.get_created_at(),
-                                                    "profile_completed": supplier.get_profile_completed(),
-                                                    "city": supplier.get_city(),
-                                                    "business_address": supplier.get_business_address(),
-                                                    "annual_revenue": supplier.get_annual_revenue(),
-                                                    "industry": supplier.get_industry(),
-                                                    "pincode": supplier.get_pincode(),
-                                                    "updated_at": suser.get_updated_at()
-                                                }})
+            if SupplierIndustries().insert_many(supplier_inds):
+                if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
+                    return response.customResponse({"response": "Profile details updated successfully",
+                                                    "details": {
+                                                        "supplier_id": suser.get_supplier_id(),
+                                                        "email": data['_id'],
+                                                        "name": suser.get_name(),
+                                                        "mobile_no": suser.get_mobile_no(),
+                                                        "company_name": supplier.get_company_name(),
+                                                        "company_logo": supplier.get_company_logo(),
+                                                        "status": suser.get_status(),
+                                                        "role": suser.get_role(),
+                                                        "activation_status": supplier.get_activation_status(),
+                                                        "created_at": suser.get_created_at(),
+                                                        "profile_completed": supplier.get_profile_completed(),
+                                                        "city": supplier.get_city(),
+                                                        "business_address": supplier.get_business_address(),
+                                                        "annual_revenue": supplier.get_annual_revenue(),
+                                                        "industry": supplier.get_industry(),
+                                                        "pincode": supplier.get_pincode(),
+                                                        "updated_at": suser.get_updated_at()
+                                                    }})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -763,7 +777,9 @@ def buyer_create_rfq():
         invited_suppliers_ids = InviteSupplier("").insert_many(suppliers)
 
         # Create the lot
-        lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'])
+        data['lot']['lot_description'] = data['lot']['lot_description'] if 'lot_description' in data['lot'] else ''
+        lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'],
+                                 lot_category=data['lot']['lot_category'], lot_sub_category=data['lot']['lot_sub_category'])
 
         # Insert the products
         for product in data['products']:
@@ -1762,6 +1778,21 @@ def get_supplier_order_distribution():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for searching pincodes for profile details form
+@app.route("/pincode/search", methods=["POST"])
+@validate_access_token
+def pincode_search():
+    try:
+        data = request.json
+        if data['pincode'] == "":
+            return response.customResponse({"pincodes": []})
+        return response.customResponse({"pincodes": Pincode().search_by_pincode(data['pincode'])})
+
+    except Exception as e:
+        log = Logger(module_name="/pincode/search", function_name="pincode_search()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 ########################################### PRODUCTS SECTION ##########################################################
 
 # POST request for fetching list of products for buyer
@@ -1786,13 +1817,14 @@ def buyer_product_add():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else ''
         # Check whether the product is existing or not
         if not ProductMaster().is_product_added(product_name=data['product_name'].lower(),
                                                 product_category=data['product_category'].lower(),
                                                 buyer_id=data['buyer_id']):
             # Insert the product
             product_id = ProductMaster().add_product(product_name=data['product_name'], product_category=data['product_category'],
-                                                     buyer_id=data['buyer_id'])
+                                                     buyer_id=data['buyer_id'], product_sub_category=data['product_sub_category'])
             return response.customResponse({"response": "Product added successfully", "product_id": product_id})
         return response.errorResponse("Product already exists in the inventory. Please select it from the products dropdown")
 
@@ -1803,7 +1835,7 @@ def buyer_product_add():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for editing/deleting a buyer product
+# POST request for editing/deleting a buyer product (Delete method is not being used)
 @app.route("/buyer/products/modify", methods=["POST"])
 @validate_buyer_access_token
 def buyer_products_modify():
@@ -1815,6 +1847,7 @@ def buyer_products_modify():
                                             "product_id": data['product_id'],
                                             "product_name": data['product_name'],
                                             "product_category": data['product_category']})
+        # Delete method is not being used
         else:
             ProductMaster(data['product_id']).delete_product()
             return response.customResponse({"response": "Product deleted successfully"})
@@ -1855,6 +1888,63 @@ def get_product_order_distribution():
         log = Logger(module_name="/buyer/product-order-distribution/get", function_name="get_product_order_distribution()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the categories from the IDNTX master
+@app.route("/idntx-categories/get", methods=["POST"])
+@validate_access_token
+def idntx_categories_get():
+    try:
+        return response.customResponse({"categories": IdntxCategory().get_categories()})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/idntx-categories/get", function_name="idntx_categories_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+
+# POST request for fetching the sub categories from the IDNTX sub categories master
+@app.route("/idntx-sub-categories/get", methods=["POST"])
+@validate_access_token
+def idntx_sub_categories_get():
+    try:
+        data = request.json
+        if 'category_id' not in data:
+            return response.errorResponse("Please send a valid category")
+        return response.customResponse({"sub_categories": IdntxSubCategory().get_subcategories_for_category(category_id=data['category_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/idntx-sub-categories/get", function_name="idntx_sub_categories_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+
+# POST request for fetching the products from the IDNTX product master
+@app.route("/idntx-products/get", methods=["POST"])
+@validate_access_token
+def idntx_products_get():
+    try:
+        data = request.json
+        if data['product_str'] == "":
+            return response.customResponse({"products": []})
+        if 'category_id' not in data:
+            return response.errorResponse("Please send a valid category")
+        if 'sub_category_id' not in data:
+            return response.errorResponse("Please send a valid sub category")
+        return response.customResponse({"products": IdntxProductMaster().search_products(product_str=data['product_str'],
+                                                                                         category_id=data['category_id'],
+                                                                                         sub_category_id=data['sub_category_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/idntx-products/get", function_name="idntx_products_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 ########################################### ORDERS SECTION ############################################################
 
