@@ -95,8 +95,8 @@ class Order:
             if client_type.lower() == "buyer":
                 self.__cursor.execute("""select o.supplier_id, o.order_id, o.po_no, o.acquisition_id, o.acquisition_type, qu.delivery_time,
                                         r.currency, o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
-                                        o.created_at, o.remarks, s.company_name as supplier_company_name, pm.product_name, idc.category_name, 
-                                        idsc.sub_category_name, p.product_description, qu.amount, qu.per_unit, qu.gst
+                                        o.created_at, o.remarks, s.company_name as supplier_company_name, pm.product_name, idc.category_name as product_category, 
+                                        idsc.sub_category_name as product_sub_category, p.product_description, qu.amount, qu.per_unit, qu.gst
                                         from orders as o
                                         join requisitions as r
                                         on r.requisition_id = o.acquisition_id
@@ -122,8 +122,8 @@ class Order:
                 self.__cursor.execute("""select o.buyer_id, b.company_name as buyer_company_name, o.order_id, o.po_no, o.acquisition_id, 
                                         r.currency, o.acquisition_type, qu.delivery_time,
                                         o.payment_status, o.order_status, o.grn_uploaded, o.payment_date, o.transaction_ref_no, 
-                                        o.created_at, o.remarks, pm.product_name, idc.category_name, p.product_description, 
-                                        qu.amount, qu.per_unit, qu.gst, idsc.sub_category_name
+                                        o.created_at, o.remarks, pm.product_name, idc.category_name as product_category, p.product_description, 
+                                        qu.amount, qu.per_unit, qu.gst, idsc.sub_category_name as product_sub_category
                                         from orders as o
                                         join requisitions as r
                                         on o.acquisition_id = r.requisition_id
@@ -157,8 +157,8 @@ class Order:
 
     def get_order_product_details(self):
         try:
-            self.__cursor.execute("""select o.reqn_product_id, p.product_id, pm.product_name, idc.category_name, 
-                                    idsc.sub_category_name, p.product_description
+            self.__cursor.execute("""select o.reqn_product_id, p.product_id, pm.product_name, idc.category_name as product_category, 
+                                    idsc.sub_category_name as product_sub_category, p.product_description
                                     from orders as o
                                     join products as p
                                     on o.reqn_product_id = p.reqn_product_id
@@ -204,7 +204,8 @@ class Order:
         try:
             self.__cursor.execute("""select o.order_id, o.buyer_id, o.po_no, qu.delivery_time, 
                                     qu.per_unit, qu.amount, qu.gst,
-                                    o.created_at, pm.product_name, idc.category_name, idsc.sub_category_name,  
+                                    o.created_at, pm.product_name, idc.category_name as product_category, 
+                                    idsc.sub_category_name as product_sub_category,  
                                     p.product_description, qu.quantity, p.unit
                                     from orders as o
                                     join requisitions as r

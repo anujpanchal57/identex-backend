@@ -249,7 +249,8 @@ class Join:
 
     def get_buyer_product_order_distribution(self, buyer_id, start_limit=0, end_limit=5):
         try:
-            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name, idsc.sub_category_name, 
+            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name as product_category, 
+                                    idsc.sub_category_name as product_sub_category, 
                                     sum(qu.amount) as total_procurement
                                     from product_master as pm
                                     join products as p

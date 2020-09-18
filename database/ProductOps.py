@@ -100,7 +100,7 @@ class Product:
 
     def get_product_details(self):
         try:
-            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name
+            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name as product_category
                                     from products as p 
                                     join product_master as pm
                                     on p.product_id = pm.product_id
