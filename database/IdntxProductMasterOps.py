@@ -23,9 +23,10 @@ class IdntxProductMaster:
             self.__cursor.close()
             self.__sql.close()
 
-    def search_products(self, product_str, category_id, sub_category_id):
+    def search_products(self, product_str, category_id, sub_category_id, start_limit=0, end_limit=10):
         self.__cursor.execute("select * from idntx_products where lower(product_name) like '%" + product_str + "%' and category_id = "+
-                              str(category_id) + " and sub_category_id = " + str(sub_category_id) + " order by product_name")
+                              str(category_id) + " and sub_category_id = " + str(sub_category_id) + " order by product_name limit " +
+                              str(start_limit) + ", " + str(end_limit))
         res = self.__cursor.fetchall()
         if res is None:
             res = []

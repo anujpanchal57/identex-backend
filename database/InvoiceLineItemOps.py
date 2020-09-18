@@ -98,8 +98,8 @@ class InvoiceLineItem:
     def get_invoice_lt_products(self, invoice_id):
         try:
             self.__cursor.execute("""select il.order_id, il.per_unit, il.quantity, il.gst, il.amount, il.unit_currency, 
-                                    p.reqn_product_id, p.product_description, pm.product_name, pm.product_category, 
-                                    p.unit
+                                    p.reqn_product_id, p.product_description, pm.product_name, idc.category_name, 
+                                    p.unit, idsc.sub_category_name
                                     from invoice_line_items as il
                                     join orders as o
                                     on il.order_id = o.order_id
@@ -107,6 +107,10 @@ class InvoiceLineItem:
                                     on o.reqn_product_id = p.reqn_product_id
                                     join product_master as pm
                                     on p.product_id = pm.product_id
+                                    join idntx_category as idc
+                                    on pm.product_category = idc.category_id
+                                    join idntx_sub_categories as idsc
+                                    on pm.product_sub_category = idsc.sub_category_id
                                     where il.invoice_id = %s""", (invoice_id, ))
             res = self.__cursor.fetchall()
             return res

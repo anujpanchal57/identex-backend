@@ -75,11 +75,15 @@ class Product:
 
     def get_lot_products(self, lot_id):
         try:
-            self.__cursor.execute("""select p.reqn_product_id, pm.product_id, pm.product_name, pm.product_category, p.product_description, 
-                                    p.quantity, p.unit
+            self.__cursor.execute("""select p.reqn_product_id, pm.product_id, pm.product_name, idc.category_name, p.product_description, 
+                                    p.quantity, p.unit, idsc.sub_category_name
                                     from products as p 
                                     join product_master as pm
                                     on p.product_id = pm.product_id
+                                    join idntx_category as idc
+                                    on pm.product_category = idc.category_id
+                                    join idntx_sub_categories as idsc
+                                    on pm.product_sub_category = idsc.sub_category_id
                                     where p.lot_id = %s;""", (lot_id, ))
             res = self.__cursor.fetchall()
             self.__sql.commit()
@@ -96,10 +100,12 @@ class Product:
 
     def get_product_details(self):
         try:
-            self.__cursor.execute("""select pm.product_id, pm.product_name, pm.product_category
+            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name
                                     from products as p 
                                     join product_master as pm
                                     on p.product_id = pm.product_id
+                                    join idntx_category as idc
+                                    on pm.product_category = idc.category_id
                                     where p.reqn_product_id = %s;""", (self.__id, ))
             res = self.__cursor.fetchone()
             return res

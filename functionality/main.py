@@ -1934,7 +1934,7 @@ def idntx_products_get():
             return response.errorResponse("Please send a valid category")
         if 'sub_category_id' not in data:
             return response.errorResponse("Please send a valid sub category")
-        return response.customResponse({"products": IdntxProductMaster().search_products(product_str=data['product_str'],
+        return response.customResponse({"products": IdntxProductMaster().search_products(product_str=data['product_str'].lower(),
                                                                                          category_id=data['category_id'],
                                                                                          sub_category_id=data['sub_category_id'])})
 
