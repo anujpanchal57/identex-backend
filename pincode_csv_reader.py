@@ -7,6 +7,7 @@ filename = "pincode_details.csv"
 # initializing the titles and rows list
 fields = []
 rows = []
+added_pincodes = []
 
 sql_conn = DBConnectivity.create_sql_connection()
 cursor = sql_conn.cursor(dictionary=True)
@@ -18,8 +19,12 @@ with open(filename, 'r') as csvfile:
 
     # extracting each data row one by one
     for row in csvreader:
-        single_row = tuple([row[1], row[4], row[5], row[6], row[7], row[8], row[9]])
-        rows.append(single_row)
+        if row[1] not in added_pincodes:
+            added_pincodes.append(row[1])
+            single_row = tuple([row[1], row[4], row[5], row[6], row[7], row[8], row[9]])
+            rows.append(single_row)
+        else:
+            continue
 
     # Inserting values in the db
     cursor.executemany("""INSERT INTO pincodes (pincode, division_name, region_name, circle_name, taluka, 

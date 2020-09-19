@@ -20,10 +20,8 @@ class Pincode:
             self.__sql.close()
 
     def search_by_pincode(self, pincode, offset=0, limit=10):
-        self.__cursor.execute("select distinct(pincode) as pincode, pincode_id, division_name, region_name, circle_name, "
-                              "taluka, district_name, state_name from pincodes where pincode like "
-                              "'" + pincode + "%' limit " + str(offset) + ", " + str(limit))
+        self.__cursor.execute("select * from pincodes where pincode like '" + pincode + "%' limit " + str(offset) + ", " + str(limit))
         res = self.__cursor.fetchall()
         return res
 
-# pprint(Pincode().search_by_pincode("124"))
+# pprint(Pincode().search_by_pincode("400078"))

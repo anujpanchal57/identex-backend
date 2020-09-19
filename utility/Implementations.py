@@ -27,7 +27,7 @@ supplier_create_table = """create table if not exists suppliers (
                 updated_at int(11) not null,
                 city varchar(30) not null default '',
                 business_address varchar(500) not null default '',
-                annual_revenue varchar(20) not null default '',
+                annual_revenue varchar(50) not null default '',
                 pincode varchar(20) not null default '',
                 profile_completed bool not null default false
             ) ENGINE=InnoDB auto_increment=1000"""
@@ -320,7 +320,7 @@ pincodes_create_table = """create table if not exists pincodes (
                 taluka varchar(60) not null default '',
                 district_name varchar(60) not null default '',
                 state_name varchar(60) not null default ''
-            ) ENGINE=InnoDB auto_increment=1000"""
+            ) ENGINE=InnoDB"""
 
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,
