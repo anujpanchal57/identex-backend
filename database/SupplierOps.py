@@ -82,7 +82,7 @@ class Supplier:
             return False
 
     def set_activation_status(self, status):
-        self.__supplier['activation_status'] = status
+        self.__supplier['activation_status'] = 1 if status else 0
         self.__cursor.execute("update suppliers set activation_status = %s where supplier_id = %s", (status, self.__id))
         self.__sql.commit()
         return True

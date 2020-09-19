@@ -1821,16 +1821,19 @@ def buyer_product_add():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else ''
-        # Check whether the product is existing or not
-        if not ProductMaster().is_product_added(product_name=data['product_name'].lower(),
+        is_product_added = ProductMaster().is_product_added(product_name=data['product_name'].lower(),
                                                 product_category=data['product_category'],
                                                 product_sub_category=data['product_sub_category'],
-                                                buyer_id=data['buyer_id']):
+                                                buyer_id=data['buyer_id'])
+        # Check whether the product is existing or not
+        if not is_product_added:
             # Insert the product
             product_id = ProductMaster().add_product(product_name=data['product_name'], product_category=data['product_category'],
                                                      buyer_id=data['buyer_id'], product_sub_category=data['product_sub_category'])
             return response.customResponse({"response": "Product added successfully", "product_id": product_id})
-        return response.errorResponse("Product already exists in the inventory. Please select it from the products dropdown")
+        # If the product already exists
+        product_id = is_product_added['product_id']
+        return response.customResponse({"response": "Product added successfully", "product_id": product_id})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
