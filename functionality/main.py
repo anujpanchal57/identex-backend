@@ -2050,8 +2050,13 @@ def buyer_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        orders =  Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
+        orders = Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
                                      request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)
+        if len(orders) > 0:
+            for order in orders:
+                if order['grn_uploaded']:
+                    order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'],
+                                                                     operation_type="order")
 
         # Fetching the orders count for different categories
         join_obj = Join()
