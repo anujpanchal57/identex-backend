@@ -90,7 +90,7 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    def get_buyer_products(self, buyer_id):
+    def get_buyer_products(self, buyer_id, product_category, product_sub_category):
         try:
             self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name as product_category, 
                                     idsc.sub_category_name as product_sub_category, pm.created_at 
@@ -99,7 +99,8 @@ class ProductMaster:
                                     on pm.product_category = idc.category_id
                                     join idntx_sub_categories as idsc
                                     on pm.product_sub_category = idsc.sub_category_id
-                                    where buyer_id = %s order by created_at desc""", (buyer_id,))
+                                    where buyer_id = %s and product_category = %s and product_sub_category = %s 
+                                    order by created_at desc""", (buyer_id, product_category, product_sub_category))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res

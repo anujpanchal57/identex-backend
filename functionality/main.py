@@ -1107,6 +1107,7 @@ def buyer_rfq_invite_supplier():
                                       type_of_user="buyer", user_id=data['buyer_id'], ip_address=flask.request.remote_addr,
                                       name=buser.get_name(), company_name=buyer.get_company_name())
         # Fetching lot info for email notification
+        submission_limit = Requisition(data['requisition_id']).get_submission_limit()
         lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
         invited_suppliers = Join().get_invited_suppliers(operation_id=data['requisition_id'], operation_type="rfq")
         buyer_company_name = buyer.get_company_name()
@@ -1121,6 +1122,7 @@ def buyer_rfq_invite_supplier():
                                                                                   "USER": suser.get_first_name(),
                                                                                   "BUYER_COMPANY_NAME": buyer_company_name,
                                                                                   "LOT_NAME": lot['lot_name'],
+                                                                                  "MAX_RESPONSES": str(submission_limit),
                                                                                   "LINK_FOR_RFQ": rfq_link})
                 p.start()
 
@@ -1802,7 +1804,8 @@ def buyer_products_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'])
+        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'], product_category=data['product_category'],
+                                                      product_sub_category=data['product_sub_category'])
         return response.customResponse({"products": products})
 
     except Exception as e:
