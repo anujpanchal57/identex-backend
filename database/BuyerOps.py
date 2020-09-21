@@ -23,7 +23,7 @@ class Buyer:
             self.__sql.close()
 
     # Adding a new buyer
-    def add_buyer(self, company_name, domain_name, auto_join=False, default_currency="inr", subscription_plan="", activation_status=False, company_logo=""):
+    def add_buyer(self, company_name, domain_name, auto_join=True, default_currency="inr", subscription_plan="", activation_status=False, company_logo=""):
         self.__buyer['company_name'] = company_name
         self.__buyer['domain_name'] = domain_name
         self.__buyer['activation_status'] = activation_status

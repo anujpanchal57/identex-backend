@@ -831,6 +831,8 @@ def buyer_create_rfq():
         return response.customResponse({"response": "Your RFQ has been created successfully and sent to the invited suppliers",
                                         "rfq_id": requisition_id})
 
+        # return response.customResponse({"response": True})
+
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:

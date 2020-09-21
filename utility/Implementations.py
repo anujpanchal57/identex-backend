@@ -20,7 +20,7 @@ buyer_create_table = """create table if not exists buyers (
 
 supplier_create_table = """create table if not exists suppliers (
                 supplier_id int primary key not null auto_increment,
-                company_name varchar(50) not null,
+                company_name varchar(100) not null,
                 company_logo varchar(100) not null,
                 activation_status bool not null, 
                 created_at int(11) not null,

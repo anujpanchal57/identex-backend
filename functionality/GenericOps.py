@@ -83,6 +83,9 @@ def get_current_timestamp_of_timezone(op_tz):
     offset = datetime.datetime.now(tz).strftime("%z")
     return convert_time_offset_to_timestamp(offset, int(datetime.datetime.utcnow().timestamp()))
 
+def convert_time_offset_to_timestamp_for_deadline(offset, utc_timestamp):
+    return int(utc_timestamp + ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
+
 def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_format="%d-%m-%Y %H:%M"):
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
     dt = datetime.datetime.strptime(utc_deadline, in_format)
