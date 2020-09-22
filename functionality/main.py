@@ -1200,12 +1200,12 @@ def get_buyer_rfq_quotes_summary():
                     qt_not_found_counter += 1
                     continue
                 # Fetching and calculating the optimal rates
-                cheapest_amount, fastest_time = products[i]['cheapest']['amount'], products[i]['fastest']['delivery_time']
+                cheapest_amount, fastest_time = products[i]['cheapest']['per_unit'], products[i]['fastest']['delivery_time']
                 optimal = quote.get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'], charge_id=products[i]['reqn_product_id'])
                 amount_deviations, delivery_deviations = [], []
                 # calculating deviations
                 for obj in optimal:
-                    amount_deviations.append(obj['amount'] - cheapest_amount)
+                    amount_deviations.append(obj['per_unit'] - cheapest_amount)
                     delivery_deviations.append(obj['delivery_time'] - fastest_time)
                 # Standardizing the deviations calculated
                 std_amount_deviations, std_max_del_deviation = [], []
