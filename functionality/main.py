@@ -11,7 +11,7 @@ from flask_cors import CORS
 import platform
 import jwt
 import flask
-
+import copy
 
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
@@ -1273,6 +1273,9 @@ def supplier_quotation_send():
         suser = SUser(data['_id'])
         supplier_id = suser.get_supplier_id()
         requisition = Requisition(data['requisition_id'])
+        # Fetching lot products
+        lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+        products = Product().get_lot_products(lot_id=lot['lot_id'])
         supplier = Supplier(supplier_id)
         unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
                                                            operation_type="rfq")
@@ -1291,6 +1294,10 @@ def supplier_quotation_send():
         # If supplier is quoting for a closed RFQ
         if requisition.get_request_type() != "open":
             return response.errorResponse("This RFQ is not accepting any further quotations from suppliers")
+
+        # Fetching the previous ranks
+        previous_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
+                                                          products=products))
 
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
@@ -1341,8 +1348,14 @@ def supplier_quotation_send():
                                                            operation_type="rfq")
 
         submissions_left = submission_limit - (quotation_count + 1) if quotation_count <= submission_limit else 0
+
+        # Fetching the current ranks
+        current_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
+                                                                       products=products))
+
         return response.customResponse({"response": "Quotation sent successfully", "unlock_status": unlock_status,
-                                        "submissions_left": submissions_left})
+                                        "submissions_left": submissions_left, "previous_rank": previous_ranks,
+                                        "current_rank": current_ranks})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -1412,22 +1425,8 @@ def supplier_rfq_last_quote_get():
         products = Product().get_lot_products(lot_id=lot['lot_id'])
         result = []
         if len(products) > 0:
-            for i in range(0, len(products)):
-                quotes = Quote().get_supplier_quotes_for_requisition(requisition_id=data['requisition_id'],
-                                                                     charge_id=products[i]['reqn_product_id'])
-                product = products[i]
-                # Getting rank of the supplier
-                for i in range(0, len(quotes)):
-                    if quotes[i]['supplier_id'] == data['supplier_id']:
-                        quotes[i]['rank'] = i+1
-                        product['quote'] = quotes[i]
-                        result.append(product)
-
-                if len(result) == 0:
-                    result.append(product)
-                else:
-                    if result[-1]['reqn_product_id'] != product['reqn_product_id']:
-                        result.append(product)
+            result = Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], products=products,
+                                                      supplier_id=data['supplier_id'])
 
             return response.customResponse({"products": result})
         return response.errorResponse("No products found in this lot")

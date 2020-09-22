@@ -124,6 +124,47 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def calculate_supplier_ranks(self, requisition_id, products, supplier_id, status=True):
+        try:
+            result = []
+            for i in range(0, len(products)):
+                self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
+                                        qu.charge_id, qu.quote_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit 
+                                        from suppliers as s
+                                        join quotations as q
+                                        on s.supplier_id = q.supplier_id
+                                        join quotes as qu
+                                        on q.quotation_id = qu.quotation_id
+                                        where q.requisition_id = %s
+                                        and q.status = %s
+                                        and qu.charge_id = %s
+                                        order by qu.per_unit asc""", (requisition_id, status, products[i]['reqn_product_id']))
+                quotes = self.__cursor.fetchall()
+                product = products[i]
+
+                # Getting rank of the supplier
+                for i in range(0, len(quotes)):
+                    if quotes[i]['supplier_id'] == supplier_id:
+                        quotes[i]['rank'] = i+1
+                        product['quote'] = quotes[i]
+                        result.append(product)
+
+                if len(result) == 0:
+                    result.append(product)
+                else:
+                    if result[-1]['reqn_product_id'] != product['reqn_product_id']:
+                        result.append(product)
+            return result
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='calculate_supplier_ranks()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='calculate_supplier_ranks()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
     def get_highest_quote_for_product(self, requisition_id, buyer_id, charge_id):
         try:
             self.__cursor.execute("""select max(qu.amount) as max_amount
@@ -150,7 +191,7 @@ class Quote:
         try:
             if category.lower() == "cheapest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
-                                        qu.quote_id
+                                        qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit 
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
@@ -165,7 +206,7 @@ class Quote:
                 return res
             elif category.lower() == "fastest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
-                                        qu.quote_id
+                                        qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit 
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
