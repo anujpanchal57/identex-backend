@@ -111,7 +111,7 @@ class Quote:
                                     where q.requisition_id = %s
                                     and q.status = %s
                                     and qu.charge_id = %s
-                                    order by per_unit asc;""", (requisition_id, status, charge_id))
+                                    order by qu.per_unit asc;""", (requisition_id, status, charge_id))
             res = self.__cursor.fetchall()
             return res
 
