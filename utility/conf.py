@@ -53,6 +53,8 @@ SUPPLIERS_ENDPOINT = conf_settings.get('supplier_endpoint')
 
 BUYER_ACTIVATION_SECRET_KEY = conf_settings.get('secret').get('buyer_activation')
 
+APPY_FLOW_SECRET_KEY = conf_settings.get('api_keys').get('appyflow')
+
 aws = {
     'access_key': conf_settings['aws']['access_key_id'],
     'secret_key': conf_settings['aws']['secret_key'],

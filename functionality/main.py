@@ -2487,6 +2487,22 @@ def buyer_dashobard_metrics_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+########################################### GST SECTION ###############################################################
+
+# POST request for fetching the details against a GST number
+@app.route("/gst/details/get", methods=["POST"])
+@validate_access_token
+def gst_details_get():
+    try:
+        pass
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/gst/details/get", function_name="gst_details_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 ########################################### MISCELLANEOUS SECTION #####################################################
 
 # POST request for fetching messages
@@ -2500,8 +2516,8 @@ def get_activity_logs():
         data['limit'] = data['limit'] if 'limit' in data else 15
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
-        activity_logs = ActivityLogs().get_activity_logs(type_of_user="buyer", user_id=data['client_id'], start_limit=start_limit,
-                                                         end_limit=end_limit)
+        activity_logs = ActivityLogs().get_activity_logs(operation_id=data['operation_id'], operation_type=data['operation_type'],
+                                                         start_limit=start_limit, end_limit=end_limit)
         return response.customResponse({"activity_logs": activity_logs})
 
     except Exception as e:
@@ -2554,6 +2570,8 @@ def mcx_spot_rates_get():
         log = Logger(module_name="/mcx/spot-rates/get", function_name="mcx_spot_rates_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+
 
 
 if __name__ == '__main__':
