@@ -1293,8 +1293,8 @@ def supplier_quotation_send():
             return response.errorResponse("This RFQ is not accepting any further quotations from suppliers")
 
         # Fetching the previous ranks
-        previous_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
-                                                          products=products))
+        previous_ranks, supplier_prev_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
+                                                                                             products=products))
 
         # Add quotation
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
@@ -1311,6 +1311,7 @@ def supplier_quotation_send():
             quotes.append(qt)
         quotes_id = Quote().insert_many(quotes)
 
+        # Error response if quotation is not updated correctly
         if not quotation_id or not quotes_id:
             return response.errorResponse("Failed to send quotation, please try again")
 
@@ -1318,6 +1319,7 @@ def supplier_quotation_send():
         if submission_limit <= quotation_count + 1 and unlock_status:
             InviteSupplier().update_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'], operation_type="rfq", status=False)
 
+        # Adding the activity in the logs
         ActivityLogs("").add_activity(activity="Quotation sent", done_by=data['_id'],
                                       operation_id=data['requisition_id'],
                                       operation_type="rfq",
@@ -1336,7 +1338,7 @@ def supplier_quotation_send():
                                                                               "SUPPLIER_NAME": supplier_company_name,
                                                                               "TYPE_OF_REQUEST": "RFQ",
                                                                               "REQUEST_ID": str(data['requisition_id']),
-                                                                              "LOT_NAME": buyer['requisition_name'],
+                                                                              "LOT_NAME": lot['lot_name'],
                                                                               "LINK": link})
             p.start()
 
@@ -1347,8 +1349,27 @@ def supplier_quotation_send():
         submissions_left = submission_limit - (quotation_count + 1) if quotation_count <= submission_limit else 0
 
         # Fetching the current ranks
-        current_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
-                                                                       products=products))
+        current_ranks, supplier_curr_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
+                                                                                            products=products))
+
+        pprint(supplier_prev_ranks, supplier_curr_ranks)
+
+        # Sending a notification to suppliers for intimation of changes in their ranks, if any
+        suppliers = GenericOps.get_rank_changed_suppliers(prev_ranks=supplier_prev_ranks, curr_ranks=supplier_curr_ranks)
+        if len(suppliers) > 0:
+            for supp in suppliers:
+                link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['rank_changed']['page_url'].replace("{{operation_type}}", "rfq")
+                subject = conf.email_endpoints['supplier']['rank_changed']['subject'].replace("{{operation_type}}", "RFQ").replace("{{requisition_id}}", str(data['requisition_id']))
+                lot_name = lot['lot_name']
+                p = Process(target=EmailNotifications.send_handlebars_email, kwargs={"recipients": [suppliers[supp]['email']],
+                                                                                     "template_id": conf.email_endpoints['supplier']['rank_changed']['template_id'],
+                                                                                     "subject": subject,
+                                                                                     "USER": suppliers[supp]['supplier_name'],
+                                                                                     "LOT_NAME": lot_name,
+                                                                                     "RFQ_ID": str(data['requisition_id']),
+                                                                                     "LINK": link,
+                                                                                     "PRODUCTS": suppliers[supp]['products']})
+                p.start()
 
         return response.customResponse({"response": "Quotation sent successfully", "unlock_status": unlock_status,
                                         "submissions_left": submissions_left, "previous_rank": previous_ranks,

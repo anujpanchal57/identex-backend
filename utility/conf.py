@@ -161,6 +161,11 @@ email_endpoints = {
             "page_url": "/invoices?type=pending",
             "subject": "Invoice raised by {{supplier_name}}",
             "template_id": "invoice_raised"
+        },
+        "rank_changed": {
+            "page_url": "/{{operation_type}}?type=open",
+            "subject": "Your rank for the {{operation_type}} (#{{requisition_id}}) has changed",
+            "template_id": "rank_changed"
         }
     }
 }

@@ -114,6 +114,33 @@ def populate_email_template_for_messages(file_path, details):
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
+def get_rank_changed_suppliers(prev_ranks, curr_ranks):
+    result = {}
+    for prev in prev_ranks:
+        if len(prev['ranks']) == 0:
+            continue
+        else:
+            for curr in curr_ranks:
+                if prev['reqn_product_id'] == curr['reqn_product_id']:
+                    for i in range(len(prev['ranks'])):
+                        for j in range(len(curr['ranks'])):
+                            if curr['ranks'][j]['supplier_id'] == prev['ranks'][i]['supplier_id'] and j > i:
+                                if curr['ranks'][j]['supplier_id'] not in result:
+                                    result[curr['ranks'][j]['supplier_id']] = {}
+                                    result[curr['ranks'][j]['supplier_id']]['supplier_name'] = curr['ranks'][j]['supplier_name']
+                                    result[curr['ranks'][j]['supplier_id']]['products'] = []
+                                    result[curr['ranks'][j]['supplier_id']]['products'].append({"product_name": curr['product_name'],
+                                                                                                "product_description": curr['product_description'],
+                                                                                                "current_rank": j+1,
+                                                                                                "previous_rank": i+1})
+                                else:
+                                    result[curr['ranks'][j]['supplier_id']]['products'].append({"product_name": curr['product_name'],
+                                                                                                "product_description": curr['product_description'],
+                                                                                                "current_rank": j + 1,
+                                                                                                "previous_rank": i + 1})
+    return result
+
+
 # pprint(calculate_closing_time(1598376600, "asia/calcutta"))
 # pprint(calculate_closing_time("2020-08-25 17:30", "asia/calcutta"))
 # pprint(populate_email_template_for_messages(file_path=conf.message_files['message_received'], details={}))
