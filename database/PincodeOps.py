@@ -19,6 +19,13 @@ class Pincode:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_pincode_details(self, pincode):
+        self.__cursor.execute("""select * from pincodes where pincode = %s""", (pincode, ))
+        res = self.__cursor.fetchone()
+        if res is None:
+            res = {}
+        return res
+
     def search_by_pincode(self, pincode, offset=0, limit=10):
         self.__cursor.execute("select * from pincodes where pincode like '" + pincode + "%' limit " + str(offset) + ", " + str(limit))
         res = self.__cursor.fetchall()

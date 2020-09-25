@@ -25,12 +25,20 @@ supplier_create_table = """create table if not exists suppliers (
                 activation_status bool not null, 
                 created_at int(11) not null,
                 updated_at int(11) not null,
-                city varchar(30) not null default '',
-                business_address varchar(500) not null default '',
                 annual_revenue varchar(50) not null default '',
-                pincode varchar(20) not null default '',
-                profile_completed bool not null default false
+                profile_completed bool not null default false,
+                pan_no varchar(20) not null default '',
+                company_nature varchar(30) not null default ''
             ) ENGINE=InnoDB auto_increment=1000"""
+
+supplier_branches_create_table = """create table if not exists supplier_branches (
+                branch_id int not null primary key auto_increment,
+                supplier_id int not null,
+                city varchar(50) not null default '',
+                business_address varchar(500) not null default '',
+                pincode varchar(20) not null default '',
+                foreign key (supplier_id) references suppliers(supplier_id)
+            ) Engine=InnoDB auto_increment=1000"""
 
 supplier_industries_create_table = """create table if not exists supplier_industries (
                 mapper_id int not null primary key auto_increment,
@@ -39,6 +47,15 @@ supplier_industries_create_table = """create table if not exists supplier_indust
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
                 FOREIGN KEY (industry_id) REFERENCES idntx_category(category_id)
             ) ENGINE=InnoDB auto_increment=1000"""
+
+supplier_gst_details_create_table = """create table if not exists supplier_gst_details (
+                gst_details_id int not null primary key auto_increment,
+                supplier_id int not null,
+                gst_no varchar(50) not null,
+                filing_frequency varchar(20) not null default '',
+                status varchar(20) not null default '',
+                foreign key (supplier_id) references suppliers(supplier_id)
+            ) Engine=InnoDB auto_increment=1000"""
 
 buser_create_table = """create table if not exists b_users (
                 email varchar(60) primary key not null,

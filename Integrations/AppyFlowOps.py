@@ -13,7 +13,7 @@ class AppyFlow:
         self.__secret_key = secret_key
 
     # For verifying the GST number and if valid then fetching its details
-    def verify_gst_no(self):
+    def get_details(self):
         url = "https://appyflow.in/api/verifyGST?gstNo=" + self.__gst_no + "&key_secret=" + self.__secret_key
         payload = {}
         headers = {}

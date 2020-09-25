@@ -37,6 +37,7 @@ from multiprocessing import Process
 from database.VerificationOps import Verification
 from database.SupplierRelationshipOps import SupplierRelationship
 from Integrations.AWSOps import AWS
+from Integrations.AppyFlowOps import AppyFlow
 from database.InvitedSupplierOps import InviteSupplier
 from database.LotOps import Lot
 from database.ProductOps import Product
@@ -61,6 +62,8 @@ from database.IdntxCategoryOps import IdntxCategory
 from database.IdntxSubCategoryOps import IdntxSubCategory
 from database.IdntxProductMasterOps import IdntxProductMaster
 from database.SupplierIndustriesOps import SupplierIndustries
+from database.SupplierBranchesOps import SupplierBranches
+from database.SupplierGSTDetailsOps import SupplierGSTDetails
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -285,11 +288,15 @@ def supplier_profile_update():
         for ind in details['industry']:
             sample = [data['supplier_id'], ind]
             supplier_inds.append(tuple(sample))
-        if supplier.update_supplier_profile(city=details['city'], business_address=details['business_address'],
-                                                                 annual_revenue=details['annual_revenue'],
-                                                                 pincode=details['pincode'], company_name=details['company_name']):
+        if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
+                                            annual_revenue=details['annual_revenue'], company_name=details['company_name']):
             if SupplierIndustries().insert_many(supplier_inds):
                 if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
+                    # Adding supplier branches and GST details
+                    SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
+                                                    business_address=details['business_address'], pincode=details['pincode'])
+                    SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
+                                                         filing_frequency=details['filing_frequency'], status=details['gst_status'])
                     return response.customResponse({"response": "Profile details updated successfully",
                                                     "details": {
                                                         "supplier_id": suser.get_supplier_id(),
@@ -303,11 +310,6 @@ def supplier_profile_update():
                                                         "activation_status": supplier.get_activation_status(),
                                                         "created_at": suser.get_created_at(),
                                                         "profile_completed": supplier.get_profile_completed(),
-                                                        "city": supplier.get_city(),
-                                                        "business_address": supplier.get_business_address(),
-                                                        "annual_revenue": supplier.get_annual_revenue(),
-                                                        "industry": supplier.get_industry(),
-                                                        "pincode": supplier.get_pincode(),
                                                         "updated_at": suser.get_updated_at()
                                                     }})
 
@@ -615,11 +617,6 @@ def supplier_login_verify():
                                                 "activation_status": supplier.get_activation_status(),
                                                 "created_at": suser.get_created_at(),
                                                 "profile_completed": supplier.get_profile_completed(),
-                                                "city": supplier.get_city(),
-                                                "business_address": supplier.get_business_address(),
-                                                "annual_revenue": supplier.get_annual_revenue(),
-                                                "industry": supplier.get_industry(),
-                                                "pincode": supplier.get_pincode(),
                                                 "updated_at": suser.get_updated_at()
                                             }})
         return response.errorResponse("Invalid credentials")
@@ -2494,7 +2491,37 @@ def buyer_dashobard_metrics_get():
 @validate_access_token
 def gst_details_get():
     try:
-        pass
+        data = request.json
+        if 'gst_no' not in data:
+            return response.errorResponse("Please send a valid GST number")
+        if data['gst_no'] == "":
+            return response.errorResponse("Please send a valid GST number")
+        gst_details = AppyFlow(gst_no=data['gst_no']).get_details()
+
+        if 'error' in gst_details:
+            if gst_details['error']:
+                return response.errorResponse("Valid GST number required")
+
+        if gst_details['taxpayerInfo']['errorMsg'] is None:
+            tax_payer_info = gst_details['taxpayerInfo']
+            result = {}
+            # Normalizing fields
+            address = tax_payer_info['pradr']['addr']
+            result['business_address'] = address['bno'] + " " + address['bnm'] + " " + address['loc'] + " " + address['st'] + " " + address['dst']
+            # PAN number
+            result['pan_no'] = tax_payer_info['panNo']
+            # Filing frequency
+            result['filing_frequency'] = gst_details['compliance']['filingFrequency'] if gst_details['compliance']['filingFrequency'] is not None else tax_payer_info['frequencyType']
+            # Nature of the business
+            result['company_nature'] = tax_payer_info['ctb']
+            # Full name of the company
+            result['company_name'] = tax_payer_info['tradeNam']
+            # GST status
+            result['status'] = tax_payer_info['sts']
+            # City and pincode
+            result['city'] = Pincode().get_pincode_details(pincode=address['pncd'])['division_name']
+            result['pincode'] = address['pncd']
+            return response.customResponse({"details": result})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
