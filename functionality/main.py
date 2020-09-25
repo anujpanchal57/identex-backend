@@ -1352,17 +1352,17 @@ def supplier_quotation_send():
         current_ranks, supplier_curr_ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], supplier_id=supplier_id,
                                                                                             products=products))
 
-        pprint(supplier_prev_ranks, supplier_curr_ranks)
 
         # Sending a notification to suppliers for intimation of changes in their ranks, if any
         suppliers = GenericOps.get_rank_changed_suppliers(prev_ranks=supplier_prev_ranks, curr_ranks=supplier_curr_ranks)
+        pprint(suppliers)
         if len(suppliers) > 0:
             for supp in suppliers:
                 link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['rank_changed']['page_url'].replace("{{operation_type}}", "rfq")
                 subject = conf.email_endpoints['supplier']['rank_changed']['subject'].replace("{{operation_type}}", "RFQ").replace("{{requisition_id}}", str(data['requisition_id']))
                 lot_name = lot['lot_name']
                 p = Process(target=EmailNotifications.send_handlebars_email, kwargs={"recipients": [suppliers[supp]['email']],
-                                                                                     "template_id": conf.email_endpoints['supplier']['rank_changed']['template_id'],
+                                                                                     "template": conf.email_endpoints['supplier']['rank_changed']['template_id'],
                                                                                      "subject": subject,
                                                                                      "USER": suppliers[supp]['supplier_name'],
                                                                                      "LOT_NAME": lot_name,
@@ -1443,8 +1443,8 @@ def supplier_rfq_last_quote_get():
         products = Product().get_lot_products(lot_id=lot['lot_id'])
         result = []
         if len(products) > 0:
-            result = Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], products=products,
-                                                      supplier_id=data['supplier_id'])
+            result, ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], products=products,
+                                                                           supplier_id=data['supplier_id']))
 
             return response.customResponse({"products": result})
         return response.errorResponse("No products found in this lot")

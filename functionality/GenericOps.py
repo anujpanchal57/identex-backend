@@ -128,6 +128,7 @@ def get_rank_changed_suppliers(prev_ranks, curr_ranks):
                                 if curr['ranks'][j]['supplier_id'] not in result:
                                     result[curr['ranks'][j]['supplier_id']] = {}
                                     result[curr['ranks'][j]['supplier_id']]['supplier_name'] = curr['ranks'][j]['supplier_name']
+                                    result[curr['ranks'][j]['supplier_id']]['email'] = curr['ranks'][j]['email']
                                     result[curr['ranks'][j]['supplier_id']]['products'] = []
                                     result[curr['ranks'][j]['supplier_id']]['products'].append({"product_name": curr['product_name'],
                                                                                                 "product_description": curr['product_description'],
