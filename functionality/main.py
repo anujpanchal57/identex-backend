@@ -64,6 +64,9 @@ from database.IdntxProductMasterOps import IdntxProductMaster
 from database.SupplierIndustriesOps import SupplierIndustries
 from database.SupplierBranchesOps import SupplierBranches
 from database.SupplierGSTDetailsOps import SupplierGSTDetails
+from database.ProjectOps import Project
+from database.ProjectMembersOps import ProjectMembers
+from database.ProjectLotsOps import ProjectLots
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -2548,6 +2551,42 @@ def gst_details_get():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/gst/details/get", function_name="gst_details_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+########################################### PROJECTS SECTION ##########################################################
+
+# POST request for creating a new project
+@app.route("/buyer/project/create", methods=['POST'])
+@validate_buyer_access_token
+def buyer_project_create():
+    try:
+        data = request.json
+        # create a new project
+
+        # add members to that project
+
+        pass
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/project/create", function_name="buyer_project_create()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching team members of a buyer
+@app.route("/buyer/members/get", methods=['POST'])
+@validate_buyer_access_token
+def buyer_members_get():
+    try:
+        data = request.json
+        return response.customResponse({"members": BUser().get_busers_for_buyer_id(buyer_id=data['buyer_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/members/get", function_name="buyer_members_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

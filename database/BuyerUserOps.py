@@ -27,7 +27,7 @@ class BUser:
 
     def get_busers_for_buyer_id(self, buyer_id):
         try:
-            self.__cursor.execute("""select * from b_users where buyer_id = %s""", (buyer_id, ))
+            self.__cursor.execute("""select name, mobile_no, email, role from b_users where buyer_id = %s""", (buyer_id, ))
             res = self.__cursor.fetchall()
             return res
 

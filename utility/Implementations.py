@@ -339,6 +339,28 @@ pincodes_create_table = """create table if not exists pincodes (
                 state_name varchar(60) not null default ''
             ) ENGINE=InnoDB"""
 
+projects_create_table = """create table if not exists projects(
+                project_id int not null primary key auto_increment,
+                project_name varchar(100) not null,
+                project_description varchar(500) not null default '',
+                project_budget float(20, 2) not null default 0,
+                project_deadline int(11) not null,
+                project_utc_deadline varchar(20) not null default '',
+                ref_id varchar(100) not null default ''
+            ) Engine=InnoDB auto_increment=1000"""
+
+project_members_create_table = """create table if not exists project_members (
+                project_id int not null,
+                member_email varchar(60) not null,
+                primary key (project_id, member_email)
+            )"""
+
+project_lots_create_table = """create table if not exists project_lots (
+                project_id int not null,
+                lot_id int not null,
+                primary key (project_id, lot_id)
+            )"""
+
 logs_create_table = """create table if not exists logs (
                 log_id varchar(100) not null primary key,
                 function_name varchar(50) not null,
