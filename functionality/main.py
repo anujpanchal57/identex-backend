@@ -2575,6 +2575,36 @@ def buyer_project_create():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+########################################### TEAM MANAGEMENT SECTION ###################################################
+
+# POST request for adding a new member
+@app.route("/buyer/member/add", methods=["POST"])
+@validate_buyer_access_token
+def buyer_member_add():
+    try:
+        pass
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/member/add", function_name="buyer_member_add()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for updating the details of a member / deleting an existing member
+@app.route("/buyer/member-details/update", methods=["POST"])
+@validate_buyer_access_token
+def buyer_member_details_update():
+    try:
+        pass
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/member-details/update", function_name="buyer_member_details_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for fetching team members of a buyer
 @app.route("/buyer/members/get", methods=['POST'])
 @validate_buyer_access_token
