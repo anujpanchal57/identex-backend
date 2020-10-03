@@ -159,6 +159,40 @@ class BUser:
         self.__sql.commit()
         return True
 
+    def set_member_details(self, details):
+        try:
+            self.__buser['name'], self.__buser['mobile_no'] = details['name'], details['mobile_no']
+            self.__cursor.execute("update b_users set name = %s, mobile_no = %s where email = %s", (self.__buser['name'],
+                                                                                                    self.__buser['mobile_no'],
+                                                                                                    self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='BuyerUserOps', function_name='set_member_details()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update member details, please try again')
+        except Exception as e:
+            log = Logger(module_name='BuyerUserOps', function_name='set_member_details()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update member details, please try again')
+
+    def remove_buser(self):
+        try:
+            self.__cursor.execute("delete from b_users where email = %s", (self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='BuyerUserOps', function_name='remove_buser()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to remove member, please try again')
+        except Exception as e:
+            log = Logger(module_name='BuyerUserOps', function_name='remove_buser()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to remove member, please try again')
+
+
 # buser = BUser("anujpanchal57@gmail.com")
 # pprint(BUser.is_buser("utkarsh.dhawan@exportify.in"))
 # pprint(BUser("").add_buser("utkarsh.dhawan@exportify.in", "Utkarsh", 1000, "", "cbdbe4936ce8be63184d9f2e13fc249234371b9a", "admin"))

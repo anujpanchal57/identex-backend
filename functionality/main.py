@@ -2577,11 +2577,28 @@ def buyer_project_create():
 
 ########################################### TEAM MANAGEMENT SECTION ###################################################
 
+# POST request for checking whether a member is already added or not
+@app.route("/buyer/is-member/verify", methods=["POST"])
+@validate_buyer_access_token
+def is_member_buyer_verify():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        is_buser = True if BUser.is_buser(data['_id']) else False
+        return response.customResponse({"is_member": is_buser})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/is-member/verify", function_name="is_member_buyer_verify()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for adding a new member
 @app.route("/buyer/member/add", methods=["POST"])
 @validate_buyer_access_token
 def buyer_member_add():
     try:
+        data = request.json
+        buyer = Buyer(data['buyer_id'])
         pass
 
     except exceptions.IncompleteRequestException as e:
@@ -2596,7 +2613,18 @@ def buyer_member_add():
 @validate_buyer_access_token
 def buyer_member_details_update():
     try:
-        pass
+        data = request.json
+        if not data['truncate']:
+            # Update member details
+            data['member_details']['email'] = data['member_details']['email'].lower()
+            BUser(data['member_details']['email']).set_member_details(data['member_details'])
+            return response.customResponse({"response": "Member details updated successfully",
+                                            "member_details": data['member_details']})
+        else:
+            # Delete the member
+            data['member_details']['email'] = data['member_details']['email'].lower()
+            BUser(data['member_details']['email']).remove_buser()
+            return response.customResponse({"response": "Member deleted successfully"})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)

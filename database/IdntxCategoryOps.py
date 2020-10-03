@@ -24,7 +24,7 @@ class IdntxCategory:
             self.__sql.close()
 
     def get_categories(self):
-        self.__cursor.execute("""select * from idntx_category order by category_name""")
+        self.__cursor.execute("""select * from idntx_category where status = true order by category_name""")
         res = self.__cursor.fetchall()
         if res is None:
             res = []
