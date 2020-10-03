@@ -1688,13 +1688,15 @@ def buyer_supplier_add():
             if SUser.is_suser(supp['email']):
                 suser = SUser(supp['email'])
                 SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id())
+                b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
                 # Send an email to supplier
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
                                                                                   "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
                                                                                   "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
                                                                                   "SUPPLIER_USER": suser.get_first_name(),
                                                                                   "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
-                                                                                  "FIRST_INVITE": "none"})
+                                                                                  "FIRST_INVITE": "none",
+                                                                                  "cc": b_user_emails})
                 p.start()
             # If supplier is not present
             else:
@@ -1706,6 +1708,7 @@ def buyer_supplier_add():
                 SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
                 # Send an email to supplier
                 suser = SUser(supp['email'])
+                b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
                                                                                   "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
                                                                                   "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
@@ -1713,7 +1716,8 @@ def buyer_supplier_add():
                                                                                   "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
                                                                                   "SUPPLIER_USERNAME": suser.get_email(),
                                                                                   "PASSWORD": password,
-                                                                                  "FIRST_INVITE": "block"})
+                                                                                  "FIRST_INVITE": "block",
+                                                                                  "cc": b_user_emails})
                 p.start()
 
         result = Join().get_suppliers_info(buyer_id)
