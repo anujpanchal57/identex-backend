@@ -59,7 +59,7 @@ aws = {
     'access_key': conf_settings['aws']['access_key_id'],
     'secret_key': conf_settings['aws']['secret_key'],
     'bucket_name': {
-        'uploads': 'uploads-idntx'
+        'uploads': 'upload-idntx'
     }
 }
 

@@ -281,19 +281,11 @@ def supplier_profile_update():
         details = data['details']
         if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['pincode'] == "":
             return response.errorResponse("Please fill all the required fields")
-        # if len(details['industry']) == 0:
-        #     return response.errorResponse("Please select atleast one industry")
         suser = SUser(data['_id'])
         supplier = Supplier(data['supplier_id'])
 
-        # Converting the list of industries into tuples for inserting them together
-        # supplier_inds = []
-        # for ind in details['industry']:
-        #     sample = [data['supplier_id'], ind]
-        #     supplier_inds.append(tuple(sample))
         if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
                                             annual_revenue=details['annual_revenue'], company_name=details['company_name']):
-            # if SupplierIndustries().insert_many(supplier_inds):
             if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
                 # Adding supplier branches and GST details
                 SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
