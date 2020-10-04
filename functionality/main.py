@@ -279,42 +279,42 @@ def supplier_profile_update():
         data = request.json
         data['_id'] = data['_id'].lower()
         details = data['details']
-        if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['industry'] == "" or details['pincode'] == "":
+        if details['city'] == "" or details['business_address'] == "" or details['annual_revenue'] == "" or details['pincode'] == "":
             return response.errorResponse("Please fill all the required fields")
-        if len(details['industry']) == 0:
-            return response.errorResponse("Please select atleast one industry")
+        # if len(details['industry']) == 0:
+        #     return response.errorResponse("Please select atleast one industry")
         suser = SUser(data['_id'])
         supplier = Supplier(data['supplier_id'])
 
         # Converting the list of industries into tuples for inserting them together
-        supplier_inds = []
-        for ind in details['industry']:
-            sample = [data['supplier_id'], ind]
-            supplier_inds.append(tuple(sample))
+        # supplier_inds = []
+        # for ind in details['industry']:
+        #     sample = [data['supplier_id'], ind]
+        #     supplier_inds.append(tuple(sample))
         if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
                                             annual_revenue=details['annual_revenue'], company_name=details['company_name']):
-            if SupplierIndustries().insert_many(supplier_inds):
-                if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
-                    # Adding supplier branches and GST details
-                    SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
-                                                    business_address=details['business_address'], pincode=details['pincode'])
-                    SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
-                                                         filing_frequency=details['filing_frequency'], status=details['gst_status'])
-                    return response.customResponse({"response": "Profile details updated successfully",
-                                                    "details": {
-                                                        "supplier_id": suser.get_supplier_id(),
-                                                        "email": data['_id'],
-                                                        "name": suser.get_name(),
-                                                        "mobile_no": suser.get_mobile_no(),
-                                                        "company_name": supplier.get_company_name(),
-                                                        "company_logo": supplier.get_company_logo(),
-                                                        "status": suser.get_status(),
-                                                        "role": suser.get_role(),
-                                                        "activation_status": supplier.get_activation_status(),
-                                                        "created_at": suser.get_created_at(),
-                                                        "profile_completed": supplier.get_profile_completed(),
-                                                        "updated_at": suser.get_updated_at()
-                                                    }})
+            # if SupplierIndustries().insert_many(supplier_inds):
+            if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
+                # Adding supplier branches and GST details
+                SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
+                                                business_address=details['business_address'], pincode=details['pincode'])
+                SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
+                                                     filing_frequency=details['filing_frequency'], status=details['gst_status'])
+                return response.customResponse({"response": "Profile details updated successfully",
+                                                "details": {
+                                                    "supplier_id": suser.get_supplier_id(),
+                                                    "email": data['_id'],
+                                                    "name": suser.get_name(),
+                                                    "mobile_no": suser.get_mobile_no(),
+                                                    "company_name": supplier.get_company_name(),
+                                                    "company_logo": supplier.get_company_logo(),
+                                                    "status": suser.get_status(),
+                                                    "role": suser.get_role(),
+                                                    "activation_status": supplier.get_activation_status(),
+                                                    "created_at": suser.get_created_at(),
+                                                    "profile_completed": supplier.get_profile_completed(),
+                                                    "updated_at": suser.get_updated_at()
+                                                }})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -2603,7 +2603,16 @@ def buyer_member_add():
     try:
         data = request.json
         buyer = Buyer(data['buyer_id'])
-        pass
+        result = []
+        for member in data['member_details']:
+            member['email'] = member['email'].lower()
+            if not BUser.is_buser(member['email']):
+                member['role'] = member['role'] if 'role' in member else 'employee'
+                password = GenericOps.generate_user_password()
+                BUser().add_buser(email=member['email'], name=member['name'], buyer_id=data['buyer_id'], mobile_no=member['mobile_no'],
+                                  password=hashlib.sha1(password.encode()).hexdigest(), role=member['role'], status=True)
+                result.append(member)
+            return response.customResponse({"response": "Member(s) added successfully", "member_details": result})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
