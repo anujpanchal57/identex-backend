@@ -20,7 +20,7 @@ class Join:
             self.__sql.close()
 
     # Add start and end limit in this query
-    def get_suppliers_info(self, buyer_id):
+    def get_suppliers_info(self, buyer_id, start_limit=0, end_limit=10):
         try:
             self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id
                                     from supplier_relationships as sr 
@@ -29,7 +29,8 @@ class Join:
                                     join s_users as su
                                     on su.supplier_id = sr.supplier_id 
                                     where sr.buyer_id = %s
-                                    order by su.created_at desc""", (buyer_id, ))
+                                    order by su.created_at desc
+                                    limit %s, %s""", (buyer_id, start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
