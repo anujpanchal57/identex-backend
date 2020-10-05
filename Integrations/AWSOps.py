@@ -39,8 +39,9 @@ class AWS:
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
             return self.get_url_of_file(key=path)
 
+# print(conf.aws['access_key'])
 # aws = AWS('s3')
-# path = "/home/anuj/Downloads/Container Tracking Sheet Updated.xlsx"
-# pprint(aws.upload_files(path=path, path_in_aws="B1001/jhbaskhascbsdffdsfc.xlsx"))
+# path = "/opt/backend/Integrations/sample_upload.png"
+# pprint(aws.upload_files(path=path, path_in_aws="test_uploads/hbaskhascbsdffdsfc.png"))
 # pprint(aws.get_url_of_file(key="B1001/jhbaskhascbfdsfc.xlsx"))
 # pprint(aws.upload_file_from_base64(base64_string=base64_str, path="test_uploads/akdhcbdksjfcbhsgfv.png"))

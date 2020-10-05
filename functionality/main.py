@@ -1728,12 +1728,31 @@ def buyer_suppliers_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 10
+        start_limit = data['offset']
+        end_limit = data['offset'] + data['limit']
         buyer_id = BUser(data['_id']).get_buyer_id()
-        suppliers = Join().get_suppliers_info(buyer_id=buyer_id)
+        suppliers = Join().get_suppliers_info(buyer_id=buyer_id, start_limit=start_limit, end_limit=end_limit)
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
         log = Logger(module_name="/buyer/suppliers/get", function_name="buyer_suppliers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for searching suppliers associated with a buyer
+@app.route("/buyer/suppliers/search", methods=["POST"])
+@validate_buyer_access_token
+def buyer_suppliers_search():
+    try:
+        data = DictionaryOps.set_primary_key(request.json, "email")
+        data['_id'] = data['_id'].lower()
+        suppliers = Buyer(data['buyer_id']).search_suppliers(search_str=data['search_str'].lower())
+        return response.customResponse({"suppliers": suppliers})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/suppliers/search", function_name="buyer_suppliers_search()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
