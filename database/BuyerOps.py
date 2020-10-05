@@ -107,11 +107,11 @@ class Buyer:
             return res
 
         except mysql.connector.Error as error:
-            log = Logger(module_name='BuyerOps', function_name='get_suppliers_info()')
+            log = Logger(module_name='BuyerOps', function_name='search_suppliers()')
             log.log(str(error), priority='highest')
             return []
         except Exception as e:
-            log = Logger(module_name='BuyerOps', function_name='get_suppliers_info()')
+            log = Logger(module_name='BuyerOps', function_name='search_suppliers()')
             log.log(traceback.format_exc(), priority='highest')
             return []
 
