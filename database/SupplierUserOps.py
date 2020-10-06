@@ -125,6 +125,7 @@ class SUser:
     def set_password(self, password):
         try:
             self.__suser['password'] = password
+            self.__id = self.__suser['email'] if self.__id == "" else self.__id
             self.__cursor.execute("update s_users set password = %s where email = %s", (password, self.__id))
             self.__sql.commit()
             return True
