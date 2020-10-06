@@ -1736,7 +1736,12 @@ def buyer_suppliers_get():
         buyer_id = BUser(data['_id']).get_buyer_id()
         category = data['category'].lower() if 'category' in data else "all"
         suppliers = Join().get_suppliers_info(buyer_id=buyer_id, category=category, start_limit=start_limit, end_limit=end_limit)
-        return response.customResponse({"suppliers": suppliers})
+        supplier = Supplier()
+        count = {
+            "onboarded": supplier.get_suppliers_count_on_profile_comp(buyer_id=buyer_id, profile_completed=True),
+            "pending": supplier.get_suppliers_count_on_profile_comp(buyer_id=buyer_id, profile_completed=False)
+        }
+        return response.customResponse({"suppliers": suppliers, "count": count})
 
     except Exception as e:
         log = Logger(module_name="/buyer/suppliers/get", function_name="buyer_suppliers_get()")

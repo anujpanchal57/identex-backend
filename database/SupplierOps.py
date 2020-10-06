@@ -123,7 +123,30 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to update profile details, please try again')
 
+    def get_suppliers_count_on_profile_comp(self, buyer_id, profile_completed):
+        try:
+            self.__cursor.execute("""select count(*) as supplier_count
+                                        from supplier_relationships as sr 
+                                        join suppliers as s
+                                        on sr.supplier_id = s.supplier_id
+                                        join s_users as su
+                                        on su.supplier_id = sr.supplier_id 
+                                        where sr.buyer_id = %s and s.profile_completed = %s""", (buyer_id, profile_completed))
+            res = self.__cursor.fetchone()['supplier_count']
+            if res is None:
+                res = 0
+            return res
 
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierOps', function_name='get_suppliers_count_on_profile_comp()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='SupplierOps', function_name='get_suppliers_count_on_profile_comp()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+# pprint(Supplier().get_suppliers_count_on_profile_comp(1000, False))
 # pprint(Supplier(1000).update_supplier_profile("Thane", "Mumbai, Thane", "10-15cr", "Engineering"))
 # pprint(Supplier(1000))
 # pprint(Supplier("").add_supplier("Bhavani"))
