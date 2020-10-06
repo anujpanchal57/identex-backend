@@ -1864,6 +1864,7 @@ def supplier_invite_email_send():
                                                                           "FIRST_INVITE": "block",
                                                                           "cc": b_user_emails})
         p.start()
+        return response.customResponse({"response": "Invite email sent successfully"})
 
     except Exception as e:
         log = Logger(module_name="/buyer/supplier/invite-email/send", function_name="supplier_invite_email_send()")
