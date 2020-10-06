@@ -22,7 +22,8 @@ class Join:
     # Add start and end limit in this query
     def get_suppliers_info(self, buyer_id, start_limit=0, end_limit=10):
         try:
-            self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id
+            self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
+                                    s.profile_completed
                                     from supplier_relationships as sr 
                                     join suppliers as s
                                     on sr.supplier_id = s.supplier_id
