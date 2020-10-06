@@ -1734,7 +1734,8 @@ def buyer_suppliers_get():
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         buyer_id = BUser(data['_id']).get_buyer_id()
-        suppliers = Join().get_suppliers_info(buyer_id=buyer_id, start_limit=start_limit, end_limit=end_limit)
+        category = data['category'].lower() if 'category' in data else "all"
+        suppliers = Join().get_suppliers_info(buyer_id=buyer_id, category=category, start_limit=start_limit, end_limit=end_limit)
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
@@ -1749,7 +1750,8 @@ def buyer_suppliers_search():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        suppliers = Buyer(data['buyer_id']).search_suppliers(search_str=data['search_str'].lower())
+        category = data['category'].lower() if 'category' in data else "all"
+        suppliers = Buyer(data['buyer_id']).search_suppliers(search_str=data['search_str'].lower(), category=category)
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:

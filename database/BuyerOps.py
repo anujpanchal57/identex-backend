@@ -100,9 +100,13 @@ class Buyer:
     def get_company_name(self):
         return self.__buyer['company_name']
 
-    def search_suppliers(self, search_str):
+    def search_suppliers(self, search_str, category="all"):
         try:
-            self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, ))
+            if category == "all":
+                self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, ))
+            else:
+                profile_completed = True if category == "onboarded" else False
+                self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and s.profile_completed = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, profile_completed))
             res = self.__cursor.fetchall()
             return res
 
