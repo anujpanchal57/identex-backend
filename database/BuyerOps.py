@@ -103,10 +103,10 @@ class Buyer:
     def search_suppliers(self, search_str, category="all"):
         try:
             if category == "all":
-                self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, ))
+                self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = " + str(self.__id) + " and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc")
             else:
                 profile_completed = True if category == "onboarded" else False
-                self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and s.profile_completed = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, profile_completed))
+                self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = " + str(self.__id) + " and s.profile_completed = " + str(profile_completed) + " and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc")
             res = self.__cursor.fetchall()
             return res
 
@@ -120,7 +120,7 @@ class Buyer:
             return []
 
 # pprint(Buyer(1000))
-# pprint(Buyer(1000).search_suppliers(search_str=""))
+# pprint(Buyer(1000).search_suppliers(search_str="s", category="pending"))
 # pprint(Buyer("").add_buyer("Bhavani", "gmail.com"))
 # pprint(Buyer.is_buyer_domain_registered("anuj.panchal@exportify.in"))
 # pprint(Buyer(1000).set_auto_join(False))
