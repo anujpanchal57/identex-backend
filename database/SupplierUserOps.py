@@ -142,6 +142,7 @@ class SUser:
     def update_suser_details(self, name, mobile_no):
         try:
             self.__suser['name'], self.__suser['mobile_no'] = name, mobile_no
+            self.__id = self.__suser['email'] if self.__id == "" else self.__id
             self.__cursor.execute("update s_users set name = %s, mobile_no = %s where email = %s", (name, mobile_no, self.__id))
             self.__sql.commit()
             return True
@@ -163,6 +164,7 @@ class SUser:
 
     def set_status(self, status):
         self.__suser['status'] = status
+        self.__id = self.__suser['email'] if self.__id == "" else self.__id
         self.__cursor.execute("update s_users set status = %s where email = %s", (status, self.__id))
         self.__sql.commit()
         return True
