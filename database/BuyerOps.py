@@ -102,7 +102,7 @@ class Buyer:
 
     def search_suppliers(self, search_str):
         try:
-            self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, ))
+            self.__cursor.execute("select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, s.profile_completed from supplier_relationships as sr join suppliers as s on sr.supplier_id = s.supplier_id join s_users as su on su.supplier_id = sr.supplier_id where sr.buyer_id = %s and (lower(s.company_name) like '%" + search_str + "%' or lower(su.name) like '%" + search_str + "%' or lower(su.email) like '%" + search_str + "%' or su.mobile_no like '%" + search_str + "%') order by su.created_at desc", (self.__id, ))
             res = self.__cursor.fetchall()
             return res
 

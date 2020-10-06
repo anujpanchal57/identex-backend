@@ -1557,6 +1557,7 @@ def messages_suppliers_get():
                                                                             sent_by=data['client_id'], sender=data['client_type'],
                                                                             receiver_id=supp['supplier_id'], receiver_type="supplier")
 
+                # Adding the last message
                 if last_message is not None:
                     supp['last_message'] = last_message['message']
                     supp['last_message_timestamp'] = last_message['sent_on']
@@ -1829,6 +1830,41 @@ def pincode_search():
 
     except Exception as e:
         log = Logger(module_name="/pincode/search", function_name="pincode_search()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for sending the invite email to suppliers
+@app.route("/buyer/supplier/invite-email/send", methods=["POST"])
+@validate_buyer_access_token
+def supplier_invite_email_send():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        supplier = Supplier(data['supplier_id'])
+        if supplier.get_profile_completed():
+            return response.errorResponse("Supplier has been onboarded already")
+        buyer = Buyer(data['buyer_id'])
+        buser = BUser(data['_id'])
+        suser = SUser(supplier_id=data['supplier_id'])
+        # Generating the new password
+        password = GenericOps.generate_user_password()
+        # Updating the password
+        suser.set_password(password=hashlib.sha1(password.encode()).hexdigest())
+        # Send an email to supplier
+        b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=data['buyer_id'])]
+        p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
+                                                                          "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
+                                                                          "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                          "SUPPLIER_USER": suser.get_first_name(),
+                                                                          "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                          "SUPPLIER_USERNAME": suser.get_email(),
+                                                                          "PASSWORD": password,
+                                                                          "FIRST_INVITE": "block",
+                                                                          "cc": b_user_emails})
+        p.start()
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/supplier/invite-email/send", function_name="supplier_invite_email_send()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
