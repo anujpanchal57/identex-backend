@@ -1299,9 +1299,10 @@ def supplier_quotation_send():
 
         # Add quotes
         quotes = []
+        logistics_included = quotation['logistics_included'] if 'logistics_included' in quotation else False
         for quote in quotation['quotes']:
             qt = [quotation_id, quote['charge_id'], quote['charge_name'], quote['quantity'], quote['gst'],
-                  quote['per_unit'], quote['amount'], quote['delivery_time'], False]
+                  quote['per_unit'], quote['amount'], quote['delivery_time'], False, logistics_included]
             qt = tuple(qt)
             quotes.append(qt)
         quotes_id = Quote().insert_many(quotes)

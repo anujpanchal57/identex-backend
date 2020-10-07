@@ -66,8 +66,8 @@ class Quote:
             self.__cursor.execute(Implementations.quotes_create_table)
             # Inserting the record in the table
             self.__cursor.executemany("""INSERT INTO quotes (quotation_id, charge_id, charge_name, quantity, gst, per_unit, 
-                                        amount, delivery_time, confirmed) 
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
+                                        amount, delivery_time, confirmed, logistics_included) 
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]
@@ -102,7 +102,8 @@ class Quote:
     def get_supplier_quotes_for_requisition(self, requisition_id, charge_id, status=True):
         try:
             self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
-                                    qu.charge_id, qu.quote_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit 
+                                    qu.charge_id, qu.quote_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
+                                    qu.logistics_included
                                     from suppliers as s
                                     join quotations as q
                                     on s.supplier_id = q.supplier_id
@@ -204,7 +205,8 @@ class Quote:
         try:
             if category.lower() == "cheapest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
-                                        qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit 
+                                        qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
+                                        qu.logistics_included
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
@@ -219,7 +221,8 @@ class Quote:
                 return res
             elif category.lower() == "fastest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
-                                        qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit 
+                                        qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
+                                        qu.logistics_included
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id

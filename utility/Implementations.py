@@ -220,6 +220,7 @@ quotes_create_table = """create table if not exists quotes (
                 amount float(11, 2) not null,
                 delivery_time int not null, 
                 confirmed bool not null,
+                logistics_included bool not null default false,
                 FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
                 FOREIGN KEY (charge_id) REFERENCES products(reqn_product_id)
             ) ENGINE=InnoDB auto_increment=1000"""
