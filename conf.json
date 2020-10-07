@@ -55,7 +55,7 @@
         "server": "Confidential"
     },
     "jwt": {
-        "expire_after": 259200
+        "expire_after": 2592000
     },
     "customer_no": 100007,
     "const": {

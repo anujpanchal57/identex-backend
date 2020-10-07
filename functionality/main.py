@@ -909,6 +909,9 @@ def buyer_rfq_suppliers_get():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+        # Adding the gst validity details
+        for supp in suppliers:
+            supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
@@ -1137,10 +1140,12 @@ def get_buyer_rfq_quotes():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+
         # If no lot is found
         if len(lot) == 0:
             return response.errorResponse("No lot found against this RFQ")
         invited_suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
+
         # If no suppliers are quoting
         if len(invited_suppliers) == 0:
             return response.errorResponse("No suppliers are quoting against this RFQ")
@@ -1731,12 +1736,15 @@ def buyer_suppliers_get():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         data['offset'] = data['offset'] if 'offset' in data else 0
-        data['limit'] = data['limit'] if 'limit' in data else 10
+        data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['offset'] + data['limit']
         buyer_id = BUser(data['_id']).get_buyer_id()
         category = data['category'].lower() if 'category' in data else "all"
         suppliers = Join().get_suppliers_info(buyer_id=buyer_id, category=category, start_limit=start_limit, end_limit=end_limit)
+        # Adding the gst validity details
+        for supp in suppliers:
+            supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
         supplier = Supplier()
         count = {
             "onboarded": supplier.get_suppliers_count_on_profile_comp(buyer_id=buyer_id, profile_completed=True),
