@@ -20,7 +20,7 @@ class Join:
             self.__sql.close()
 
     # Add start and end limit in this query
-    def get_suppliers_info(self, buyer_id, category="all", start_limit=0, end_limit=10):
+    def get_suppliers_info(self, buyer_id, category="all", start_limit=0, end_limit=5):
         try:
             if category == "all":
                 self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
