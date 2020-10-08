@@ -28,17 +28,18 @@ class SupplierRelationship:
     def get_buyer_suppliers(self):
         return self.__s_relations
 
-    def add_supplier_relationship(self, buyer_id, supplier_id):
+    def add_supplier_relationship(self, buyer_id, supplier_id, supplier_category="uncategorized"):
         self.__s_relations['supplier_id'] = supplier_id
         self.__s_relations['buyer_id'] = buyer_id
+        self.__s_relations['supplier_category'] = supplier_category
         return self.insert(self.__s_relations)
 
     def insert(self, values):
         try:
             self.__cursor.execute(Implementations.supplier_relationship_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO supplier_relationships (buyer_id, supplier_id) VALUES (%s, %s)""",
-                                  (values['buyer_id'], values['supplier_id']))
+            self.__cursor.execute("""INSERT INTO supplier_relationships (buyer_id, supplier_id, supplier_category) VALUES (%s, %s, %s)""",
+                                  (values['buyer_id'], values['supplier_id'], values['supplier_category']))
             self.__sql.commit()
             return True
 

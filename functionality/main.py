@@ -1700,7 +1700,8 @@ def buyer_supplier_add():
             # If supplier is present
             if SUser.is_suser(supp['email']):
                 suser = SUser(supp['email'])
-                SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id())
+                supplier_category = supp['category'] if 'category' in supp else 'uncategorized'
+                SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id(), supplier_category)
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
                 # Send an email to supplier
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
@@ -1718,7 +1719,8 @@ def buyer_supplier_add():
                 password = GenericOps.generate_user_password()
                 SUser().add_suser(email=supp['email'], name=supp['name'], mobile_no=supp['mobile_no'],
                                   supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
-                SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id)
+                supplier_category = supp['category'] if 'category' in supp else 'uncategorized'
+                SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id, supplier_category)
                 # Send an email to supplier
                 suser = SUser(supp['email'])
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]

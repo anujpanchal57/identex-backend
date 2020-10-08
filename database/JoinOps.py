@@ -24,7 +24,7 @@ class Join:
         try:
             if category == "all":
                 self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
-                                        s.profile_completed
+                                        s.profile_completed, sr.supplier_category
                                         from supplier_relationships as sr 
                                         join suppliers as s
                                         on sr.supplier_id = s.supplier_id
@@ -37,7 +37,7 @@ class Join:
             else:
                 profile_completed = True if category == "onboarded" else False
                 self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
-                                        s.profile_completed
+                                        s.profile_completed, sr.supplier_category
                                         from supplier_relationships as sr 
                                         join suppliers as s
                                         on sr.supplier_id = s.supplier_id
