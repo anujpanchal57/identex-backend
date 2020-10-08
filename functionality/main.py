@@ -1519,7 +1519,7 @@ def supplier_rfq_quot_history_get():
         return response.customResponse({"quotation": quotations})
 
     except Exception as e:
-        log = Logger(module_name="/supplier/rfq/last-quotation/get", function_name="supplier_rfq_last_quotation_get()")
+        log = Logger(module_name="/supplier/rfq/quotation-history/get", function_name="supplier_rfq_quot_history_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
