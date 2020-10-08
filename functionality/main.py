@@ -1717,7 +1717,13 @@ def buyer_supplier_add():
             # If supplier is present
             if SUser.is_suser(supp['email']):
                 suser = SUser(supp['email'])
-                supplier_category = supp['category'] if 'category' in supp else 'uncategorized'
+                if 'category' in supp:
+                    if supp['category'] != "":
+                        supplier_category = supp['category']
+                    else:
+                        supplier_category = "uncategorized"
+                else:
+                    supplier_category = "uncategorized"
                 SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id(), supplier_category)
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
                 # Send an email to supplier
@@ -1736,7 +1742,13 @@ def buyer_supplier_add():
                 password = GenericOps.generate_user_password()
                 SUser().add_suser(email=supp['email'], name=supp['name'], mobile_no=supp['mobile_no'],
                                   supplier_id=supplier_id, password=hashlib.sha1(password.encode()).hexdigest())
-                supplier_category = supp['category'] if 'category' in supp else 'uncategorized'
+                if 'category' in supp:
+                    if supp['category'] != "":
+                        supplier_category = supp['category']
+                    else:
+                        supplier_category = "uncategorized"
+                else:
+                    supplier_category = "uncategorized"
                 SupplierRelationship().add_supplier_relationship(buyer_id, supplier_id, supplier_category)
                 # Send an email to supplier
                 suser = SUser(supp['email'])
