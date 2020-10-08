@@ -24,7 +24,7 @@ class Requisition:
             self.__sql.close()
 
     def add_requisition(self, requisition_name, buyer_id, timezone, currency, deadline, utc_deadline, tnc="", request_type="open",
-                        cancelled=False, status=True, supplier_instructions="", submission_limit=3):
+                        cancelled=False, status=True, supplier_instructions="", submission_limit=3, ref_no='', budget=0):
         self.__requisition['requisition_name'] = requisition_name
         self.__requisition['buyer_id'] = buyer_id
         self.__requisition['timezone'] = timezone
@@ -38,20 +38,21 @@ class Requisition:
         self.__requisition['created_at'] = GenericOps.get_current_timestamp()
         self.__requisition['utc_deadline'] = utc_deadline
         self.__requisition['submission_limit'] = submission_limit
+        self.__requisition['ref_no'], self.__requisition['budget'] = ref_no, budget
         self.__requisition['requisition_id'] = self.insert(self.__requisition)
         return self.__requisition['requisition_id']
 
-    def insert(self, values, table="requisition_table"):
+    def insert(self, values):
         try:
             self.__cursor.execute(Implementations.requisition_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO requisitions (buyer_id, requisition_name, timezone, currency, deadline, 
-            utc_deadline, supplier_instructions, tnc, cancelled, request_type, status, created_at, submission_limit) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            utc_deadline, supplier_instructions, tnc, cancelled, request_type, status, created_at, submission_limit, ref_no, budget) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['buyer_id'], values['requisition_name'], values['timezone'], values['currency'],
                                    values['deadline'], values['utc_deadline'], values['supplier_instructions'], values['tnc'],
                                    values['cancelled'], values['request_type'], values['status'], values['created_at'],
-                                   values['submission_limit']))
+                                   values['submission_limit'], values['ref_no'], values['budget']))
             requisition_id = self.__cursor.lastrowid
 
             # Adding an event for RFQ expiry
@@ -198,6 +199,25 @@ class Requisition:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def get_all_ref_nos(self, buyer_id):
+        try:
+            self.__cursor.execute("""select distinct(ref_no) from requisitions where buyer_id = %s""", (buyer_id, ))
+            res = self.__cursor.fetchall()
+            if res is None:
+                result = []
+            result = [x['ref_no'] for x in res if x['ref_no'] != ""]
+            return result
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='RequisitionOps', function_name='get_all_ref_nos()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='RequisitionOps', function_name='get_all_ref_nos()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+# pprint(Requisition().get_all_ref_nos(1000))
 # pprint(Requisition(1000).cancel_rfq())
 # pprint(Requisition().get_rfq(1000))
 # pprint(Requisition().add_requisition(requisition_name="ABC", buyer_id=1000, timezone="asia/calcutta", currency="inr", deadline=6513216854))

@@ -110,6 +110,7 @@ reqn_history_create_table = """create table if not exists requisition_history (
 supplier_relationship_create_table = """create table if not exists supplier_relationships (
                 buyer_id int not null,
                 supplier_id int not null,
+                supplier_category varchar(100) not null default 'uncategorized',
                 PRIMARY KEY (buyer_id, supplier_id)
             )"""
 
@@ -135,6 +136,8 @@ requisition_create_table = """create table if not exists requisitions (
                 status bool not null,
                 created_at int(11) not null,
                 submission_limit int not null default 3,
+                ref_no varchar(100) not null default '',
+                budget float(20, 2) not null default 0,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 

@@ -759,7 +759,7 @@ def buyer_create_rfq():
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
                                                          utc_deadline=utc_deadline, submission_limit=data['submission_limit'],
                                                          supplier_instructions=data['supplier_instructions'],
-                                                         tnc=data['tnc'])
+                                                         tnc=data['tnc'], ref_no=data['ref_no'], budget=data['budget'])
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -829,6 +829,19 @@ def buyer_create_rfq():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/create", function_name="buyer_create_rfq()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to fetch the list of reference numbers (Project numbers, Process numbers, etc)
+@app.route("/buyer/rfq/ref-nos/get", methods=['POST'])
+@validate_buyer_access_token
+def rfq_ref_nos_get():
+    try:
+        data = request.json
+        return response.customResponse({"ref_nos": Requisition().get_all_ref_nos(buyer_id=data['buyer_id'])})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/ref-nos/get", function_name="rfq_ref_nos_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -910,8 +923,9 @@ def buyer_rfq_suppliers_get():
         data['_id'] = data['_id'].lower()
         suppliers = Join().get_suppliers_quoting(operation_id=data['requisition_id'], operation_type="rfq")
         # Adding the gst validity details
-        for supp in suppliers:
-            supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
+        if len(suppliers) > 0:
+            for supp in suppliers:
+                supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
@@ -1743,8 +1757,9 @@ def buyer_suppliers_get():
         category = data['category'].lower() if 'category' in data else "all"
         suppliers = Join().get_suppliers_info(buyer_id=buyer_id, category=category, start_limit=start_limit, end_limit=end_limit)
         # Adding the gst validity details
-        for supp in suppliers:
-            supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
+        if len(suppliers) > 0:
+            for supp in suppliers:
+                supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
         supplier = Supplier()
         count = {
             "onboarded": supplier.get_suppliers_count_on_profile_comp(buyer_id=buyer_id, profile_completed=True),
@@ -1766,6 +1781,10 @@ def buyer_suppliers_search():
         data['_id'] = data['_id'].lower()
         category = data['category'].lower() if 'category' in data else "all"
         suppliers = Buyer(data['buyer_id']).search_suppliers(search_str=data['search_str'].lower(), category=category)
+        # Adding the gst validity details
+        if len(suppliers) > 0:
+            for supp in suppliers:
+                supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
