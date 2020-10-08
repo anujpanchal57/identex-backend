@@ -80,7 +80,7 @@ class Quotation:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    def get__supplier_quotations_count_for_requisition(self, requisition_id, supplier_id, table="quotation_table"):
+    def get_supplier_quotations_count_for_requisition(self, requisition_id, supplier_id, table="quotation_table"):
         try:
             self.__cursor.execute("""SELECT * FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1;""",
                                   (conf.sqlconfig.get('database_name'), conf.sqlconfig.get('tables').get(table)))
@@ -167,5 +167,43 @@ class Quotation:
             log = Logger(module_name='QuotationOps', function_name='get_supplier_quotation_count()')
             log.log(traceback.format_exc(), priority='highest')
             return False
+
+    def get_last_quotation(self, supplier_id, requisition_id):
+        try:
+            self.__cursor.execute(
+                """select * from quotations where requisition_id = %s and supplier_id = %s order by created_at desc limit 1;""",
+                (requisition_id, supplier_id,))
+            res = self.__cursor.fetchone()
+            if res is None:
+                return {}
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='get_last_quotation()')
+            log.log(str(error), priority='highest')
+            return {}
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='get_last_quotation()')
+            log.log(traceback.format_exc(), priority='highest')
+            return {}
+
+    def get_supplier_quotations(self, supplier_id, requisition_id):
+        try:
+            self.__cursor.execute(
+                """select * from quotations where requisition_id = %s and supplier_id = %s order by created_at desc;""",
+                (requisition_id, supplier_id,))
+            res = self.__cursor.fetchall()
+            if res is None:
+                return []
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuotationOps', function_name='get_supplier_quotations()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='QuotationOps', function_name='get_supplier_quotations()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
 
 # pprint(Quotation().get_quotations_count_for_requisition(1000))

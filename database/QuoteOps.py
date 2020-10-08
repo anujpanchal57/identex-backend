@@ -276,6 +276,22 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to update product confirmation, please try again')
 
+    def get_quotes_for_quotation(self, quotation_id):
+        try:
+            self.__cursor.execute("""select * from quotes where quotation_id = %s;""", (quotation_id, ))
+            res = self.__cursor.fetchall()
+            if res is None:
+                return []
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='get_quotes_for_quotation()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='get_quotes_for_quotation()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
 
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))

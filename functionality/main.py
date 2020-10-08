@@ -1438,7 +1438,7 @@ def supplier_rfq_list():
                                                                        receiver_id=data['supplier_id'], receiver_type="supplier",
                                                                        sender="buyer", sent_by=req['buyer_id'])
 
-                quotation_count = Quotation().get__supplier_quotations_count_for_requisition(requisition_id=req['requisition_id'],
+                quotation_count = Quotation().get_supplier_quotations_count_for_requisition(requisition_id=req['requisition_id'],
                                                                                              supplier_id=data['supplier_id'])
                 req['submissions_left'] = req['submission_limit'] - quotation_count if quotation_count <= req['submission_limit'] else 0
                 if len(req['products']) > 0:
@@ -1485,6 +1485,44 @@ def supplier_rfq_last_quote_get():
         log = Logger(module_name="/supplier/rfq/last-quote/get", function_name="supplier_rfq_last_quote_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the last sent quotation of supplier
+@app.route("/supplier/rfq/last-quotation/get", methods=['POST'])
+@validate_supplier_access_token
+def supplier_rfq_last_quotation_get():
+    try:
+        data = request.json
+        # Fetch the latest quote
+        quotation = Quotation().get_last_quotation(supplier_id=data['supplier_id'], requisition_id=data['requisition_id'])
+        if len(quotation) > 0:
+            # Fetch the quotes against the latest quote
+            quotation['quotes'] = Quote().get_quotes_for_quotation(quotation_id=quotation['quotation_id'])
+        return response.customResponse({"quotation": quotation})
+
+    except Exception as e:
+        log = Logger(module_name="/supplier/rfq/last-quotation/get", function_name="supplier_rfq_last_quotation_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the quotation history of a supplier
+@app.route("/supplier/rfq/quotation-history/get", methods=['POST'])
+@validate_supplier_access_token
+def supplier_rfq_quot_history_get():
+    try:
+        data = request.json
+        # Fetch all the quotations
+        quotations = Quotation().get_supplier_quotations(supplier_id=data['supplier_id'], requisition_id=data['requisition_id'])
+        if len(quotations) > 0:
+            quote = Quote()
+            for quot in quotations:
+                quot['quotes'] = quote.get_quotes_for_quotation(quotation_id=quot['quotation_id'])
+        return response.customResponse({"quotation": quotations})
+
+    except Exception as e:
+        log = Logger(module_name="/supplier/rfq/last-quotation/get", function_name="supplier_rfq_last_quotation_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 
 ########################################### MESSAGE SECTION ##########################################################
 
