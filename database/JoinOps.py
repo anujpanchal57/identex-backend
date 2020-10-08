@@ -20,32 +20,60 @@ class Join:
             self.__sql.close()
 
     # Add start and end limit in this query
-    def get_suppliers_info(self, buyer_id, category="all", start_limit=0, end_limit=5):
+    def get_suppliers_info(self, buyer_id, supplier_category="all", category="all", start_limit=0, end_limit=5):
         try:
-            if category == "all":
-                self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
-                                        s.profile_completed, sr.supplier_category
-                                        from supplier_relationships as sr 
-                                        join suppliers as s
-                                        on sr.supplier_id = s.supplier_id
-                                        join s_users as su
-                                        on su.supplier_id = sr.supplier_id 
-                                        where sr.buyer_id = %s
-                                        order by su.created_at desc
-                                        limit %s, %s;""", (buyer_id, start_limit, end_limit))
+            # First level of diff on supplier_category
+            if supplier_category == "all":
+                # Second level of diff on onboarded/pending supplier status
+                if category == "all":
+                    self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
+                                            s.profile_completed, sr.supplier_category
+                                            from supplier_relationships as sr 
+                                            join suppliers as s
+                                            on sr.supplier_id = s.supplier_id
+                                            join s_users as su
+                                            on su.supplier_id = sr.supplier_id 
+                                            where sr.buyer_id = %s
+                                            order by su.created_at desc
+                                            limit %s, %s;""", (buyer_id, start_limit, end_limit))
 
+                else:
+                    profile_completed = True if category == "onboarded" else False
+                    self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
+                                            s.profile_completed, sr.supplier_category
+                                            from supplier_relationships as sr 
+                                            join suppliers as s
+                                            on sr.supplier_id = s.supplier_id
+                                            join s_users as su
+                                            on su.supplier_id = sr.supplier_id 
+                                            where sr.buyer_id = %s and s.profile_completed = %s
+                                            order by su.created_at desc 
+                                            limit %s, %s;""", (buyer_id, profile_completed, start_limit, end_limit))
             else:
-                profile_completed = True if category == "onboarded" else False
-                self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
-                                        s.profile_completed, sr.supplier_category
-                                        from supplier_relationships as sr 
-                                        join suppliers as s
-                                        on sr.supplier_id = s.supplier_id
-                                        join s_users as su
-                                        on su.supplier_id = sr.supplier_id 
-                                        where sr.buyer_id = %s and s.profile_completed = %s
-                                        order by su.created_at desc
-                                        limit %s, %s;""", (buyer_id, profile_completed, start_limit, end_limit))
+                if category == "all":
+                    self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
+                                            s.profile_completed, sr.supplier_category
+                                            from supplier_relationships as sr 
+                                            join suppliers as s
+                                            on sr.supplier_id = s.supplier_id
+                                            join s_users as su
+                                            on su.supplier_id = sr.supplier_id 
+                                            where sr.buyer_id = %s and sr.supplier_category = %s
+                                            order by su.created_at desc
+                                            limit %s, %s;""", (buyer_id, supplier_category, start_limit, end_limit))
+
+                else:
+                    profile_completed = True if category == "onboarded" else False
+                    self.__cursor.execute("""select su.name, su.mobile_no, su.email, s.company_name, s.supplier_id, 
+                                            s.profile_completed, sr.supplier_category
+                                            from supplier_relationships as sr 
+                                            join suppliers as s
+                                            on sr.supplier_id = s.supplier_id
+                                            join s_users as su
+                                            on su.supplier_id = sr.supplier_id 
+                                            where sr.buyer_id = %s and s.profile_completed = %s and sr.supplier_category = %s
+                                            order by su.created_at desc 
+                                            limit %s, %s;""", (buyer_id, profile_completed, supplier_category, start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
