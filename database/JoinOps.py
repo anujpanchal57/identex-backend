@@ -422,12 +422,14 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return 0
 
-    def get_buyer_total_suppliers(self, buyer_id):
+    def get_buyer_total_suppliers(self, buyer_id, profile_completed=True):
         try:
             self.__cursor.execute("""select count(*) as total_suppliers
-                                    from supplier_relationships
-                                    where buyer_id = %s""",
-                                  (buyer_id, ))
+                                    from supplier_relationships as sr
+                                    join suppliers as s
+                                    on sr.supplier_id = s.supplier_id
+                                    where sr.buyer_id = %s and s.profile_completed = %s""",
+                                  (buyer_id, profile_completed))
             res = self.__cursor.fetchone()['total_suppliers']
             if res is None:
                 res = 0
@@ -463,7 +465,7 @@ class Join:
             return 0
 
 # pprint(Join().get_buyer_total_savings(1000))
-# pprint(Join().get_buyer_total_suppliers(1001))
+# pprint(Join().get_buyer_total_suppliers(1000, False))
 # pprint(Join().get_buyer_total_amount_due(1000))
 # pprint(Join().get_buyer_total_orders(1000))
 # pprint(Join().get_supplier_requisitions_count(supplier_id=1000))
