@@ -52,11 +52,11 @@ class Quotation:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='QuotationOps', function_name='insert()')
-            log.log(str(error), priority='highest')
+            log.log(str(error), priority='critical')
             raise exceptions.IncompleteRequestException("Failed to add quotation, please try again")
         except Exception as e:
             log = Logger(module_name='QuotationOps', function_name='insert()')
-            log.log(traceback.format_exc(), priority='highest')
+            log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException("Failed to add quotation, please try again")
 
     def get_quotations_count_for_requisition(self, requisition_id, table="quotation_table"):

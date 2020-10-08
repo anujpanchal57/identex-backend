@@ -85,11 +85,11 @@ class InviteSupplier:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='InvitedSupplierOps', function_name='update_unlock_status()')
-            log.log(str(error), priority='highest')
+            log.log(str(error), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to update unlock status of a supplier, please try again')
         except Exception as e:
             log = Logger(module_name='InvitedSupplierOps', function_name='update_unlock_status()')
-            log.log(traceback.format_exc(), priority='highest')
+            log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to update unlock status of a supplier, please try again')
 
     def get_unlock_status(self, supplier_id, operation_id, operation_type):

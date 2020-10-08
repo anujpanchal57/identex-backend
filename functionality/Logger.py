@@ -36,9 +36,9 @@ class Logger:
             return True
         except mysql.connector.Error as error:
             # Email the error
-            if priority.lower() == "critical":
+            if priority.lower() == "critical" and conf.environ_name.lower() == "production":
                 message = "<h1>Error in logger: </h1><br><p>{}</p>".format(error)
-                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.in"])
+                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.in", "utkarsh.dhawan@identex.in"])
             return False
 
 # pprint(Logger(module_name="/buyer/forgot-password/auth", function_name="buyer_forgot_password_auth()").log("adsferwvwervwfvsdfv"))

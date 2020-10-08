@@ -1411,7 +1411,7 @@ def supplier_quotation_send():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/supplier/quotation/send", function_name="supplier_quotation_send()")
-        log.log(traceback.format_exc())
+        log.log(error=traceback.format_exc(), priority="critical")
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request for listing the RFQs for supplier

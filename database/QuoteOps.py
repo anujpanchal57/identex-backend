@@ -77,11 +77,11 @@ class Quote:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='QuoteOps', function_name='insert_many()')
-            log.log(str(error), priority='highest')
+            log.log(str(error), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to add quote(s), please try again')
         except Exception as e:
             log = Logger(module_name='QuoteOps', function_name='insert_many()')
-            log.log(traceback.format_exc(), priority='highest')
+            log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to add quote(s), please try again')
 
     def remove_quotes(self, quotation_id):
@@ -172,11 +172,11 @@ class Quote:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='QuoteOps', function_name='calculate_supplier_ranks()')
-            log.log(str(error), priority='highest')
+            log.log(str(error), priority='critical')
             return []
         except Exception as e:
             log = Logger(module_name='QuoteOps', function_name='calculate_supplier_ranks()')
-            log.log(traceback.format_exc(), priority='highest')
+            log.log(traceback.format_exc(), priority='critical')
             return []
 
     def get_highest_quote_for_product(self, requisition_id, buyer_id, charge_id):
