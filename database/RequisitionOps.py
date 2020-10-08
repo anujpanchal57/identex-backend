@@ -217,6 +217,20 @@ class Requisition:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
+    def update_ref_no(self, ref_no):
+        try:
+            self.__cursor.execute("""update requisitions set ref_no = %s where requisition_id = %s""", (ref_no, self.__id))
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='RequisitionOps', function_name='update_ref_no()')
+            log.log(str(error), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update reference number, please try again")
+        except Exception as e:
+            log = Logger(module_name='RequisitionOps', function_name='update_ref_no()')
+            log.log(traceback.format_exc(), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update reference number, please try again")
+
 # pprint(Requisition().get_all_ref_nos(1000))
 # pprint(Requisition(1000).cancel_rfq())
 # pprint(Requisition().get_rfq(1000))

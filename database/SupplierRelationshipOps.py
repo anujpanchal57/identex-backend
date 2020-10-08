@@ -68,5 +68,41 @@ class SupplierRelationship:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete supplier, please try again')
 
+    def update_supplier_category(self, buyer_id, supplier_id, category):
+        try:
+            self.__cursor.execute("""update supplier_relationships set supplier_category = %s where buyer_id = %s and supplier_id = %s""",
+                                  (category, buyer_id, supplier_id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierRelationshipOps', function_name='update_supplier_category()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update supplier category, please try again')
+        except Exception as e:
+            log = Logger(module_name='SupplierRelationshipOps', function_name='update_supplier_category()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update supplier category, please try again')
+
+    def get_supplier_categories(self):
+        try:
+            self.__cursor.execute("""select distinct(supplier_category) from supplier_relationships where buyer_id = %s""",
+                                  (self.__id, ))
+            res = self.__cursor.fetchall()
+            if res is None:
+                result = []
+            result = [x['supplier_category'] for x in res if x['supplier_category'].lower() != "uncategorized"]
+            return result
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierRelationshipOps', function_name='get_supplier_categories()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='SupplierRelationshipOps', function_name='get_supplier_categories()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+# pprint(SupplierRelationship(1000).get_supplier_categories())
 # pprint(SupplierRelationship(1000).get_buyer_suppliers())
 # pprint(SupplierRelationship("").add_supplier_relationship(1000, 1001))

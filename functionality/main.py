@@ -845,6 +845,23 @@ def rfq_ref_nos_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request to update the reference number for a RFQ
+@app.route("/buyer/rfq/ref-no/update", methods=['POST'])
+@validate_buyer_access_token
+def buyer_rfq_ref_no_udpate():
+    try:
+        data = request.json
+        if Requisition(data['requisition_id']).update_ref_no(ref_no=data['ref_no']):
+            return response.customResponse({"response": "Reference number updated successfully",
+                                            "ref_no": data['ref_no']})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/ref-no/update", function_name="buyer_rfq_ref_no_udpate()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for listing the RFQs for buyer
 @app.route("/buyer/rfq/list", methods=["POST"])
 @validate_buyer_access_token
@@ -1791,6 +1808,39 @@ def buyer_suppliers_search():
 
     except Exception as e:
         log = Logger(module_name="/buyer/suppliers/search", function_name="buyer_suppliers_search()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for changing the category of a supplier
+@app.route("/buyer/supplier/category/update", methods=['POST'])
+@validate_buyer_access_token
+def buyer_supplier_category_update():
+    try:
+        data = request.json
+        if SupplierRelationship().update_supplier_category(buyer_id=data['buyer_id'], supplier_id=data['supplier_id'],
+                                                           category=data['category']):
+            return response.customResponse({"response": "Supplier category updated successfully",
+                                            "category": data['category']})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/supplier/category/update", function_name="buyer_supplier_category_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the supplier categories
+@app.route("/buyer/supplier/categories/get", methods=['POST'])
+@validate_buyer_access_token
+def buyer_supplier_categories_get():
+    try:
+        data = request.json
+        return response.customResponse({"supplier_categories": SupplierRelationship(_id=data['buyer_id']).get_supplier_categories()})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/supplier/categories/get", function_name="buyer_supplier_categories_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

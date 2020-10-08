@@ -32,7 +32,7 @@ class Join:
                                         on su.supplier_id = sr.supplier_id 
                                         where sr.buyer_id = %s
                                         order by su.created_at desc
-                                        limit %s, %s""", (buyer_id, start_limit, end_limit))
+                                        limit %s, %s;""", (buyer_id, start_limit, end_limit))
 
             else:
                 profile_completed = True if category == "onboarded" else False
@@ -45,7 +45,7 @@ class Join:
                                         on su.supplier_id = sr.supplier_id 
                                         where sr.buyer_id = %s and s.profile_completed = %s
                                         order by su.created_at desc
-                                        limit %s, %s""", (buyer_id, profile_completed, start_limit, end_limit))
+                                        limit %s, %s;""", (buyer_id, profile_completed, start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
@@ -58,7 +58,7 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return []
 
-    # Made this method for the sake of email
+    # Made this method for the sake of email (Add GST details and profile completed)
     def get_invited_suppliers(self, operation_id, operation_type="rfq"):
         try:
             self.__cursor.execute("""select substring_index(su.name, " ", 1) as name, su.email, s.company_name, su.mobile_no, ins.unlock_status,
@@ -154,7 +154,7 @@ class Join:
                                     on r.requisition_id = l.requisition_id
                                     where r.request_type = %s and buyer_id = %s and r.cancelled = %s
                                     order by r.created_at desc
-                                    limit %s, %s;""", (req_type, buyer_id, cancelled,start_limit, end_limit))
+                                    limit %s, %s;""", (req_type, buyer_id, cancelled, start_limit, end_limit))
             res = self.__cursor.fetchall()
             return res
 
