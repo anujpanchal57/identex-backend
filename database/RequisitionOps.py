@@ -65,11 +65,11 @@ class Requisition:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='RequisitionOps', function_name='insert()')
-            log.log(str(error), priority='highest')
+            log.log(str(error), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to add RFQ, please try again')
         except Exception as e:
             log = Logger(module_name='RequisitionOps', function_name='insert()')
-            log.log(traceback.format_exc(), priority='highest')
+            log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to add RFQ, please try again')
 
     def get_rfq(self, buyer_id):

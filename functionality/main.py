@@ -759,7 +759,7 @@ def buyer_create_rfq():
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
                                                          utc_deadline=utc_deadline, submission_limit=data['submission_limit'],
                                                          supplier_instructions=data['supplier_instructions'],
-                                                         tnc=data['tnc'], ref_no=data['ref_no'], budget=data['budget'])
+                                                         tnc=data['tnc'])
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
@@ -829,7 +829,7 @@ def buyer_create_rfq():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/create", function_name="buyer_create_rfq()")
-        log.log(traceback.format_exc())
+        log.log(error=traceback.format_exc(), priority="critical")
         return response.errorResponse("Some error occurred please try again!")
 
 # POST request to fetch the list of reference numbers (Project numbers, Process numbers, etc)

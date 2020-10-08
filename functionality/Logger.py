@@ -38,7 +38,7 @@ class Logger:
             # Email the error
             if priority.lower() == "critical":
                 message = "<h1>Error in logger: </h1><br><p>{}</p>".format(error)
-                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.io"])
+                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.in"])
             return False
 
 # pprint(Logger(module_name="/buyer/forgot-password/auth", function_name="buyer_forgot_password_auth()").log("adsferwvwervwfvsdfv"))
