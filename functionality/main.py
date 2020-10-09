@@ -1465,10 +1465,10 @@ def supplier_rfq_list():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for fetching the last quote and rank of supplier according to products
-@app.route("/supplier/rfq/last-quote/get", methods=["POST"])
+# POST request for fetching the quotation history of a supplier
+@app.route("/supplier/rfq/quotation-history/get", methods=["POST"])
 @validate_supplier_access_token
-def supplier_rfq_last_quote_get():
+def supplier_rfq_quot_history_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
@@ -1477,16 +1477,24 @@ def supplier_rfq_last_quote_get():
         if len(lot) == 0:
             return response.errorResponse("No lot found against this RFQ")
         products = Product().get_lot_products(lot_id=lot['lot_id'])
-        result = []
         if len(products) > 0:
-            result, ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], products=products,
-                                                                           supplier_id=data['supplier_id']))
+            return response.errorResponse("No products found in this lot")
+        result = []
 
-            return response.customResponse({"products": result})
-        return response.errorResponse("No products found in this lot")
+        # Fetching the latest quote and the corresponding rank
+        result, ranks = copy.deepcopy(Quote().calculate_supplier_ranks(requisition_id=data['requisition_id'], products=products,
+                                                                       supplier_id=data['supplier_id']))
+        # Fetch all the quotations
+        quotations = Quotation().get_supplier_quotations(supplier_id=data['supplier_id'],
+                                                         requisition_id=data['requisition_id'])
+        if len(quotations) > 0:
+            quote = Quote()
+            for quot in quotations:
+                quot['quotes'] = quote.get_quotes_for_quotation(quotation_id=quot['quotation_id'])
+        return response.customResponse({"products": result, "quotations": quotations})
 
     except Exception as e:
-        log = Logger(module_name="/supplier/rfq/last-quote/get", function_name="supplier_rfq_last_quote_get()")
+        log = Logger(module_name="/supplier/rfq/quotation-history/get", function_name="supplier_rfq_quot_history_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -1505,25 +1513,6 @@ def supplier_rfq_last_quotation_get():
 
     except Exception as e:
         log = Logger(module_name="/supplier/rfq/last-quotation/get", function_name="supplier_rfq_last_quotation_get()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
-# POST request for fetching the quotation history of a supplier
-@app.route("/supplier/rfq/quotation-history/get", methods=['POST'])
-@validate_supplier_access_token
-def supplier_rfq_quot_history_get():
-    try:
-        data = request.json
-        # Fetch all the quotations
-        quotations = Quotation().get_supplier_quotations(supplier_id=data['supplier_id'], requisition_id=data['requisition_id'])
-        if len(quotations) > 0:
-            quote = Quote()
-            for quot in quotations:
-                quot['quotes'] = quote.get_quotes_for_quotation(quotation_id=quot['quotation_id'])
-        return response.customResponse({"quotation": quotations})
-
-    except Exception as e:
-        log = Logger(module_name="/supplier/rfq/quotation-history/get", function_name="supplier_rfq_quot_history_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

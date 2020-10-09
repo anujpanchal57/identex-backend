@@ -189,11 +189,11 @@ class Quotation:
             log.log(traceback.format_exc(), priority='highest')
             return {}
 
-    def get_supplier_quotations(self, supplier_id, requisition_id):
+    def get_supplier_quotations(self, supplier_id, requisition_id, offset=1, limit=20):
         try:
             self.__cursor.execute(
-                """select * from quotations where requisition_id = %s and supplier_id = %s order by created_at desc;""",
-                (requisition_id, supplier_id,))
+                """select * from quotations where requisition_id = %s and supplier_id = %s order by created_at desc limit %s, %s;""",
+                (requisition_id, supplier_id, offset, limit))
             res = self.__cursor.fetchall()
             if res is None:
                 return []
