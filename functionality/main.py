@@ -755,11 +755,13 @@ def buyer_create_rfq():
         data['submission_limit'] = data['submission_limit'] if 'submission_limit' in data else conf.default_submission_limit
         data['supplier_instructions'] = data['supplier_instructions'] if 'supplier_instructions' in data else ""
         data['tnc'] = data['tnc'] if 'tnc' in data else ""
+        data['ref_no'] = data['ref_no'] if 'ref_no' in data else ''
+        data['budget'] = data['budget'] if 'budget' in data else 0
         requisition_id = Requisition("").add_requisition(requisition_name=data['lot']['lot_name'], timezone=data['timezone'],
                                                          currency=data['currency'], buyer_id=buyer_id, deadline=deadline,
                                                          utc_deadline=utc_deadline, submission_limit=data['submission_limit'],
                                                          supplier_instructions=data['supplier_instructions'],
-                                                         tnc=data['tnc'])
+                                                         tnc=data['tnc'], budget=data['budget'], ref_no=data['ref_no'])
         # Add the invited suppliers
         suppliers = []
         for supplier in data['invited_suppliers']:
