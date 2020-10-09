@@ -1477,7 +1477,7 @@ def supplier_rfq_quot_history_get():
         if len(lot) == 0:
             return response.errorResponse("No lot found against this RFQ")
         products = Product().get_lot_products(lot_id=lot['lot_id'])
-        if len(products) > 0:
+        if len(products) == 0:
             return response.errorResponse("No products found in this lot")
         result = []
 
