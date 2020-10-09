@@ -176,7 +176,8 @@ class Join:
 
     def get_buyer_requisitions(self, buyer_id, start_limit, end_limit, cancelled, req_type="open"):
         try:
-            self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, r.status, l.lot_id, r.utc_deadline
+            self.__cursor.execute("""select r.requisition_id, l.lot_name, r.deadline, r.timezone, r.currency, r.created_at, 
+                                    r.status, l.lot_id, r.utc_deadline, r.ref_no, r.budget
                                     from requisitions as r
                                     join lots as l
                                     on r.requisition_id = l.requisition_id

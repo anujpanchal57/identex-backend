@@ -103,7 +103,7 @@ class Quote:
         try:
             self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
                                     qu.charge_id, qu.quote_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
-                                    qu.logistics_included
+                                    qu.logistics_included, q.payment_terms, q.remarks
                                     from suppliers as s
                                     join quotations as q
                                     on s.supplier_id = q.supplier_id
@@ -206,7 +206,7 @@ class Quote:
             if category.lower() == "cheapest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
                                         qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
-                                        qu.logistics_included
+                                        qu.logistics_included, q.payment_terms, q.remarks
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
@@ -222,7 +222,7 @@ class Quote:
             elif category.lower() == "fastest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
                                         qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
-                                        qu.logistics_included
+                                        qu.logistics_included, q.payment_terms, q.remarks
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id

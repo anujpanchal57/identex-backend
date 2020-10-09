@@ -1328,9 +1328,12 @@ def supplier_quotation_send():
                                                                                              products=products))
 
         # Add quotation
+        quotation['payment_terms'] = quotation['payment_terms'] if 'payment_terms' in quotation else 0
+        quotation['remarks'] = quotation['remarks'] if 'remarks' in quotation else ''
         quotation_id = Quotation().add_quotation(supplier_id=suser.get_supplier_id(), requisition_id=data['requisition_id'],
                                                  total_amount=quotation['total_amount'],
-                                                 total_gst=quotation['total_gst'], quote_validity=quotation['quote_validity'])
+                                                 total_gst=quotation['total_gst'], quote_validity=quotation['quote_validity'],
+                                                 payment_terms=quotation['payment_terms'], remarks=quotation['remarks'])
 
 
         # Add quotes
@@ -1387,7 +1390,6 @@ def supplier_quotation_send():
 
         # Sending a notification to suppliers for intimation of changes in their ranks, if any
         suppliers = GenericOps.get_rank_changed_suppliers(prev_ranks=supplier_prev_ranks, curr_ranks=supplier_curr_ranks)
-        pprint(suppliers)
         if len(suppliers) > 0:
             for supp in suppliers:
                 link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['rank_changed']['page_url'].replace("{{operation_type}}", "rfq")

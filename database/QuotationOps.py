@@ -23,7 +23,7 @@ class Quotation:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_quotation(self, supplier_id, requisition_id, total_amount, total_gst, quote_validity, status=True):
+    def add_quotation(self, supplier_id, requisition_id, total_amount, total_gst, quote_validity, status=True, payment_terms=0, remarks=''):
         self.__quotation['supplier_id'] = supplier_id
         self.__quotation['requisition_id'] = requisition_id
         self.__quotation['total_amount'] = total_amount
@@ -31,6 +31,7 @@ class Quotation:
         self.__quotation['total_gst'] = total_gst
         self.__quotation['status'] = status
         self.__quotation['created_at'] = GenericOps.get_current_timestamp()
+        self.__quotation['payment_terms'], self.__quotation['remarks'] = payment_terms, remarks
         self.__quotation['quotation_id'] = self.insert(self.__quotation)
         return self.__quotation['quotation_id']
 
@@ -43,10 +44,11 @@ class Quotation:
             self.__sql.commit()
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO quotations (supplier_id, requisition_id, total_amount,
-                        total_gst, quote_validity, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                        total_gst, quote_validity, status, created_at, payment_terms, remarks) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['supplier_id'], values['requisition_id'],
                                    values['total_amount'], values['total_gst'], values['quote_validity'],
-                                   values['status'], values['created_at']))
+                                   values['status'], values['created_at'], values['payment_terms'], values['remarks']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 

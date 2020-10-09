@@ -208,6 +208,8 @@ quotations_create_table = """create table if not exists quotations (
                 quote_validity int(11) not null, 
                 status bool not null, 
                 created_at int(11) not null, 
+                payment_terms int not null default 0,
+                remarks varchar(500) not null default '',
                 FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
                 FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
             ) ENGINE=InnoDB auto_increment=1000"""
