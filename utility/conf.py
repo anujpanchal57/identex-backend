@@ -166,6 +166,11 @@ email_endpoints = {
             "page_url": "/{{operation_type}}?type=open",
             "subject": "Your rank for the {{operation_type}} (#{{requisition_id}}) has changed",
             "template_id": "rank_changed"
+        },
+        "rfq_close_reminder": {
+            "page_url": "/rfq?type=open",
+            "subject": "Your RFQ[{}] from {} for {} is about to close!",
+            "template_id": "rfq_closing_reminder_2hours"
         }
     }
 }
