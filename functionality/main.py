@@ -1302,11 +1302,13 @@ def supplier_quotation_send():
         quotation = data['quotation']
         suser = SUser(data['_id'])
         supplier_id = suser.get_supplier_id()
+        supplier = Supplier(supplier_id)
+        if not supplier.get_profile_completed():
+            return response.errorResponse("Kindly complete your profile before sending the quotation")
         requisition = Requisition(data['requisition_id'])
         # Fetching lot products
         lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
         products = Product().get_lot_products(lot_id=lot['lot_id'])
-        supplier = Supplier(supplier_id)
         unlock_status = InviteSupplier().get_unlock_status(supplier_id=supplier_id, operation_id=data['requisition_id'],
                                                            operation_type="rfq")
 
@@ -2486,6 +2488,9 @@ def supplier_invoice_add():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         invoice_details = data['invoice_details']
+        supplier = Supplier(_id=invoice_details['supplier_id'])
+        if not supplier.get_profile_completed():
+            return response.errorResponse("Kindly complete your profile before raising an invoice")
         # Considering default unit currency as INR, if not present
         invoice_details['unit_currency'] = invoice_details['unit_currency'] if 'unit_currency' in invoice_details else "inr"
 
@@ -2505,7 +2510,6 @@ def supplier_invoice_add():
             invoice_lt_ids = InvoiceLineItem().insert_many(lts)
 
         # Email to buyer
-        supplier = Supplier(_id=invoice_details['supplier_id'])
         buyers = BUser().get_busers_for_buyer_id(buyer_id=invoice_details['buyer_id'])
         subject = conf.email_endpoints['supplier']['invoice_raised']['subject'].replace("{{supplier_name}}", supplier.get_company_name())
         link = conf.ENV_ENDPOINT + conf.email_endpoints['supplier']['invoice_raised']['page_url']
