@@ -1988,10 +1988,11 @@ def supplier_invite_email_send():
         # Updating the password
         suser.set_password(password=hashlib.sha1(password.encode()).hexdigest())
         # Send an email to supplier
+        subject = conf.email_endpoints['buyer']['supplier_onboarding']['subject'].replace("{{buyer_company}}", buyer.get_company_name())
         b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=data['buyer_id'])]
         p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
                                                                           "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                          "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                          "subject": subject,
                                                                           "SUPPLIER_USER": suser.get_first_name(),
                                                                           "BUYER_COMPANY_NAME": buyer.get_company_name(),
                                                                           "SUPPLIER_USERNAME": suser.get_email(),
