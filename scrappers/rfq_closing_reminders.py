@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 from pprint import pprint
 from multiprocessing import Process
 
-from functionality.EmailNotifications import send_template_mail
 
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 sys.path.append(app_name)
 from utility import DBConnectivity, conf
+from functionality.EmailNotifications import send_template_mail
 
 # in seconds
 execution_time_gap_1 = 600

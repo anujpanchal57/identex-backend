@@ -19,10 +19,12 @@ from utility import conf
 
 
 def get_current_timestamp(rounded=True):
-    return math.ceil(time.time()) if rounded else time.time()
+    return math.ceil(datetime.datetime.timestamp(datetime.datetime.now(timezone.utc))) if rounded else datetime.datetime.timestamp(datetime.datetime.now(timezone.utc))
+
 
 def convert_datestring_to_timestamp(date_str, format="%d-%m-%Y"):
     return int(datetime.datetime.strptime(date_str, format).timestamp())
+
 
 def round_of(number, number_of_decimals=2):
     try:
@@ -30,7 +32,9 @@ def round_of(number, number_of_decimals=2):
     except Exception as e:
         return number
 
-def convert_datetime_to_utc_datetimestring(datetime_str, op_tz, in_format="%d-%m-%Y %H:%M", out_format="%Y-%m-%d %H:%M"):
+
+def convert_datetime_to_utc_datetimestring(datetime_str, op_tz, in_format="%d-%m-%Y %H:%M",
+                                           out_format="%Y-%m-%d %H:%M"):
     # dt = datetime.datetime.strptime(datetime_str, in_format)
     # ts = int(dt.replace(tzinfo=timezone.utc).timestamp())
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
@@ -39,29 +43,36 @@ def convert_datetime_to_utc_datetimestring(datetime_str, op_tz, in_format="%d-%m
     actual = convert_time_offset_to_timestamp(offset, ts)
     return datetime.datetime.fromtimestamp(actual).strftime(out_format)
 
+
 def generate_forgot_password_token():
     token = ''.join(str(uuid.uuid4()).split('-'))
     return token
+
 
 def generate_email_verification_token():
     token = ''.join(str(uuid.uuid4()).split('-'))
     return token
 
+
 def generate_token_for_login():
     link = ''.join(str(uuid.uuid4()).split('-'))
     return link
+
 
 def generate_aws_file_path(client_type, client_id, document_type):
     if client_type.lower() == "buyer":
         return "B" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
     return "S" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
 
+
 def is_url(url):
     return 'http://' in url or 'https://' in url
+
 
 def generate_user_password(length=7):
     password_characters = string.ascii_letters + string.digits
     return ''.join(random.choice(password_characters) for i in range(length))
+
 
 def get_calculated_timestamp(date_time, op_tz):
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
@@ -69,22 +80,28 @@ def get_calculated_timestamp(date_time, op_tz):
     ts = int(date_obj.replace(tzinfo=timezone.utc).timestamp())
     return convert_time_offset_to_timestamp(offset, ts)
 
+
 def convert_time_offset_to_timestamp(offset, utc_timestamp):
     return int(utc_timestamp - ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
 
+
 def calculate_operation_deadline(utc_deadline):
     utc_timestamp = int(datetime.datetime.utcnow().timestamp())
-    deadline_ts = int(datetime.datetime.strptime(utc_deadline, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp())
+    deadline_ts = int(
+        datetime.datetime.strptime(utc_deadline, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp())
     time_remaining = deadline_ts - utc_timestamp
     return time_remaining
+
 
 def get_current_timestamp_of_timezone(op_tz):
     tz = pytz.timezone(op_tz)
     offset = datetime.datetime.now(tz).strftime("%z")
     return convert_time_offset_to_timestamp(offset, int(datetime.datetime.utcnow().timestamp()))
 
+
 def convert_time_offset_to_timestamp_for_deadline(offset, utc_timestamp):
     return int(utc_timestamp + ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
+
 
 def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_format="%d-%m-%Y %H:%M"):
     offset = datetime.datetime.now(pytz.timezone(op_tz)).strftime("%z")
@@ -93,8 +110,10 @@ def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_
     result = datetime.datetime.fromtimestamp(add_offset_to_utc(offset, ts)).strftime(out_format)
     return result
 
+
 def add_offset_to_utc(offset, utc_ts):
     return int(utc_ts + ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
+
 
 def populate_email_template_for_messages(file_path, details):
     with open(file_path) as html:
@@ -114,6 +133,7 @@ def populate_email_template_for_messages(file_path, details):
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
+
 def get_rank_changed_suppliers(prev_ranks, curr_ranks):
     result = {}
     for prev in prev_ranks:
@@ -127,20 +147,22 @@ def get_rank_changed_suppliers(prev_ranks, curr_ranks):
                             if curr['ranks'][j]['supplier_id'] == prev['ranks'][i]['supplier_id'] and j > i:
                                 if curr['ranks'][j]['supplier_id'] not in result:
                                     result[curr['ranks'][j]['supplier_id']] = {}
-                                    result[curr['ranks'][j]['supplier_id']]['supplier_name'] = curr['ranks'][j]['supplier_name']
+                                    result[curr['ranks'][j]['supplier_id']]['supplier_name'] = curr['ranks'][j][
+                                        'supplier_name']
                                     result[curr['ranks'][j]['supplier_id']]['email'] = curr['ranks'][j]['email']
                                     result[curr['ranks'][j]['supplier_id']]['products'] = []
-                                    result[curr['ranks'][j]['supplier_id']]['products'].append({"product_name": curr['product_name'],
-                                                                                                "product_description": curr['product_description'],
-                                                                                                "current_rank": j+1,
-                                                                                                "previous_rank": i+1})
+                                    result[curr['ranks'][j]['supplier_id']]['products'].append(
+                                        {"product_name": curr['product_name'],
+                                         "product_description": curr['product_description'],
+                                         "current_rank": j + 1,
+                                         "previous_rank": i + 1})
                                 else:
-                                    result[curr['ranks'][j]['supplier_id']]['products'].append({"product_name": curr['product_name'],
-                                                                                                "product_description": curr['product_description'],
-                                                                                                "current_rank": j + 1,
-                                                                                                "previous_rank": i + 1})
+                                    result[curr['ranks'][j]['supplier_id']]['products'].append(
+                                        {"product_name": curr['product_name'],
+                                         "product_description": curr['product_description'],
+                                         "current_rank": j + 1,
+                                         "previous_rank": i + 1})
     return result
-
 
 # pprint(calculate_closing_time(1598376600, "asia/calcutta"))
 # pprint(calculate_closing_time("2020-08-25 17:30", "asia/calcutta"))

@@ -171,6 +171,11 @@ email_endpoints = {
             "page_url": "/rfq?type=open",
             "subject": "Your RFQ[{}] from {} for {} is about to close!",
             "template_id": "rfq_closing_reminder_2hours"
+        },
+        "order_delivery_reminder": {
+            "page_url": "",
+            "subject": "Your delivery for {} from {} is due tomorrow!",
+            "template_id": "order_delivery_reminder"
         }
     }
 }
