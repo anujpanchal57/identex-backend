@@ -283,30 +283,36 @@ def supplier_profile_update():
             return response.errorResponse("Please fill all the required fields")
         suser = SUser(data['_id'])
         supplier = Supplier(data['supplier_id'])
+        if 'filing_frequency' in details:
+            if details['filing_frequency'] is None:
+                details['filing_frequency'] = "NA"
+        if 'gst_status' in details:
+            if details['gst_status'] is None:
+                details['gst_status'] = "NA"
 
-        if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
-                                            annual_revenue=details['annual_revenue'], company_name=details['company_name']):
-            if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
-                # Adding supplier branches and GST details
-                SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
-                                                business_address=details['business_address'], pincode=details['pincode'])
-                SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
-                                                     filing_frequency=details['filing_frequency'], status=details['gst_status'])
-                return response.customResponse({"response": "Profile details updated successfully",
-                                                "details": {
-                                                    "supplier_id": suser.get_supplier_id(),
-                                                    "email": data['_id'],
-                                                    "name": suser.get_name(),
-                                                    "mobile_no": suser.get_mobile_no(),
-                                                    "company_name": supplier.get_company_name(),
-                                                    "company_logo": supplier.get_company_logo(),
-                                                    "status": suser.get_status(),
-                                                    "role": suser.get_role(),
-                                                    "activation_status": supplier.get_activation_status(),
-                                                    "created_at": suser.get_created_at(),
-                                                    "profile_completed": supplier.get_profile_completed(),
-                                                    "updated_at": suser.get_updated_at()
-                                                }})
+        if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
+            # Adding supplier branches and GST details
+            if SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
+                                            business_address=details['business_address'], pincode=details['pincode']):
+                if SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
+                                                     filing_frequency=details['filing_frequency'], status=details['gst_status']):
+                    if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
+                                                        annual_revenue=details['annual_revenue'], company_name=details['company_name']):
+                        return response.customResponse({"response": "Profile details updated successfully",
+                                                        "details": {
+                                                            "supplier_id": suser.get_supplier_id(),
+                                                            "email": data['_id'],
+                                                            "name": suser.get_name(),
+                                                            "mobile_no": suser.get_mobile_no(),
+                                                            "company_name": supplier.get_company_name(),
+                                                            "company_logo": supplier.get_company_logo(),
+                                                            "status": suser.get_status(),
+                                                            "role": suser.get_role(),
+                                                            "activation_status": supplier.get_activation_status(),
+                                                            "created_at": suser.get_created_at(),
+                                                            "profile_completed": supplier.get_profile_completed(),
+                                                            "updated_at": suser.get_updated_at()
+                                                        }})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
