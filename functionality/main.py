@@ -1743,6 +1743,7 @@ def buyer_supplier_add():
         data['_id'] = data['_id'].lower()
         buser = BUser(data['_id'])
         buyer_id = buser.get_buyer_id()
+        buyer = Buyer(buyer_id)
         suppliers = data['supplier_details']
         for supp in suppliers:
             supp['email'] = supp['email'].lower()
@@ -1760,11 +1761,12 @@ def buyer_supplier_add():
                 SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id(), supplier_category)
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
                 # Send an email to supplier
+                subject = conf.email_endpoints['buyer']['supplier_onboarding']['subject'].replace("{{buyer_company}}", buyer.get_company_name())
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
                                                                                   "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                                  "subject": subject,
                                                                                   "SUPPLIER_USER": suser.get_first_name(),
-                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
                                                                                   "FIRST_INVITE": "none",
                                                                                   "cc": b_user_emails})
                 p.start()
@@ -1786,11 +1788,12 @@ def buyer_supplier_add():
                 # Send an email to supplier
                 suser = SUser(supp['email'])
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
+                subject = conf.email_endpoints['buyer']['supplier_onboarding']['subject'].replace("{{buyer_company}}", buyer.get_company_name())
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
                                                                                   "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                                  "subject": subject,
                                                                                   "SUPPLIER_USER": suser.get_first_name(),
-                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
                                                                                   "SUPPLIER_USERNAME": suser.get_email(),
                                                                                   "PASSWORD": password,
                                                                                   "FIRST_INVITE": "block",

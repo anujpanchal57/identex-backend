@@ -82,7 +82,7 @@ email_endpoints = {
         },
         "supplier_onboarding": {
             "page_url": "",
-            "subject": "You have been invited to join Identex",
+            "subject": "{{buyer_company}} has invited you to join Identex",
             "template_id": "supplier_onboarding"
         },
         "rfq_created": {
