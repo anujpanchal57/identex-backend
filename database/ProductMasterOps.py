@@ -150,7 +150,7 @@ class ProductMaster:
             res = []
         return res
 
-pprint(ProductMaster().is_product_added("copper ball bearings", '', '', 1000))
+# pprint(ProductMaster().is_product_added("copper ball bearings", '', '', 1000))
 # pprint(ProductMaster().search_products("bea"))
 # pprint(Product().get_lot_products(1000))
 # pprint(Product("").add_product(1000, "filters", "steel", "filtering filters", "piece", 2))
