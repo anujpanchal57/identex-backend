@@ -778,10 +778,8 @@ def buyer_create_rfq():
 
         # Create the lot
         data['lot']['lot_description'] = data['lot']['lot_description'] if 'lot_description' in data['lot'] else ''
-        lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'],
-                                 lot_category=data['lot']['lot_category'], lot_sub_category=data['lot']['lot_sub_category'])
+        lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'])
 
-        # Insert the products
         for product in data['products']:
             product_id = Product("").add_product(lot_id=lot_id, buyer_id=buyer_id, product_id=product['product_id'],
                                                  product_description=product['product_description'], unit=product['unit'],
@@ -2022,8 +2020,7 @@ def buyer_products_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'], product_category=data['product_category'],
-                                                      product_sub_category=data['product_sub_category'])
+        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'])
         return response.customResponse({"products": products})
 
     except Exception as e:
@@ -2038,11 +2035,9 @@ def buyer_product_add():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else ''
-        is_product_added = ProductMaster().is_product_added(product_name=data['product_name'].lower(),
-                                                product_category=data['product_category'],
-                                                product_sub_category=data['product_sub_category'],
-                                                buyer_id=data['buyer_id'])
+        data['product_category'] = data['product_category'] if 'product_category' in data else 'uncategorized'
+        data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else 'uncategorized'
+        is_product_added = ProductMaster().is_product_added(product_name=data['product_name'].lower(), buyer_id=data['buyer_id'])
         # Check whether the product is existing or not
         if not is_product_added:
             # Insert the product
@@ -2155,13 +2150,7 @@ def idntx_products_get():
         data = request.json
         if data['product_str'] == "":
             return response.customResponse({"products": []})
-        if 'category_id' not in data:
-            return response.errorResponse("Please send a valid category")
-        if 'sub_category_id' not in data:
-            return response.errorResponse("Please send a valid sub category")
-        return response.customResponse({"products": IdntxProductMaster().search_products(product_str=data['product_str'].lower(),
-                                                                                         category_id=data['category_id'],
-                                                                                         sub_category_id=data['sub_category_id'])})
+        return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower())})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)

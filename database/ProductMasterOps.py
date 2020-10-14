@@ -23,7 +23,7 @@ class ProductMaster:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_product(self, buyer_id, product_name, product_category, product_sub_category=""):
+    def add_product(self, buyer_id, product_name, product_category, product_sub_category):
         self.__product_master['buyer_id'] = buyer_id
         self.__product_master['product_name'] = product_name
         self.__product_master['product_category'] = product_category
@@ -73,11 +73,10 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to add product(s), please try again')
 
-    def is_product_added(self, product_name, product_category, product_sub_category, buyer_id):
+    def is_product_added(self, product_name, buyer_id):
         try:
-            self.__cursor.execute("""select * from product_master where lower(product_name) = %s and product_category = %s 
-                                    and buyer_id = %s and product_sub_category = %s""",
-                                  (product_name, product_category, buyer_id, product_sub_category))
+            self.__cursor.execute("""select * from product_master where lower(product_name) = %s and buyer_id = %s""",
+                                  (product_name, buyer_id))
             res = self.__cursor.fetchone()
             return res
 
@@ -90,17 +89,13 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    def get_buyer_products(self, buyer_id, product_category, product_sub_category):
+    # will have to add limit
+    def get_buyer_products(self, buyer_id):
         try:
-            self.__cursor.execute("""select pm.product_id, pm.product_name, idc.category_name as product_category, 
-                                    idsc.sub_category_name as product_sub_category, pm.created_at 
-                                    from product_master as pm
-                                    join idntx_category as idc
-                                    on pm.product_category = idc.category_id
-                                    join idntx_sub_categories as idsc
-                                    on pm.product_sub_category = idsc.sub_category_id
-                                    where buyer_id = %s and product_category = %s and product_sub_category = %s 
-                                    order by created_at desc""", (buyer_id, product_category, product_sub_category))
+            self.__cursor.execute("""select product_id, product_name, product_category, product_sub_category  
+                                    from product_master
+                                    where buyer_id = %s
+                                    order by created_at desc""", (buyer_id, ))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res
@@ -148,5 +143,14 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete product, please try again')
 
+    def search_products(self, product_str, start_limit=0, end_limit=10):
+        self.__cursor.execute("select * from product_master where lower(product_name) like '%" + product_str + "%' order by product_name limit " + str(start_limit) + ", " + str(end_limit))
+        res = self.__cursor.fetchall()
+        if res is None:
+            res = []
+        return res
+
+pprint(ProductMaster().is_product_added("copper ball bearings", '', '', 1000))
+# pprint(ProductMaster().search_products("bea"))
 # pprint(Product().get_lot_products(1000))
 # pprint(Product("").add_product(1000, "filters", "steel", "filtering filters", "piece", 2))
