@@ -150,7 +150,47 @@ class ProductMaster:
             res = []
         return res
 
+    def get_product_categories(self, buyer_id):
+        try:
+            self.__cursor.execute("""select distinct(product_category) from product_master where buyer_id = %s""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchall()
+            if res is None:
+                result = []
+            result = [x['product_category'] for x in res if x['product_category'].lower() != "uncategorized"]
+            return result
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ProductMasterOps', function_name='get_product_categories()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='ProductMasterOps', function_name='get_product_categories()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+    def get_product_sub_categories(self, buyer_id):
+        try:
+            self.__cursor.execute("""select distinct(product_sub_category) from product_master where buyer_id = %s""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchall()
+            if res is None:
+                result = []
+            result = [x['product_sub_category'] for x in res if x['product_sub_category'].lower() != "uncategorized"]
+            return result
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='ProductMasterOps', function_name='get_product_sub_categories()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='ProductMasterOps', function_name='get_product_sub_categories()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+# pprint(ProductMaster().get_product_categories(1000))
 # pprint(ProductMaster().get_buyer_products(1000))
+# pprint(ProductMaster().get_product_sub_categories(1000))
 # pprint(ProductMaster().is_product_added("copper ball bearings", '', '', 1000))
 # pprint(ProductMaster().search_products("bea"))
 # pprint(Product().get_lot_products(1000))

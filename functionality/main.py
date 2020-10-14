@@ -2131,35 +2131,34 @@ def get_product_order_distribution():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for fetching the categories from the IDNTX master
-@app.route("/idntx-categories/get", methods=["POST"])
-@validate_access_token
-def idntx_categories_get():
+# POST request for fetching the categories from the product master
+@app.route("/buyer/product-categories/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_categories_get():
     try:
-        return response.customResponse({"categories": IdntxCategory().get_categories()})
+        data = request.json
+        return response.customResponse({"categories": ProductMaster().get_product_categories(buyer_id=data['buyer_id'])})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
-        log = Logger(module_name="/idntx-categories/get", function_name="idntx_categories_get()")
+        log = Logger(module_name="/buyer/product-categories/get", function_name="buyer_product_categories_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
 
-# POST request for fetching the sub categories from the IDNTX sub categories master
-@app.route("/idntx-sub-categories/get", methods=["POST"])
-@validate_access_token
-def idntx_sub_categories_get():
+# POST request for fetching the sub categories from the product master
+@app.route("/buyer/product-sub-categories/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_sub_categories_get():
     try:
         data = request.json
-        if 'category_id' not in data:
-            return response.errorResponse("Please send a valid category")
-        return response.customResponse({"sub_categories": IdntxSubCategory().get_subcategories_for_category(category_id=data['category_id'])})
+        return response.customResponse({"sub_categories": ProductMaster().get_product_sub_categories(buyer_id=data['buyer_id'])})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
-        log = Logger(module_name="/idntx-sub-categories/get", function_name="idntx_sub_categories_get()")
+        log = Logger(module_name="/buyer/product-sub-categories/get", function_name="buyer_product_sub_categories_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
