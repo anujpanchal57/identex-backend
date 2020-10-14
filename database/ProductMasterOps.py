@@ -143,8 +143,8 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to delete product, please try again')
 
-    def search_products(self, product_str, start_limit=0, end_limit=10):
-        self.__cursor.execute("select * from product_master where lower(product_name) like '%" + product_str + "%' order by product_name limit " + str(start_limit) + ", " + str(end_limit))
+    def search_products(self, product_str, buyer_id, start_limit=0, end_limit=10):
+        self.__cursor.execute("select * from product_master where lower(product_name) like '%" + product_str + "%' and buyer_id = " + str(buyer_id) + " order by product_name limit " + str(start_limit) + ", " + str(end_limit))
         res = self.__cursor.fetchall()
         if res is None:
             res = []

@@ -2021,7 +2021,8 @@ def buyer_products_search():
         data = request.json
         if data['product_str'] == "":
             return response.customResponse({"products": []})
-        return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower())})
+        return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower(),
+                                                                                    buyer_id=data['buyer_id'])})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
