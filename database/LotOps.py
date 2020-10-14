@@ -37,7 +37,7 @@ class Lot:
             self.__cursor.execute(Implementations.lots_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO lots (requisition_id, lot_name, lot_description, force_lot_bidding, created_at) 
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                                    VALUES (%s, %s, %s, %s, %s)""",
                                   (values['requisition_id'], values['lot_name'],
                                    values['lot_description'], values['force_lot_bidding'], values['created_at']))
             self.__sql.commit()
