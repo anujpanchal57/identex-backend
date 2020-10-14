@@ -2013,6 +2013,23 @@ def supplier_invite_email_send():
 
 ########################################### PRODUCTS SECTION ##########################################################
 
+# POST request for searching the products from the product master
+@app.route("/buyer/products/search", methods=["POST"])
+@validate_access_token
+def buyer_products_search():
+    try:
+        data = request.json
+        if data['product_str'] == "":
+            return response.customResponse({"products": []})
+        return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower())})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/products/search", function_name="buyer_products_search()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for fetching list of products for buyer
 @app.route("/buyer/products/get", methods=["POST"])
 @validate_buyer_access_token
@@ -2020,7 +2037,11 @@ def buyer_products_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'])
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['limit']
+        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'], start_limit=start_limit, end_limit=end_limit)
         return response.customResponse({"products": products})
 
     except Exception as e:
@@ -2138,24 +2159,6 @@ def idntx_sub_categories_get():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/idntx-sub-categories/get", function_name="idntx_sub_categories_get()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
-
-# POST request for fetching the products from the IDNTX product master
-@app.route("/idntx-products/get", methods=["POST"])
-@validate_access_token
-def idntx_products_get():
-    try:
-        data = request.json
-        if data['product_str'] == "":
-            return response.customResponse({"products": []})
-        return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower())})
-
-    except exceptions.IncompleteRequestException as e:
-        return response.errorResponse(e.error)
-    except Exception as e:
-        log = Logger(module_name="/idntx-products/get", function_name="idntx_products_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

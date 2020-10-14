@@ -89,13 +89,13 @@ class ProductMaster:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
-    # will have to add limit
-    def get_buyer_products(self, buyer_id):
+    def get_buyer_products(self, buyer_id, start_limit=0, end_limit=10):
         try:
             self.__cursor.execute("""select product_id, product_name, product_category, product_sub_category  
                                     from product_master
                                     where buyer_id = %s
-                                    order by created_at desc""", (buyer_id, ))
+                                    order by created_at desc
+                                    limit %s, %s""", (buyer_id, start_limit, end_limit))
             res = self.__cursor.fetchall()
             self.__sql.commit()
             return res
@@ -150,6 +150,7 @@ class ProductMaster:
             res = []
         return res
 
+# pprint(ProductMaster().get_buyer_products(1000))
 # pprint(ProductMaster().is_product_added("copper ball bearings", '', '', 1000))
 # pprint(ProductMaster().search_products("bea"))
 # pprint(Product().get_lot_products(1000))
