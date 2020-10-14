@@ -2015,7 +2015,7 @@ def supplier_invite_email_send():
 
 # POST request for searching the products from the product master
 @app.route("/buyer/products/search", methods=["POST"])
-@validate_access_token
+@validate_buyer_access_token
 def buyer_products_search():
     try:
         data = request.json
