@@ -11,7 +11,6 @@ def create_sql_connection():
                                          user=conf.SQL_CONNECTION_USER,
                                          password=conf.SQL_CONNECTION_PASSWORD,
                                          autocommit=True)
-
     if connection.is_connected():
         return connection
 
