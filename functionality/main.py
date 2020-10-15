@@ -67,6 +67,7 @@ from database.SupplierGSTDetailsOps import SupplierGSTDetails
 from database.ProjectOps import Project
 from database.ProjectMembersOps import ProjectMembers
 from database.ProjectLotsOps import ProjectLots
+from database.UnitOps import Unit
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1296,6 +1297,18 @@ def buyer_rfq_quotes_download():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for fetching the list of units for products
+@app.route("/buyer/product-units/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_units_get():
+    try:
+        return response.customResponse({"units": Unit().get_all_units()})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/product-units/get", function_name="buyer_product_units_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
 # POST request for listing the RFQs for buyer
@@ -1855,7 +1868,9 @@ def buyer_suppliers_search():
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
         category = data['category'].lower() if 'category' in data else "all"
-        suppliers = Buyer(data['buyer_id']).search_suppliers(search_str=data['search_str'].lower(), category=category)
+        supplier_category = data['supplier_category'] if 'supplier_category' in data else "all"
+        suppliers = Buyer(data['buyer_id']).search_suppliers(search_str=data['search_str'].lower(), category=category.lower(),
+                                                             supplier_category=supplier_category.lower())
         # Adding the gst validity details
         if len(suppliers) > 0:
             for supp in suppliers:
@@ -2090,7 +2105,8 @@ def buyer_products_modify():
             return response.customResponse({"response": "Product details updated successfully",
                                             "product_id": data['product_id'],
                                             "product_name": data['product_name'],
-                                            "product_category": data['product_category']})
+                                            "product_category": data['product_category'],
+                                            "product_sub_category": data['product_sub_category']})
         # Delete method is not being used
         else:
             ProductMaster(data['product_id']).delete_product()
