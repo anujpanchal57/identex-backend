@@ -67,6 +67,7 @@ from database.SupplierGSTDetailsOps import SupplierGSTDetails
 from database.ProjectOps import Project
 from database.ProjectMembersOps import ProjectMembers
 from database.ProjectLotsOps import ProjectLots
+from database.UnitOps import Unit
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -1293,6 +1294,18 @@ def buyer_rfq_quotes_download():
 
     except Exception as e:
         log = Logger(module_name="/buyer/rfq/quotes/download", function_name="buyer_rfq_quotes_download()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the list of units for products
+@app.route("/buyer/product-units/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_units_get():
+    try:
+        return response.customResponse({"units": Unit().get_all_units()})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/product-units/get", function_name="buyer_product_units_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

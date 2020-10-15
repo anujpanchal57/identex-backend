@@ -373,3 +373,8 @@ logs_create_table = """create table if not exists logs (
                 priority varchar(10) not null, 
                 timestamp int(11) not null
             )"""
+
+units_create_table = """create table if not exists units (
+                unit_id int not null primary key auto_increment,
+                unit_name varchar(100) not null
+            ) Engine=InnoDB auto_increment=1000"""
