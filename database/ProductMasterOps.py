@@ -111,8 +111,9 @@ class ProductMaster:
 
     def update_product_details(self, values):
         try:
-            self.__cursor.execute("""update product_master set product_name = %s where product_id = %s""",
-                                  (values['product_name'], self.__id, ))
+            self.__cursor.execute("""update product_master set product_name = %s, product_category = %s, product_sub_category = %s 
+                                    where product_id = %s""",
+                                  (values['product_name'], values['product_category'], values['product_sub_category'], self.__id, ))
             self.__sql.commit()
             return True
 
