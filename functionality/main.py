@@ -784,24 +784,26 @@ def buyer_create_rfq():
             product_id = Product("").add_product(lot_id=lot_id, buyer_id=buyer_id, product_id=product['product_id'],
                                                  product_description=product['product_description'], unit=product['unit'],
                                                  quantity=product['quantity'])
-            if len(product['documents']) > 0:
-                documents = []
-                for document in product['documents']:
-                    doc = [product_id, "product", document['document_url'], document['document_type'], document['document_name'],
+            if 'documents' in product:
+                if len(product['documents']) > 0:
+                    documents = []
+                    for document in product['documents']:
+                        doc = [product_id, "product", document['document_url'], document['document_type'], document['document_name'],
+                               document['uploaded_on'], data['_id'], "buyer"]
+                        doc = tuple(doc)
+                        documents.append(doc)
+                    document_ids += Document("").insert_many(documents)
+
+        # Insert the documents
+        documents = []
+        if 'specification_documents' in data:
+            if len(data['specification_documents']) > 0:
+                for document in data['specification_documents']:
+                    doc = [requisition_id, "rfq", document['document_url'], document['document_type'], document['document_name'],
                            document['uploaded_on'], data['_id'], "buyer"]
                     doc = tuple(doc)
                     documents.append(doc)
                 document_ids += Document("").insert_many(documents)
-
-        # Insert the documents
-        documents = []
-        if len(data['specification_documents']) > 0:
-            for document in data['specification_documents']:
-                doc = [requisition_id, "rfq", document['document_url'], document['document_type'], document['document_name'],
-                       document['uploaded_on'], data['_id'], "buyer"]
-                doc = tuple(doc)
-                documents.append(doc)
-            document_ids += Document("").insert_many(documents)
 
         # Adding activity performed to the log
         ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq",
