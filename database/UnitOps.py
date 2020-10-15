@@ -19,9 +19,6 @@ class Unit:
             self.__sql.close()
 
     def get_all_units(self):
-        self.__cursor.execute("""select distinct(unit_name) from units order by unit_name""")
+        self.__cursor.execute("""select * from units order by unit_name""")
         res = self.__cursor.fetchall()
-        if res is None:
-            result = []
-        result = [x['unit_name'] for x in res]
-        return result
+        return res

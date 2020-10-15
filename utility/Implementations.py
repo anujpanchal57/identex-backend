@@ -375,6 +375,6 @@ logs_create_table = """create table if not exists logs (
             )"""
 
 units_create_table = """create table if not exists units (
-                unit_id int not null primary key auto_increment,
+                unit_id varchar(50) not null,
                 unit_name varchar(100) not null
-            ) Engine=InnoDB auto_increment=1000"""
+            )"""
