@@ -283,30 +283,36 @@ def supplier_profile_update():
             return response.errorResponse("Please fill all the required fields")
         suser = SUser(data['_id'])
         supplier = Supplier(data['supplier_id'])
+        if 'filing_frequency' in details:
+            if details['filing_frequency'] is None:
+                details['filing_frequency'] = "NA"
+        if 'gst_status' in details:
+            if details['gst_status'] is None:
+                details['gst_status'] = "NA"
 
-        if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
-                                            annual_revenue=details['annual_revenue'], company_name=details['company_name']):
-            if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
-                # Adding supplier branches and GST details
-                SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
-                                                business_address=details['business_address'], pincode=details['pincode'])
-                SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
-                                                     filing_frequency=details['filing_frequency'], status=details['gst_status'])
-                return response.customResponse({"response": "Profile details updated successfully",
-                                                "details": {
-                                                    "supplier_id": suser.get_supplier_id(),
-                                                    "email": data['_id'],
-                                                    "name": suser.get_name(),
-                                                    "mobile_no": suser.get_mobile_no(),
-                                                    "company_name": supplier.get_company_name(),
-                                                    "company_logo": supplier.get_company_logo(),
-                                                    "status": suser.get_status(),
-                                                    "role": suser.get_role(),
-                                                    "activation_status": supplier.get_activation_status(),
-                                                    "created_at": suser.get_created_at(),
-                                                    "profile_completed": supplier.get_profile_completed(),
-                                                    "updated_at": suser.get_updated_at()
-                                                }})
+        if suser.update_suser_details(name=details['name'], mobile_no=details['mobile_no']):
+            # Adding supplier branches and GST details
+            if SupplierBranches().add_branches(supplier_id=data['supplier_id'], city=details['city'],
+                                            business_address=details['business_address'], pincode=details['pincode']):
+                if SupplierGSTDetails().add_gst_details(supplier_id=data['supplier_id'], gst_no=details['gst_no'],
+                                                     filing_frequency=details['filing_frequency'], status=details['gst_status']):
+                    if supplier.update_supplier_profile(pan_no=details['pan_no'], company_nature=details['company_nature'],
+                                                        annual_revenue=details['annual_revenue'], company_name=details['company_name']):
+                        return response.customResponse({"response": "Profile details updated successfully",
+                                                        "details": {
+                                                            "supplier_id": suser.get_supplier_id(),
+                                                            "email": data['_id'],
+                                                            "name": suser.get_name(),
+                                                            "mobile_no": suser.get_mobile_no(),
+                                                            "company_name": supplier.get_company_name(),
+                                                            "company_logo": supplier.get_company_logo(),
+                                                            "status": suser.get_status(),
+                                                            "role": suser.get_role(),
+                                                            "activation_status": supplier.get_activation_status(),
+                                                            "created_at": suser.get_created_at(),
+                                                            "profile_completed": supplier.get_profile_completed(),
+                                                            "updated_at": suser.get_updated_at()
+                                                        }})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
@@ -772,32 +778,32 @@ def buyer_create_rfq():
 
         # Create the lot
         data['lot']['lot_description'] = data['lot']['lot_description'] if 'lot_description' in data['lot'] else ''
-        lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'],
-                                 lot_category=data['lot']['lot_category'], lot_sub_category=data['lot']['lot_sub_category'])
+        lot_id = Lot("").add_lot(requisition_id=requisition_id, lot_name=data['lot']['lot_name'], lot_description=data['lot']['lot_description'])
 
-        # Insert the products
         for product in data['products']:
             product_id = Product("").add_product(lot_id=lot_id, buyer_id=buyer_id, product_id=product['product_id'],
                                                  product_description=product['product_description'], unit=product['unit'],
                                                  quantity=product['quantity'])
-            if len(product['documents']) > 0:
-                documents = []
-                for document in product['documents']:
-                    doc = [product_id, "product", document['document_url'], document['document_type'], document['document_name'],
+            if 'documents' in product:
+                if len(product['documents']) > 0:
+                    documents = []
+                    for document in product['documents']:
+                        doc = [product_id, "product", document['document_url'], document['document_type'], document['document_name'],
+                               document['uploaded_on'], data['_id'], "buyer"]
+                        doc = tuple(doc)
+                        documents.append(doc)
+                    document_ids += Document("").insert_many(documents)
+
+        # Insert the documents
+        documents = []
+        if 'specification_documents' in data:
+            if len(data['specification_documents']) > 0:
+                for document in data['specification_documents']:
+                    doc = [requisition_id, "rfq", document['document_url'], document['document_type'], document['document_name'],
                            document['uploaded_on'], data['_id'], "buyer"]
                     doc = tuple(doc)
                     documents.append(doc)
                 document_ids += Document("").insert_many(documents)
-
-        # Insert the documents
-        documents = []
-        if len(data['specification_documents']) > 0:
-            for document in data['specification_documents']:
-                doc = [requisition_id, "rfq", document['document_url'], document['document_type'], document['document_name'],
-                       document['uploaded_on'], data['_id'], "buyer"]
-                doc = tuple(doc)
-                documents.append(doc)
-            document_ids += Document("").insert_many(documents)
 
         # Adding activity performed to the log
         ActivityLogs("").add_activity(activity="Create RFQ", done_by=data['_id'], operation_id=requisition_id, operation_type="rfq",
@@ -1743,6 +1749,7 @@ def buyer_supplier_add():
         data['_id'] = data['_id'].lower()
         buser = BUser(data['_id'])
         buyer_id = buser.get_buyer_id()
+        buyer = Buyer(buyer_id)
         suppliers = data['supplier_details']
         for supp in suppliers:
             supp['email'] = supp['email'].lower()
@@ -1760,11 +1767,12 @@ def buyer_supplier_add():
                 SupplierRelationship().add_supplier_relationship(buyer_id, suser.get_supplier_id(), supplier_category)
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
                 # Send an email to supplier
+                subject = conf.email_endpoints['buyer']['supplier_onboarding']['subject'].replace("{{buyer_company}}", buyer.get_company_name())
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
                                                                                   "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                                  "subject": subject,
                                                                                   "SUPPLIER_USER": suser.get_first_name(),
-                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
                                                                                   "FIRST_INVITE": "none",
                                                                                   "cc": b_user_emails})
                 p.start()
@@ -1786,11 +1794,12 @@ def buyer_supplier_add():
                 # Send an email to supplier
                 suser = SUser(supp['email'])
                 b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=buyer_id)]
+                subject = conf.email_endpoints['buyer']['supplier_onboarding']['subject'].replace("{{buyer_company}}", buyer.get_company_name())
                 p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [supp['email']],
                                                                                   "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                                  "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                                  "subject": subject,
                                                                                   "SUPPLIER_USER": suser.get_first_name(),
-                                                                                  "BUYER_COMPANY_NAME": Buyer(buyer_id).get_company_name(),
+                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
                                                                                   "SUPPLIER_USERNAME": suser.get_email(),
                                                                                   "PASSWORD": password,
                                                                                   "FIRST_INVITE": "block",
@@ -1985,10 +1994,11 @@ def supplier_invite_email_send():
         # Updating the password
         suser.set_password(password=hashlib.sha1(password.encode()).hexdigest())
         # Send an email to supplier
+        subject = conf.email_endpoints['buyer']['supplier_onboarding']['subject'].replace("{{buyer_company}}", buyer.get_company_name())
         b_user_emails = [x['email'] for x in buser.get_busers_for_buyer_id(buyer_id=data['buyer_id'])]
         p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
                                                                           "template": conf.email_endpoints['buyer']['supplier_onboarding']['template_id'],
-                                                                          "subject": conf.email_endpoints['buyer']['supplier_onboarding']['subject'],
+                                                                          "subject": subject,
                                                                           "SUPPLIER_USER": suser.get_first_name(),
                                                                           "BUYER_COMPANY_NAME": buyer.get_company_name(),
                                                                           "SUPPLIER_USERNAME": suser.get_email(),
@@ -2005,6 +2015,24 @@ def supplier_invite_email_send():
 
 ########################################### PRODUCTS SECTION ##########################################################
 
+# POST request for searching the products from the product master
+@app.route("/buyer/products/search", methods=["POST"])
+@validate_buyer_access_token
+def buyer_products_search():
+    try:
+        data = request.json
+        if data['product_str'] == "":
+            return response.customResponse({"products": []})
+        return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower(),
+                                                                                    buyer_id=data['buyer_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/products/search", function_name="buyer_products_search()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request for fetching list of products for buyer
 @app.route("/buyer/products/get", methods=["POST"])
 @validate_buyer_access_token
@@ -2012,8 +2040,11 @@ def buyer_products_get():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'], product_category=data['product_category'],
-                                                      product_sub_category=data['product_sub_category'])
+        data['offset'] = data['offset'] if 'offset' in data else 0
+        data['limit'] = data['limit'] if 'limit' in data else 5
+        start_limit = data['offset']
+        end_limit = data['limit']
+        products = ProductMaster().get_buyer_products(buyer_id=data['buyer_id'], start_limit=start_limit, end_limit=end_limit)
         return response.customResponse({"products": products})
 
     except Exception as e:
@@ -2028,11 +2059,9 @@ def buyer_product_add():
     try:
         data = DictionaryOps.set_primary_key(request.json, "email")
         data['_id'] = data['_id'].lower()
-        data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else ''
-        is_product_added = ProductMaster().is_product_added(product_name=data['product_name'].lower(),
-                                                product_category=data['product_category'],
-                                                product_sub_category=data['product_sub_category'],
-                                                buyer_id=data['buyer_id'])
+        data['product_category'] = data['product_category'] if 'product_category' in data else 'uncategorized'
+        data['product_sub_category'] = data['product_sub_category'] if 'product_sub_category' in data else 'uncategorized'
+        is_product_added = ProductMaster().is_product_added(product_name=data['product_name'].lower(), buyer_id=data['buyer_id'])
         # Check whether the product is existing or not
         if not is_product_added:
             # Insert the product
@@ -2104,59 +2133,34 @@ def get_product_order_distribution():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for fetching the categories from the IDNTX master
-@app.route("/idntx-categories/get", methods=["POST"])
-@validate_access_token
-def idntx_categories_get():
+# POST request for fetching the categories from the product master
+@app.route("/buyer/product-categories/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_categories_get():
     try:
-        return response.customResponse({"categories": IdntxCategory().get_categories()})
+        data = request.json
+        return response.customResponse({"categories": ProductMaster().get_product_categories(buyer_id=data['buyer_id'])})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
-        log = Logger(module_name="/idntx-categories/get", function_name="idntx_categories_get()")
+        log = Logger(module_name="/buyer/product-categories/get", function_name="buyer_product_categories_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
 
-# POST request for fetching the sub categories from the IDNTX sub categories master
-@app.route("/idntx-sub-categories/get", methods=["POST"])
-@validate_access_token
-def idntx_sub_categories_get():
+# POST request for fetching the sub categories from the product master
+@app.route("/buyer/product-sub-categories/get", methods=["POST"])
+@validate_buyer_access_token
+def buyer_product_sub_categories_get():
     try:
         data = request.json
-        if 'category_id' not in data:
-            return response.errorResponse("Please send a valid category")
-        return response.customResponse({"sub_categories": IdntxSubCategory().get_subcategories_for_category(category_id=data['category_id'])})
+        return response.customResponse({"sub_categories": ProductMaster().get_product_sub_categories(buyer_id=data['buyer_id'])})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
-        log = Logger(module_name="/idntx-sub-categories/get", function_name="idntx_sub_categories_get()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
-
-# POST request for fetching the products from the IDNTX product master
-@app.route("/idntx-products/get", methods=["POST"])
-@validate_access_token
-def idntx_products_get():
-    try:
-        data = request.json
-        if data['product_str'] == "":
-            return response.customResponse({"products": []})
-        if 'category_id' not in data:
-            return response.errorResponse("Please send a valid category")
-        if 'sub_category_id' not in data:
-            return response.errorResponse("Please send a valid sub category")
-        return response.customResponse({"products": IdntxProductMaster().search_products(product_str=data['product_str'].lower(),
-                                                                                         category_id=data['category_id'],
-                                                                                         sub_category_id=data['sub_category_id'])})
-
-    except exceptions.IncompleteRequestException as e:
-        return response.errorResponse(e.error)
-    except Exception as e:
-        log = Logger(module_name="/idntx-products/get", function_name="idntx_products_get()")
+        log = Logger(module_name="/buyer/product-sub-categories/get", function_name="buyer_product_sub_categories_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

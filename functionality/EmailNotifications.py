@@ -12,7 +12,10 @@ from functionality import GenericOps
 def send_template_mail(subject, template, recipients=[], sender='Identex <business@identex.io>', cc=[], bcc=[], **kwargs):
 
     request_url = "https://api.mailgun.net/v3/delivery.identex.io/messages"
-    cc.append(conf.default_recipient)
+    if conf.environ_name.lower() != "production":
+        recipients = [conf.default_recipient]
+    if conf.environ_name.lower() == "production":
+        cc.append(conf.default_recipient)
     auth = ("api", conf.MAILGUN_API_KEY)
     data = {
         "from": sender,
@@ -28,7 +31,10 @@ def send_template_mail(subject, template, recipients=[], sender='Identex <busine
 
 def send_mail(subject, message, recipients=[], sender="Identex <business@identex.io>", cc=[], bcc=[]):
     request_url = "https://api.mailgun.net/v3/delivery.identex.io/messages"
-    cc.append(conf.default_recipient)
+    if conf.environ_name.lower() != "production":
+        recipients = [conf.default_recipient]
+    if conf.environ_name.lower() == "production":
+        cc.append(conf.default_recipient)
     auth = ("api", conf.MAILGUN_API_KEY)
     data = {
         "from": sender,
@@ -44,7 +50,10 @@ def send_message_email(subject, template, recipients=['anuj.panchal@identex.io']
     request_url = "https://api.mailgun.net/v3/delivery.identex.io/messages"
     files = []
     cc = []
-    cc.append(conf.default_recipient)
+    if conf.environ_name.lower() != "production":
+        recipients = [conf.default_recipient]
+    if conf.environ_name.lower() == "production":
+        cc.append(conf.default_recipient)
 
     # For attaching documents in the mail
     if len(kwargs['documents']) > 0:
@@ -69,7 +78,10 @@ def send_message_email(subject, template, recipients=['anuj.panchal@identex.io']
 def send_handlebars_email(subject, template, recipients=[], sender='Identex <business@identex.io>', cc=[], bcc=[], **kwargs):
 
     request_url = "https://api.mailgun.net/v3/delivery.identex.io/messages"
-    cc.append(conf.default_recipient)
+    if conf.environ_name.lower() != "production":
+        recipients = [conf.default_recipient]
+    if conf.environ_name.lower() == "production":
+        cc.append(conf.default_recipient)
     auth = ("api", conf.MAILGUN_API_KEY)
     data = {
         "from": sender,

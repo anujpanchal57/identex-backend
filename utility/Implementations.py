@@ -148,8 +148,6 @@ lots_create_table = """create table if not exists lots (
                 lot_description varchar(500) not null default '', 
                 force_lot_bidding bool not null,
                 created_at int(11) not null,
-                lot_category int not null default 0,
-                lot_sub_category int not null default 0,
                 FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
@@ -169,9 +167,9 @@ products_create_table = """create table if not exists products (
 product_master_create_table = """create table if not exists product_master (
                 product_id int primary key not null auto_increment,
                 buyer_id int not null,  
-                product_name varchar(50) not null,
-                product_category int not null default 0, 
-                product_sub_category int not null default 0,
+                product_name varchar(500) not null,
+                product_category varchar(500) not null default 'uncategorized', 
+                product_sub_category varchar(500) not null default 'uncategorized',
                 created_at int(11) not null,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""

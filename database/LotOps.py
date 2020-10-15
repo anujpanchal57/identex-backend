@@ -23,13 +23,12 @@ class Lot:
             self.__cursor.close()
             self.__sql.close()
 
-    def add_lot(self, requisition_id, lot_name, lot_description, lot_category, lot_sub_category, force_lot_bidding=True):
+    def add_lot(self, requisition_id, lot_name, lot_description, force_lot_bidding=True):
         self.__lot['requisition_id'] = requisition_id
         self.__lot['lot_name'] = lot_name
         self.__lot['lot_description'] = lot_description
         self.__lot['force_lot_bidding'] = force_lot_bidding
         self.__lot['created_at'] = GenericOps.get_current_timestamp()
-        self.__lot['lot_category'], self.__lot['lot_sub_category'] = lot_category, lot_sub_category
         self.__lot['lot_id'] = self.insert(self.__lot)
         return self.__lot['lot_id']
 
@@ -37,11 +36,10 @@ class Lot:
         try:
             self.__cursor.execute(Implementations.lots_create_table)
             # Inserting the record in the table
-            self.__cursor.execute("""INSERT INTO lots (requisition_id, lot_name, lot_description, force_lot_bidding, created_at, lot_category, lot_sub_category) 
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+            self.__cursor.execute("""INSERT INTO lots (requisition_id, lot_name, lot_description, force_lot_bidding, created_at) 
+                                    VALUES (%s, %s, %s, %s, %s)""",
                                   (values['requisition_id'], values['lot_name'],
-                                   values['lot_description'], values['force_lot_bidding'], values['created_at'],
-                                   values['lot_category'], values['lot_sub_category']))
+                                   values['lot_description'], values['force_lot_bidding'], values['created_at']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
