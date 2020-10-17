@@ -1355,7 +1355,7 @@ def buyer_rfq_quote_approve():
                 if len(products) == approved_counter:
                     requisition.set_request_type(request_type="approved")
                     requisition.drop_sql_event()
-            return response.customResponse({"response": "Quote confirmed successfully", "confirmed": quote.get_confirmed()})
+            return response.customResponse({"response": "Quote confirmed successfully", "is_confirmed": True})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
