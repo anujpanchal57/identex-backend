@@ -35,10 +35,11 @@ class SupplierGSTDetails:
             # Checking whether the record is added or not
             self.__cursor.execute("""select * from supplier_gst_details where supplier_id = %s""",
                                   (values['supplier_id'], ))
-            if self.__cursor.fetchall() is None:
+            gst = self.__cursor.fetchall()
+            if gst is None:
                 is_gst_added = False
             else:
-                is_gst_added = True if len(self.__cursor.fetchall()) > 0 else False
+                is_gst_added = True if len(gst) > 0 else False
             # If GST is present, then return True
             if is_gst_added:
                 return True

@@ -33,12 +33,12 @@ class SupplierBranches:
         try:
             self.__cursor.execute(Implementations.supplier_branches_create_table)
             # Checking whether the record is added or not
-            self.__cursor.execute("""select * from supplier_branches where supplier_id = %s""",
-                                  (values['supplier_id'],))
-            if self.__cursor.fetchall() is None:
+            self.__cursor.execute("""select * from supplier_branches where supplier_id = %s""", (values['supplier_id'], ))
+            branch = self.__cursor.fetchall()
+            if branch is None:
                 is_branch_added = False
             else:
-                is_branch_added = True if len(self.__cursor.fetchall()) > 0 else False
+                is_branch_added = True if len(branch) > 0 else False
             # If the branch is present, then return True
             if is_branch_added:
                 return True
