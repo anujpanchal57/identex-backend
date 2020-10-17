@@ -146,7 +146,7 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return 0
 
-    def get_suppliers_for_po(self, requisition_id, confirmed=True):
+    def get_suppliers_for_po(self, requisition_id, status=True):
         try:
             self.__cursor.execute("""select s.supplier_id, s.company_name, sgst.gst_no, sgst.filing_frequency, sb.city, 
                                     sb.business_address, sb.pincode, s.profile_completed, sgst.status as gst_status
@@ -157,9 +157,7 @@ class Supplier:
                                     on s.supplier_id = sb.supplier_id
                                     join quotations as q
                                     on q.supplier_id = s.supplier_id
-                                    join quotes as qu
-                                    on q.quotation_id = qu.quotation_id
-                                    where q.requisition_id = %s and qu.confirmed = %s""", (requisition_id, confirmed))
+                                    where q.requisition_id = %s and q.status = %s""", (requisition_id, status))
             res = self.__cursor.fetchall()
             if res is None:
                 return []

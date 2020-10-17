@@ -2538,19 +2538,6 @@ def update_order_po_number():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for fetching a list of suppliers to generate a PO (Not being used)
-@app.route("/po/suppliers/get", methods=['POST'])
-@validate_buyer_access_token
-def po_suppliers_get():
-    try:
-        data = request.json
-        return response.customResponse({"suppliers": Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])})
-
-    except Exception as e:
-        log = Logger(module_name="/po/suppliers/get", function_name="po_suppliers_get()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
 # POST request to fetch quotes of a supplier to raise a PO
 @app.route("/po/supplier-quotes/get", methods=['POST'])
 @validate_buyer_access_token

@@ -32,6 +32,16 @@ class SupplierBranches:
     def insert(self, values):
         try:
             self.__cursor.execute(Implementations.supplier_branches_create_table)
+            # Checking whether the record is added or not
+            self.__cursor.execute("""select * from supplier_branches where supplier_id = %s""",
+                                  (values['supplier_id'],))
+            if self.__cursor.fetchall() is None:
+                is_branch_added = False
+            else:
+                is_branch_added = True if len(self.__cursor.fetchall()) > 0 else False
+            # If the branch is present, then return True
+            if is_branch_added:
+                return True
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO supplier_branches (supplier_id, city, business_address, pincode) 
                                     VALUES (%s, %s, %s, %s)""",
