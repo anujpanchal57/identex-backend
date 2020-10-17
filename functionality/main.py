@@ -2824,26 +2824,26 @@ def gst_details_get():
             if gst_details['error']:
                 return response.errorResponse("Valid GST number required")
 
-        if gst_details['taxpayerInfo']['errorMsg'] is None:
-            tax_payer_info = gst_details['taxpayerInfo']
-            result = {}
-            # Normalizing fields
-            address = tax_payer_info['pradr']['addr']
-            result['business_address'] = address['bno'] + " " + address['bnm'] + " " + address['loc'] + " " + address['st'] + " " + address['dst']
-            # PAN number
-            result['pan_no'] = tax_payer_info['panNo']
-            # Filing frequency
-            result['filing_frequency'] = gst_details['compliance']['filingFrequency'] if gst_details['compliance']['filingFrequency'] is not None else tax_payer_info['frequencyType']
-            # Nature of the business
-            result['company_nature'] = tax_payer_info['ctb']
-            # Full name of the company
-            result['company_name'] = tax_payer_info['tradeNam']
-            # GST status
-            result['status'] = tax_payer_info['sts']
-            # City and pincode
-            result['city'] = Pincode().get_pincode_details(pincode=address['pncd'])['division_name']
-            result['pincode'] = address['pncd']
-            return response.customResponse({"details": result})
+        # if 'errorMsg' not in gst_details['taxpayerInfo']:
+        tax_payer_info = gst_details['taxpayerInfo']
+        result = {}
+        # Normalizing fields
+        address = tax_payer_info['pradr']['addr']
+        result['business_address'] = address['bno'] + " " + address['bnm'] + " " + address['loc'] + " " + address['st'] + " " + address['dst']
+        # PAN number
+        result['pan_no'] = tax_payer_info['panNo']
+        # Filing frequency
+        result['filing_frequency'] = gst_details['compliance']['filingFrequency'] if gst_details['compliance']['filingFrequency'] is not None else tax_payer_info['frequencyType']
+        # Nature of the business
+        result['company_nature'] = tax_payer_info['ctb']
+        # Full name of the company
+        result['company_name'] = tax_payer_info['tradeNam']
+        # GST status
+        result['status'] = tax_payer_info['sts']
+        # City and pincode
+        result['city'] = Pincode().get_pincode_details(pincode=address['pncd'])['division_name']
+        result['pincode'] = address['pncd']
+        return response.customResponse({"details": result})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
