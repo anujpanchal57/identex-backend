@@ -2544,6 +2544,7 @@ def update_order_po_number():
 def po_supplier_quotes_get():
     try:
         data = request.json
+        result = []
         suppliers = Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])
         for supp in suppliers:
             supp['quotes'] = Quote().get_supplier_quotes_for_po(requisition_id=data['requisition_id'],
@@ -2551,7 +2552,8 @@ def po_supplier_quotes_get():
             if len(supp['quotes']) > 0:
                 for quote in supp['quotes']:
                     quote['expected_delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
-        return response.customResponse({"suppliers": suppliers})
+                result.append(copy.deepcopy(supp))
+        return response.customResponse({"suppliers": result})
 
     except Exception as e:
         log = Logger(module_name="/po/supplier-quotes/get", function_name="po_supplier_quotes_get()")
