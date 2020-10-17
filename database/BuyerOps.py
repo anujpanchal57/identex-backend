@@ -100,6 +100,24 @@ class Buyer:
     def get_company_name(self):
         return self.__buyer['company_name']
 
+    def get_city(self):
+        return self.__buyer['city']
+
+    def get_business_address(self):
+        return self.__buyer['business_address']
+
+    def get_pincode(self):
+        return self.__buyer['pincode']
+
+    def get_gst_no(self):
+        return self.__buyer['gst_no']
+
+    def get_filing_frequency(self):
+        return self.__buyer['filing_frequency']
+
+    def get_gst_status(self):
+        return self.__buyer['gst_status']
+
     def search_suppliers(self, search_str, category="all", supplier_category="all"):
         try:
             if supplier_category == "all":

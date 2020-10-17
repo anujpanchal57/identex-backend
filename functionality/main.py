@@ -68,6 +68,7 @@ from database.ProjectOps import Project
 from database.ProjectMembersOps import ProjectMembers
 from database.ProjectLotsOps import ProjectLots
 from database.UnitOps import Unit
+from database.PurchaseOrderOps import PO
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -709,7 +710,7 @@ def upload_documents():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request uploading documents
+# POST request activating a buyer account
 @app.route('/buyer/activation-status/update', methods=['POST'])
 def buyer_activation_status_update():
     try:
@@ -731,6 +732,28 @@ def buyer_activation_status_update():
 
     except Exception as e:
         log = Logger(module_name="/buyer/activation-status/update", function_name="buyer_activation_status_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the address of buyer
+@app.route('/buyer/business-address/get', methods=['POST'])
+@validate_buyer_access_token
+def buyer_business_address_get():
+    try:
+        data = request.json
+        buyer = Buyer(data['buyer_id'])
+        details = {
+            "city": buyer.get_city(),
+            "business_address": buyer.get_business_address(),
+            "pincode": buyer.get_pincode(),
+            "gst_no": buyer.get_gst_no(),
+            "filing_frequency": buyer.get_filing_frequency(),
+            "gst_status": buyer.get_gst_status()
+        }
+        return response.customResponse({"address": details})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/business-address/get", function_name="buyer_business_address_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -1306,6 +1329,38 @@ def buyer_product_units_get():
 
     except Exception as e:
         log = Logger(module_name="/buyer/product-units/get", function_name="buyer_product_units_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for approving a quote
+@app.route("/buyer/rfq/quote/approve", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_quote_approve():
+    try:
+        data = request.json
+        quote = Quote(data['quote_id'])
+        requisition = Requisition(data['requisition_id'])
+        lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+        products = Product().get_lot_products(lot_id=lot['lot_id'])
+        if quote.set_confirmed(confirmed=True):
+            if len(products) > 0:
+                approved_counter = 0
+                # Iterate over the products
+                for i in range(0, len(products)):
+                    # Check whether the product is confirmed or not
+                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
+                    if product_confirmed:
+                        approved_counter += 1
+                # If all the products are approved then set the requisition type to approved
+                if len(products) == approved_counter:
+                    requisition.set_request_type(request_type="approved")
+                    requisition.drop_sql_event()
+            return response.customResponse({"response": "Quote confirmed successfully", "confirmed": quote.get_confirmed()})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quote/approve", function_name="buyer_rfq_quote_approve()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -2465,14 +2520,14 @@ def buyer_order_payment_status_update():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for updating PO number of an order
+# POST request for updating PO number of an purchase order
 @app.route("/order/po-number/update", methods=['POST'])
-@validate_access_token
+@validate_buyer_access_token
 def update_order_po_number():
     try:
         data = request.json
-        order = Order(data['order_id'])
-        if order.set_po_no(data['po_number']):
+        po = PO(data['po_id'])
+        if po.set_po_no(data['po_number']):
             return response.customResponse({"response": "PO number updated successfully",
                                             "po_number": data['po_number']})
 
@@ -2480,6 +2535,52 @@ def update_order_po_number():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/order/po-number/update", function_name="update_order_po_number()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching a list of suppliers to generate a PO (Not being used)
+@app.route("/po/suppliers/get", methods=['POST'])
+@validate_buyer_access_token
+def po_suppliers_get():
+    try:
+        data = request.json
+        return response.customResponse({"suppliers": Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])})
+
+    except Exception as e:
+        log = Logger(module_name="/po/suppliers/get", function_name="po_suppliers_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to fetch quotes of a supplier to raise a PO
+@app.route("/po/supplier-quotes/get", methods=['POST'])
+@validate_buyer_access_token
+def po_supplier_quotes_get():
+    try:
+        data = request.json
+        suppliers = Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])
+        for supp in suppliers:
+            supp['quotes'] = Quote().get_supplier_quotes_for_po(requisition_id=data['requisition_id'],
+                                                                supplier_id=supp['supplier_id'])
+            if len(supp['quotes']) > 0:
+                for quote in supp['quotes']:
+                    quote['expected_delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
+        return response.customResponse({"suppliers": suppliers})
+
+    except Exception as e:
+        log = Logger(module_name="/po/supplier-quotes/get", function_name="po_supplier_quotes_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for creating a PO
+@app.route("/buyer/po/create", methods=['POST'])
+@validate_buyer_access_token
+def buyer_create_po():
+    try:
+        data = request.json
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/po/create", function_name="buyer_create_po()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 

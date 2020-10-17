@@ -146,6 +146,34 @@ class Supplier:
             log.log(traceback.format_exc(), priority='highest')
             return 0
 
+    def get_suppliers_for_po(self, requisition_id, confirmed=True):
+        try:
+            self.__cursor.execute("""select s.supplier_id, s.company_name, sgst.gst_no, sgst.filing_frequency, sb.city, 
+                                    sb.business_address, sb.pincode, s.profile_completed, sgst.status as gst_status
+                                    from suppliers as s
+                                    join supplier_gst_details as sgst
+                                    on s.supplier_id = sgst.supplier_id
+                                    join supplier_branches as sb
+                                    on s.supplier_id = sb.supplier_id
+                                    join quotations as q
+                                    on q.supplier_id = s.supplier_id
+                                    join quotes as qu
+                                    on q.quotation_id = qu.quotation_id
+                                    where q.requisition_id = %s and qu.confirmed = %s""", (requisition_id, confirmed))
+            res = self.__cursor.fetchall()
+            if res is None:
+                return []
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierOps', function_name='get_suppliers_for_po()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='SupplierOps', function_name='get_suppliers_for_po()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
 # pprint(Supplier().get_suppliers_count_on_profile_comp(1000, False))
 # pprint(Supplier(1000).update_supplier_profile("Thane", "Mumbai, Thane", "10-15cr", "Engineering"))
 # pprint(Supplier(1000))

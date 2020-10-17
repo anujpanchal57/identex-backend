@@ -5,18 +5,25 @@ default_bteam_id = "All_Users"
 # 30 mins for requisition as well as auction
 deadline_change_time_factor = 30 * 60
 
-buyer_create_table = """create table if not exists buyers (
-                buyer_id int primary key not null auto_increment,
-                company_name varchar(50) not null,
-                auto_join bool not null,
-                domain_name varchar(20) not null,
-                company_logo varchar(100) not null,
-                default_currency char(5) not null,
-                subscription_plan varchar(10) not null,
-                activation_status bool not null, 
-                created_at int(11) not null,
-                updated_at int(11) not null
-            ) ENGINE=InnoDB auto_increment=1000"""
+buyer_create_table = """CREATE TABLE `buyers` (
+              `buyer_id` int(11) NOT NULL AUTO_INCREMENT,
+              `company_name` varchar(100) NOT NULL,
+              `auto_join` tinyint(1) NOT NULL,
+              `domain_name` varchar(20) NOT NULL,
+              `company_logo` varchar(100) NOT NULL,
+              `default_currency` char(5) NOT NULL,
+              `subscription_plan` varchar(10) NOT NULL,
+              `activation_status` tinyint(1) NOT NULL,
+              `created_at` int(11) NOT NULL,
+              `updated_at` int(11) NOT NULL,
+              `city` varchar(100) NOT NULL DEFAULT '',
+              `business_address` varchar(500) NOT NULL DEFAULT '',
+              `pincode` varchar(20) NOT NULL DEFAULT '',
+              `gst_no` varchar(50) NOT NULL DEFAULT '',
+              `filing_frequency` varchar(20) NOT NULL DEFAULT '',
+              `gst_status` varchar(20) NOT NULL DEFAULT '',
+              PRIMARY KEY (`buyer_id`)
+            ) ENGINE=InnoDB AUTO_INCREMENT=1000"""
 
 supplier_create_table = """create table if not exists suppliers (
                 supplier_id int primary key not null auto_increment,
@@ -138,6 +145,7 @@ requisition_create_table = """create table if not exists requisitions (
                 submission_limit int not null default 3,
                 ref_no varchar(100) not null default '',
                 budget float(20, 2) not null default 0,
+                savings float(20, 2) not null default 0,
                 FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
             ) ENGINE=InnoDB auto_increment=1000"""
 
@@ -224,6 +232,7 @@ quotes_create_table = """create table if not exists quotes (
                 delivery_time int not null, 
                 confirmed bool not null,
                 logistics_included bool not null default false,
+                po_id int not null default 0,
                 FOREIGN KEY (quotation_id) REFERENCES quotations(quotation_id),
                 FOREIGN KEY (charge_id) REFERENCES products(reqn_product_id)
             ) ENGINE=InnoDB auto_increment=1000"""
@@ -269,27 +278,25 @@ message_documents_create_table = """create table if not exists message_documents
                 uploader varchar(50) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
-orders_create_table = """create table if not exists orders (
-                order_id int primary key not null auto_increment,
-                buyer_id int not null, 
-                supplier_id int not null,
-                po_no varchar(50) not null,
-                acquisition_id int not null default 0, 
-                acquisition_type varchar(20) not null default '',
-                quote_id int not null,
-                reqn_product_id int not null,
-                payment_status varchar(20) not null default 'unpaid', 
-                order_status varchar(20) not null default 'active',
-                grn_uploaded bool not null default false,
-                payment_date int(11) not null default 0,
-                delivery_date int(11) not null default 0,
-                transaction_ref_no varchar(50) not null default '',
-                created_at int(11) not null,
-                remarks varchar(200) not null default '',
-                saved_amount float(11, 2) not null default 0,
-                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
-                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
-            ) ENGINE=InnoDB auto_increment=1000"""
+orders_create_table = """CREATE TABLE IF NOT EXISTS `orders` (
+              `order_id` int(11) NOT NULL AUTO_INCREMENT,
+              `po_no` varchar(50) NOT NULL,
+              `product_id` int(11) NOT NULL,
+              `payment_status` varchar(20) NOT NULL DEFAULT 'unpaid',
+              `order_status` varchar(20) NOT NULL DEFAULT 'active',
+              `grn_uploaded` tinyint(1) NOT NULL DEFAULT '0',
+              `payment_date` int(11) NOT NULL DEFAULT '0',
+              `delivery_date` int(11) NOT NULL DEFAULT '0',
+              `transaction_ref_no` varchar(50) NOT NULL DEFAULT '',
+              `created_at` int(11) NOT NULL,
+              `product_description` varchar(500) NOT NULL DEFAULT '',
+              `quantity` float(20,2) NOT NULL DEFAULT '0.00',
+              `gst` float(20,2) NOT NULL DEFAULT '0.00',
+              `per_unit` float(20,2) NOT NULL DEFAULT '0.00',
+              `amount` float(20,2) NOT NULL DEFAULT '0.00',
+              `delivery_time` int(11) NOT NULL DEFAULT '0',
+              PRIMARY KEY (`order_id`)
+            ) ENGINE=InnoDB AUTO_INCREMENT=1000"""
 
 invoices_create_table = """create table if not exists invoices (
                 invoice_id int not null primary key auto_increment,
@@ -378,3 +385,20 @@ units_create_table = """create table if not exists units (
                 unit_id varchar(50) not null,
                 unit_name varchar(100) not null
             )"""
+
+po_create_table = """create table if not exists purchase_orders (
+                po_id int not null primary key auto_increment,
+                po_no varchar(200) not null,
+                buyer_id int not null, 
+                supplier_id int not null,
+                acquisition_id int not null,
+                acquisition_type varchar(20) not null,
+                total_amount float(20, 2) not null default 0,
+                total_gst float(20, 2) not null default 0,
+                notes varchar(500) not null default '',
+                tnc varchar(500) not null default '',
+                po_status varchar(50) not null default 'active',
+                payment_status varchar(50) not null default 'unpaid',
+                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+            ) Engine=InnoDB auto_increment=1000"""

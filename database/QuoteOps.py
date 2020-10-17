@@ -26,6 +26,9 @@ class Quote:
     def get_amount(self):
         return self.__quote['amount']
 
+    def get_confirmed(self):
+        return self.__quote['confirmed']
+
     def add_quote(self, quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time, confirmed=False):
         self.__quote['quotation_id'] = quotation_id
         self.__quote['charge_id'] = charge_id
@@ -290,6 +293,33 @@ class Quote:
             return []
         except Exception as e:
             log = Logger(module_name='QuoteOps', function_name='get_quotes_for_quotation()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+    def get_supplier_quotes_for_po(self, requisition_id, supplier_id, confirmed=True):
+        try:
+            self.__cursor.execute("""select pm.product_id, qu.charge_name, qu.quantity, p.product_description, 
+                                    qu.gst, qu.per_unit, qu.amount, qu.delivery_time, qu.logistics_included, qu.po_id
+                                    from quotes as qu
+                                    join quotations as q
+                                    on qu.quotation_id = q.quotation_id
+                                    join products as p
+                                    on qu.charge_id = p.reqn_product_id
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    where q.supplier_id = %s and qu.confirmed = %s and requisition_id = %s""",
+                                  (supplier_id, confirmed, requisition_id))
+            res = self.__cursor.fetchall()
+            if res is None:
+                return []
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='get_supplier_quotes_for_po()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='get_supplier_quotes_for_po()')
             log.log(traceback.format_exc(), priority='highest')
             return []
 
