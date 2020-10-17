@@ -2833,7 +2833,7 @@ def gst_details_get():
         # PAN number
         result['pan_no'] = tax_payer_info['panNo']
         # Filing frequency
-        result['filing_frequency'] = gst_details['compliance']['filingFrequency'] if gst_details['compliance']['filingFrequency'] is not None else tax_payer_info['frequencyType']
+        result['filing_frequency'] = gst_details['compliance']['filingFrequency'] if gst_details['compliance']['filingFrequency'] is not None else "NA"
         # Nature of the business
         result['company_nature'] = tax_payer_info['ctb']
         # Full name of the company
