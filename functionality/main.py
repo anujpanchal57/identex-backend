@@ -2566,6 +2566,17 @@ def po_supplier_quotes_get():
 def buyer_create_po():
     try:
         data = request.json
+        # create PO in PO table
+
+        # Add sub orders in the orders table
+
+        # Calculate savings for the order
+
+        # Add supplier, buyer address if not saved
+
+        # If save, then send no email
+        # If save and send, then save and send email
+
         pass
 
     except Exception as e:
