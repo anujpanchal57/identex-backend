@@ -32,6 +32,17 @@ class SupplierGSTDetails:
     def insert(self, values):
         try:
             self.__cursor.execute(Implementations.supplier_gst_details_create_table)
+            # Checking whether the record is added or not
+            self.__cursor.execute("""select * from supplier_gst_details where supplier_id = %s""",
+                                  (values['supplier_id'],))
+            gst = self.__cursor.fetchall()
+            if gst is None:
+                is_gst_added = False
+            else:
+                is_gst_added = True if len(gst) > 0 else False
+            # If GST is present, then return True
+            if is_gst_added:
+                return True
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO supplier_gst_details (supplier_id, gst_no, filing_frequency, status) 
                                     VALUES (%s, %s, %s, %s)""",
