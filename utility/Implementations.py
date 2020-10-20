@@ -427,25 +427,24 @@ po_create_table = """CREATE TABLE `purchase_orders` (
                   CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`)
                 ) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=latin1"""
 
-sub_orders_create_table = """CREATE TABLE `sub_orders` (
-                      `order_id` int(11) NOT NULL AUTO_INCREMENT,
-                      `po_id` int(11) NOT NULL,
-                      `product_id` int(11) NOT NULL,
-                      `payment_status` varchar(20) NOT NULL DEFAULT 'unpaid',
-                      `order_status` varchar(20) NOT NULL DEFAULT 'active',
-                      `created_at` int(11) NOT NULL,
-                      `product_description` varchar(500) NOT NULL DEFAULT '',
-                      `quantity` float(20,2) NOT NULL DEFAULT '0.00',
-                      `gst` float(20,2) NOT NULL DEFAULT '0.00',
-                      `per_unit` float(20,2) NOT NULL DEFAULT '0.00',
-                      `amount` float(20,2) NOT NULL DEFAULT '0.00',
-                      `delivery_time` int(11) NOT NULL DEFAULT '0',
-                      `qty_received` float(20,2) NOT NULL DEFAULT '0.00',
-                      `unit_currency` varchar(10) NOT NULL DEFAULT 'inr',
-                      PRIMARY KEY (`order_id`),
-                      KEY `po_id` (`po_id`),
-                      CONSTRAINT `sub_orders_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`)
-                    ) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=latin1"""
+sub_orders_create_table = """CREATE TABLE IF NOT EXISTS `sub_orders` (
+                  `order_id` int(11) NOT NULL AUTO_INCREMENT,
+                  `po_id` int NOT NULL,
+                  `product_id` int(11) NOT NULL,
+                  `payment_status` varchar(20) NOT NULL DEFAULT 'unpaid',
+                  `order_status` varchar(20) NOT NULL DEFAULT 'active',
+                  `created_at` int(11) NOT NULL,
+                  `product_description` varchar(500) NOT NULL DEFAULT '',
+                  `quantity` float(20,2) NOT NULL DEFAULT '0.00',
+                  `unit` varchar(40) NOT NULL DEFAULT '',
+                  `gst` float(20,2) NOT NULL DEFAULT '0.00',
+                  `per_unit` float(20,2) NOT NULL DEFAULT '0.00',
+                  `amount` float(20,2) NOT NULL DEFAULT '0.00',
+                  `delivery_time` int(11) NOT NULL DEFAULT '0',
+                  `qty_received` float(20, 2) not null default 0,
+                  PRIMARY KEY (`order_id`),
+                  FOREIGN KEY (po_id) REFERENCES purchase_orders(po_id)
+            ) ENGINE=InnoDB AUTO_INCREMENT=1000"""
 
 order_grn_uploads_create_table = """create table if not exists order_grn_uploads (
                 grn_id int not null primary key auto_increment,
