@@ -2685,7 +2685,7 @@ def buyer_create_po():
         created_at = GenericOps.get_current_timestamp()
         for lt in po_details['line_items']:
             sub_order = [po_id, lt['product_id'], created_at, lt['product_description'], lt['quantity'], lt['unit'], lt['gst'],
-                  lt['per_unit'], lt['amount'], lt['delivery_date'], unit_currency]
+                  lt['per_unit'], lt['amount'], lt['delivery_date']]
             sub = tuple(sub_order)
             sub_orders.append(sub)
             Quote(lt['quote_id']).set_po_id(po_id)
