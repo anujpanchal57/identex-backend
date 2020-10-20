@@ -318,7 +318,7 @@ class Quote:
         try:
             self.__cursor.execute("""select pm.product_id, qu.charge_name, qu.quantity, p.product_description, 
                                     qu.gst, qu.per_unit, qu.amount, qu.delivery_time, qu.logistics_included, qu.po_id,
-                                    r.currency, p.unit, q.payment_terms
+                                    r.currency, p.unit, q.payment_terms, qu.quote_id
                                     from quotes as qu
                                     join quotations as q
                                     on qu.quotation_id = q.quotation_id
