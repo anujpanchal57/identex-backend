@@ -393,7 +393,7 @@ units_create_table = """create table if not exists units (
                 unit_name varchar(100) not null
             )"""
 
-po_create_table = """CREATE TABLE `purchase_orders` (
+po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
                   `po_id` int(11) NOT NULL AUTO_INCREMENT,
                   `po_no` varchar(200) NOT NULL,
                   `buyer_id` int(11) NOT NULL,

@@ -32,12 +32,12 @@ class PO:
         self.__po['acquisition_id'], self.__po['acquisition_type'] = acquisition_id, acquisition_type
         self.__po['order_date'], self.__po['unit_currency'] = order_date, unit_currency
         self.__po['supplier_gst_no'] = supplier_details['gst_no'] if 'gst_no' in supplier_details else ''
-        self.__po['supplier_address'] = supplier_details['supplier_address'] if 'supplier_address' in supplier_details else ''
-        self.__po['supplier_pincode'] = supplier_details['supplier_pincode'] if 'supplier_pincode' in supplier_details else ''
-        self.__po['supplier_country'] = supplier_details['supplier_country'] if 'supplier_country' in supplier_details else ''
-        self.__po['delivery_address'] = delivery_details['delivery_address'] if 'delivery_address' in delivery_details else ''
-        self.__po['delivery_pincode'] = delivery_details['delivery_pincode'] if 'delivery_pincode' in delivery_details else ''
-        self.__po['delivery_country'] = delivery_details['delivery_country'] if 'delivery_country' in delivery_details else ''
+        self.__po['supplier_address'] = supplier_details['business_address'] if 'business_address' in supplier_details else ''
+        self.__po['supplier_pincode'] = supplier_details['pincode'] if 'pincode' in supplier_details else ''
+        self.__po['supplier_country'] = supplier_details['country'] if 'country' in supplier_details else ''
+        self.__po['delivery_address'] = delivery_details['company_address'] if 'company_address' in delivery_details else ''
+        self.__po['delivery_pincode'] = delivery_details['pincode'] if 'pincode' in delivery_details else ''
+        self.__po['delivery_country'] = delivery_details['country'] if 'country' in delivery_details else ''
         self.__po['payment_terms'], self.__po['freight_included'] = payment_terms, freight_included
         self.__po['prepared_by'], self.__po['approved_by'] = prepared_by, approved_by
         self.__po['po_id'] = self.insert(self.__po)
@@ -90,7 +90,7 @@ class PO:
 
     def get_total_amount_for_acquisition(self, acquisition_id, acquisition_type="rfq"):
         try:
-            self.__cursor.execute("""select sum(total_amount) from purchase_orders where acquisition_id = %s and acquisition_type = %s""",
+            self.__cursor.execute("""select sum(total_amount) as total_amount from purchase_orders where acquisition_id = %s and acquisition_type = %s""",
                                   (acquisition_id, acquisition_type))
             res = self.__cursor.fetchone()
             if res is None:
@@ -108,7 +108,7 @@ class PO:
 
     def get_total_gst_for_acquisition(self, acquisition_id, acquisition_type="rfq"):
         try:
-            self.__cursor.execute("""select sum(total_gst) from purchase_orders where acquisition_id = %s and acquisition_type = %s""",
+            self.__cursor.execute("""select sum(total_gst) as total_gst from purchase_orders where acquisition_id = %s and acquisition_type = %s""",
                                   (acquisition_id, acquisition_type))
             res = self.__cursor.fetchone()
             if res is None:
@@ -123,3 +123,4 @@ class PO:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_total_gst_for_acquisition()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
+

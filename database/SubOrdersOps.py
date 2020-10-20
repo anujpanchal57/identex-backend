@@ -29,7 +29,7 @@ class SubOrder:
             # Inserting the record in the table
             self.__cursor.executemany("""INSERT INTO sub_orders (po_id, product_id, created_at, product_description, 
                                         quantity, unit, gst, per_unit, amount, delivery_time, unit_currency) 
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]

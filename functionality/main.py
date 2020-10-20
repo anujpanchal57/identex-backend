@@ -2581,6 +2581,9 @@ def po_metadata_get():
         result = {}
         result['po_incr_factor'], result['po_suffix'] = buyer.get_po_incr_factor(), buyer.get_po_suffix()
         result['approvers'] = BUser().get_busers_for_buyer_id(buyer_id=data['buyer_id'])
+        result['business_address'], result['pincode'], result['country'] = buyer.get_business_address(), \
+                                                                           buyer.get_pincode(), buyer.get_country()
+        result['gst_no'] = buyer.get_gst_no()
         return response.customResponse({"metadata": result})
 
     except Exception as e:
@@ -2615,7 +2618,7 @@ def buyer_create_po():
         po_details['acquisition_type'] = po_details['acquisition_type'] if 'acquisition_type' in po_details else 'adhoc'
 
         # Fetching the number of confirmed POs for a particular acquisition
-        if po_details['acquisition_id'] != 0 and po_details['acquistion_type'].lower() != "adhoc":
+        if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":
             lot = Lot().get_lot_for_requisition(requisition_id=po_details['acquisition_id'])
             # If no lot is found
             if len(lot) == 0:
@@ -2670,7 +2673,7 @@ def buyer_create_po():
         freight_included = po_details['freight_included'] if 'freight_included' in po_details else ''
         prepared_by = po_details['prepared_by'] if 'prepared_by' in po_details else ''
         approved_by = po_details['approved_by'] if 'approved_by' in po_details else ''
-        po_id = PO().add_po(po_no=po_details['po_no'], buyer_id=buyer_details['buyer_id'], supplier_id=supplier_details['suppllier_id'],
+        po_id = PO().add_po(po_no=po_details['po_no'], buyer_id=buyer_details['buyer_id'], supplier_id=supplier_details['supplier_id'],
                             acquisition_id=po_details['acquisition_id'], acquisition_type=po_details['acquisition_type'],
                             order_date=order_date, unit_currency=unit_currency, supplier_details=supplier_details,
                             delivery_details=delivery_details, payment_terms=payment_terms, freight_included=freight_included,
@@ -2682,7 +2685,7 @@ def buyer_create_po():
         created_at = GenericOps.get_current_timestamp()
         for lt in po_details['line_items']:
             sub_order = [po_id, lt['product_id'], created_at, lt['product_description'], lt['quantity'], lt['unit'], lt['gst'],
-                  lt['per_unit'], lt['amount'], lt['delivery_time'], unit_currency]
+                  lt['per_unit'], lt['amount'], lt['delivery_date'], unit_currency]
             sub = tuple(sub_order)
             sub_orders.append(sub)
             Quote(lt['quote_id']).set_po_id(po_id)
