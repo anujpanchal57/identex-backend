@@ -88,6 +88,12 @@ class Buyer:
         self.__sql.commit()
         return True
 
+    def update_po_suffix(self, po_suffix):
+        self.__buyer['po_suffix'] = po_suffix
+        self.__cursor.execute("update buyers set po_suffix = %s where buyer_id = %s", (po_suffix, self.__id))
+        self.__sql.commit()
+        return True
+
     def update_gst_no(self, gst_no):
         self.__buyer['gst_no'] = gst_no
         self.__cursor.execute("update buyers set gst_no = %s where buyer_id = %s", (gst_no, self.__id))

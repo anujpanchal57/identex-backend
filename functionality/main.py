@@ -1933,8 +1933,10 @@ def buyer_suppliers_search():
                                                              supplier_category=supplier_category.lower())
         # Adding the gst validity details
         if len(suppliers) > 0:
+            supplier_gst, supplier_branches = SupplierGSTDetails(), SupplierBranches()
             for supp in suppliers:
-                supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
+                supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
+                supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
@@ -2551,9 +2553,13 @@ def po_supplier_quotes_get():
         data = request.json
         result = []
         suppliers = Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])
+        quote = Quote()
+        # supplier_branches, supplier_gst = SupplierBranches(), SupplierGSTDetails()
         for supp in suppliers:
-            supp['quotes'] = Quote().get_supplier_quotes_for_po(requisition_id=data['requisition_id'],
-                                                                supplier_id=supp['supplier_id'])
+            supp['quotes'] = quote.get_supplier_quotes_for_po(requisition_id=data['requisition_id'],
+                                                              supplier_id=supp['supplier_id'])
+            # supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
+            # supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
             if len(supp['quotes']) > 0:
                 for quote in supp['quotes']:
                     quote['delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
@@ -2562,6 +2568,23 @@ def po_supplier_quotes_get():
 
     except Exception as e:
         log = Logger(module_name="/po/supplier-quotes/get", function_name="po_supplier_quotes_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to fetch metadata to create a PO
+@app.route("/po/metadata/get", methods=['POST'])
+@validate_buyer_access_token
+def po_metadata_get():
+    try:
+        data = request.json
+        buyer = Buyer(data['buyer_id'])
+        result = {}
+        result['po_incr_factor'], result['po_suffix'] = buyer.get_po_incr_factor(), buyer.get_po_suffix()
+        result['approvers'] = BUser().get_busers_for_buyer_id(buyer_id=data['buyer_id'])
+        return response.customResponse({"metadata": result})
+
+    except Exception as e:
+        log = Logger(module_name="/po/metadata/get", function_name="po_metadata_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -2607,12 +2630,23 @@ def buyer_create_po():
                         approved_counter += 1
 
         # If the po_incr_factor is less than or equal to the existing po_incr_factor then +1 and update it
-        po_incr_factor = int(po_details['po_no'].split('/')[0])
-        if po_incr_factor <= buyer.get_po_incr_factor():
+        curr_po_incr_factor, curr_po_suffix = buyer.get_po_incr_factor(), buyer.get_po_suffix()
+        po_no_split = po_details['po_no'].split('/')
+        po_incr_factor = int(po_no_split[0])
+        # remove the first index from the split list
+        del po_no_split[0]
+        po_suffix = '/'.join(po_no_split)
+
+        # Update the PO incr factor
+        if po_incr_factor <= curr_po_incr_factor:
             po_incr_factor += 1
             buyer.update_po_incr_factor(po_incr_factor)
         else:
             buyer.update_po_incr_factor(po_incr_factor)
+
+        # Update the PO suffix, if it doesn't match
+        if curr_po_suffix != po_suffix:
+            buyer.update_po_suffix(po_suffix)
 
         # Checking and updating buyer details
         gst_no, business_address, pincode, country = buyer.get_gst_no(), buyer.get_business_address(), buyer.get_pincode(), buyer.get_country()
@@ -2669,6 +2703,8 @@ def buyer_create_po():
 
         return response.customResponse({"response": "PO created and sent to supplier successfully"})
 
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/po/create", function_name="buyer_create_po()")
         log.log(traceback.format_exc())
