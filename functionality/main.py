@@ -2642,6 +2642,7 @@ def buyer_create_po():
 
         # Update the PO incr factor
         if po_incr_factor <= curr_po_incr_factor:
+            po_incr_factor = curr_po_incr_factor
             po_incr_factor += 1
             buyer.update_po_incr_factor(po_incr_factor)
         else:
