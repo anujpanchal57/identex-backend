@@ -6,24 +6,27 @@ default_bteam_id = "All_Users"
 deadline_change_time_factor = 30 * 60
 
 buyer_create_table = """CREATE TABLE `buyers` (
-              `buyer_id` int(11) NOT NULL AUTO_INCREMENT,
-              `company_name` varchar(100) NOT NULL,
-              `auto_join` tinyint(1) NOT NULL,
-              `domain_name` varchar(20) NOT NULL,
-              `company_logo` varchar(100) NOT NULL,
-              `default_currency` char(5) NOT NULL,
-              `subscription_plan` varchar(10) NOT NULL,
-              `activation_status` tinyint(1) NOT NULL,
-              `created_at` int(11) NOT NULL,
-              `updated_at` int(11) NOT NULL,
-              `city` varchar(100) NOT NULL DEFAULT '',
-              `business_address` varchar(500) NOT NULL DEFAULT '',
-              `pincode` varchar(20) NOT NULL DEFAULT '',
-              `gst_no` varchar(50) NOT NULL DEFAULT '',
-              `filing_frequency` varchar(20) NOT NULL DEFAULT '',
-              `gst_status` varchar(20) NOT NULL DEFAULT '',
-              PRIMARY KEY (`buyer_id`)
-            ) ENGINE=InnoDB AUTO_INCREMENT=1000"""
+                  `buyer_id` int(11) NOT NULL AUTO_INCREMENT,
+                  `company_name` varchar(100) NOT NULL,
+                  `auto_join` tinyint(1) NOT NULL,
+                  `domain_name` varchar(20) NOT NULL,
+                  `company_logo` varchar(100) NOT NULL,
+                  `default_currency` char(5) NOT NULL,
+                  `subscription_plan` varchar(10) NOT NULL,
+                  `activation_status` tinyint(1) NOT NULL,
+                  `created_at` int(11) NOT NULL,
+                  `updated_at` int(11) NOT NULL,
+                  `city` varchar(100) NOT NULL DEFAULT '',
+                  `business_address` varchar(500) NOT NULL DEFAULT '',
+                  `pincode` varchar(20) NOT NULL DEFAULT '',
+                  `gst_no` varchar(50) NOT NULL DEFAULT '',
+                  `filing_frequency` varchar(20) NOT NULL DEFAULT '',
+                  `gst_status` varchar(20) NOT NULL DEFAULT '',
+                  `country` varchar(100) NOT NULL DEFAULT 'India',
+                  `po_incr_factor` int(11) NOT NULL DEFAULT '1000',
+                  `po_suffix` varchar(200) NOT NULL DEFAULT '',
+                  PRIMARY KEY (`buyer_id`)
+                ) ENGINE=InnoDB AUTO_INCREMENT=1008 DEFAULT CHARSET=latin1"""
 
 supplier_create_table = """create table if not exists suppliers (
                 supplier_id int primary key not null auto_increment,
@@ -38,14 +41,17 @@ supplier_create_table = """create table if not exists suppliers (
                 company_nature varchar(30) not null default ''
             ) ENGINE=InnoDB auto_increment=1000"""
 
-supplier_branches_create_table = """create table if not exists supplier_branches (
-                branch_id int not null primary key auto_increment,
-                supplier_id int not null,
-                city varchar(50) not null default '',
-                business_address varchar(500) not null default '',
-                pincode varchar(20) not null default '',
-                foreign key (supplier_id) references suppliers(supplier_id)
-            ) Engine=InnoDB auto_increment=1000"""
+supplier_branches_create_table = """CREATE TABLE `supplier_branches` (
+              `branch_id` int(11) NOT NULL AUTO_INCREMENT,
+              `supplier_id` int(11) NOT NULL,
+              `city` varchar(50) NOT NULL DEFAULT '',
+              `business_address` varchar(500) NOT NULL DEFAULT '',
+              `pincode` varchar(20) NOT NULL DEFAULT '',
+              `country` varchar(100) NOT NULL DEFAULT 'India',
+              PRIMARY KEY (`branch_id`),
+              KEY `supplier_id` (`supplier_id`),
+              CONSTRAINT `supplier_branches_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`)
+            ) ENGINE=InnoDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1"""
 
 supplier_industries_create_table = """create table if not exists supplier_industries (
                 mapper_id int not null primary key auto_increment,
@@ -278,6 +284,7 @@ message_documents_create_table = """create table if not exists message_documents
                 uploader varchar(50) not null
             ) ENGINE=InnoDB auto_increment=1000"""
 
+# Not being used in the PO module
 orders_create_table = """CREATE TABLE IF NOT EXISTS `orders` (
               `order_id` int(11) NOT NULL AUTO_INCREMENT,
               `po_no` varchar(50) NOT NULL,
@@ -386,19 +393,65 @@ units_create_table = """create table if not exists units (
                 unit_name varchar(100) not null
             )"""
 
-po_create_table = """create table if not exists purchase_orders (
-                po_id int not null primary key auto_increment,
-                po_no varchar(200) not null,
-                buyer_id int not null, 
-                supplier_id int not null,
-                acquisition_id int not null,
-                acquisition_type varchar(20) not null,
-                total_amount float(20, 2) not null default 0,
-                total_gst float(20, 2) not null default 0,
-                notes varchar(500) not null default '',
-                tnc varchar(500) not null default '',
-                po_status varchar(50) not null default 'active',
-                payment_status varchar(50) not null default 'unpaid',
-                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id),
-                FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+po_create_table = """CREATE TABLE `purchase_orders` (
+                  `po_id` int(11) NOT NULL AUTO_INCREMENT,
+                  `po_no` varchar(200) NOT NULL,
+                  `buyer_id` int(11) NOT NULL,
+                  `supplier_id` int(11) NOT NULL,
+                  `acquisition_id` int(11) NOT NULL,
+                  `acquisition_type` varchar(20) NOT NULL,
+                  `order_date` int(11) NOT NULL,
+                  `unit_currency` varchar(10) NOT NULL DEFAULT 'inr',
+                  `total_amount` float(20,2) NOT NULL DEFAULT '0.00',
+                  `total_gst` float(20,2) NOT NULL DEFAULT '0.00',
+                  `notes` varchar(500) NOT NULL DEFAULT '',
+                  `tnc` varchar(500) NOT NULL DEFAULT '',
+                  `po_url` varchar(500) NOT NULL DEFAULT '',
+                  `supplier_gst_no` varchar(100) NOT NULL DEFAULT '',
+                  `supplier_address` varchar(500) NOT NULL DEFAULT '',
+                  `supplier_pincode` varchar(20) NOT NULL DEFAULT '',
+                  `supplier_country` varchar(100) NOT NULL DEFAULT '',
+                  `delivery_address` varchar(500) NOT NULL DEFAULT '',
+                  `delivery_pincode` varchar(20) NOT NULL DEFAULT '',
+                  `delivery_country` varchar(100) NOT NULL DEFAULT '',
+                  `payment_terms` varchar(200) NOT NULL DEFAULT '',
+                  `freight_included` varchar(200) NOT NULL DEFAULT '',
+                  `prepared_by` varchar(200) NOT NULL DEFAULT '',
+                  `approved_by` varchar(200) NOT NULL DEFAULT '',
+                  `po_status` varchar(50) NOT NULL DEFAULT 'active',
+                  `payment_status` varchar(50) NOT NULL DEFAULT 'unpaid',
+                  PRIMARY KEY (`po_id`),
+                  KEY `buyer_id` (`buyer_id`),
+                  KEY `supplier_id` (`supplier_id`),
+                  CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`buyer_id`) REFERENCES `buyers` (`buyer_id`),
+                  CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`)
+                ) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=latin1"""
+
+sub_orders_create_table = """CREATE TABLE `sub_orders` (
+                      `order_id` int(11) NOT NULL AUTO_INCREMENT,
+                      `po_id` int(11) NOT NULL,
+                      `product_id` int(11) NOT NULL,
+                      `payment_status` varchar(20) NOT NULL DEFAULT 'unpaid',
+                      `order_status` varchar(20) NOT NULL DEFAULT 'active',
+                      `created_at` int(11) NOT NULL,
+                      `product_description` varchar(500) NOT NULL DEFAULT '',
+                      `quantity` float(20,2) NOT NULL DEFAULT '0.00',
+                      `gst` float(20,2) NOT NULL DEFAULT '0.00',
+                      `per_unit` float(20,2) NOT NULL DEFAULT '0.00',
+                      `amount` float(20,2) NOT NULL DEFAULT '0.00',
+                      `delivery_time` int(11) NOT NULL DEFAULT '0',
+                      `qty_received` float(20,2) NOT NULL DEFAULT '0.00',
+                      `unit_currency` varchar(10) NOT NULL DEFAULT 'inr',
+                      PRIMARY KEY (`order_id`),
+                      KEY `po_id` (`po_id`),
+                      CONSTRAINT `sub_orders_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`)
+                    ) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=latin1"""
+
+order_grn_uploads_create_table = """create table if not exists order_grn_uploads (
+                grn_id int not null primary key auto_increment,
+                order_id int not null,
+                delivery_date int(11) not null default 0,
+                grn_url varchar(500) not null default '',
+                updated_at int(11) not null default 0,
+                FOREIGN KEY (order_id) REFERENCES sub_orders(order_id)
             ) Engine=InnoDB auto_increment=1000"""

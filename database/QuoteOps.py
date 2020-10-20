@@ -263,6 +263,24 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def is_po_generated(self, charge_id, confirmed=True):
+        try:
+            self.__cursor.execute("select po_id from quotes where charge_id = %s and confirmed = %s and po_id != 0",
+                                  (charge_id, confirmed, ))
+            res = self.__cursor.fetchone()
+            if res is None:
+                return False
+            return True if res['po_id'] != 0 else False
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='is_po_generated()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='is_po_generated()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
     def set_confirmed(self, confirmed):
         try:
             self.__quote['confirmed'] = confirmed
@@ -299,7 +317,8 @@ class Quote:
     def get_supplier_quotes_for_po(self, requisition_id, supplier_id, confirmed=True):
         try:
             self.__cursor.execute("""select pm.product_id, qu.charge_name, qu.quantity, p.product_description, 
-                                    qu.gst, qu.per_unit, qu.amount, qu.delivery_time, qu.logistics_included, qu.po_id
+                                    qu.gst, qu.per_unit, qu.amount, qu.delivery_time, qu.logistics_included, qu.po_id,
+                                    r.currency, p.unit, q.payment_terms
                                     from quotes as qu
                                     join quotations as q
                                     on qu.quotation_id = q.quotation_id
@@ -307,7 +326,9 @@ class Quote:
                                     on qu.charge_id = p.reqn_product_id
                                     join product_master as pm
                                     on p.product_id = pm.product_id
-                                    where q.supplier_id = %s and qu.confirmed = %s and requisition_id = %s""",
+                                    join requisitions as r
+                                    on q.requisition_id = r.requisition_id
+                                    where q.supplier_id = %s and qu.confirmed = %s and q.requisition_id = %s""",
                                   (supplier_id, confirmed, requisition_id))
             res = self.__cursor.fetchall()
             if res is None:
@@ -322,6 +343,22 @@ class Quote:
             log = Logger(module_name='QuoteOps', function_name='get_supplier_quotes_for_po()')
             log.log(traceback.format_exc(), priority='highest')
             return []
+
+    def set_po_id(self, po_id):
+        try:
+            self.__quote['po_id'] = po_id
+            self.__cursor.execute("""update quotes set po_id = %s where quote_id = %s""", (po_id, self.__id,))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='set_po_id()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update quote details, please try again')
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='set_po_id()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update quote details, please try again')
 
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))

@@ -69,6 +69,7 @@ from database.ProjectMembersOps import ProjectMembers
 from database.ProjectLotsOps import ProjectLots
 from database.UnitOps import Unit
 from database.PurchaseOrderOps import PO
+from database.SubOrdersOps import SubOrder
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -373,6 +374,10 @@ def buyer_login_verify():
                                                 "auto_join": buyer.get_auto_join(),
                                                 "company_logo": buyer.get_company_logo(),
                                                 "default_currency": buyer.get_default_currency(),
+                                                "business_address": buyer.get_business_address(),
+                                                "city": buyer.get_city(),
+                                                "pincode": buyer.get_pincode(),
+                                                "gst_no": buyer.get_gst_no(),
                                                 "created_at": buser.get_created_at(),
                                                 "updated_at": buser.get_updated_at()
                                             }})
@@ -2551,7 +2556,7 @@ def po_supplier_quotes_get():
                                                                 supplier_id=supp['supplier_id'])
             if len(supp['quotes']) > 0:
                 for quote in supp['quotes']:
-                    quote['expected_delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
+                    quote['delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
                 result.append(copy.deepcopy(supp))
         return response.customResponse({"suppliers": result})
 
@@ -2566,18 +2571,103 @@ def po_supplier_quotes_get():
 def buyer_create_po():
     try:
         data = request.json
+        data['_id'] = data['_id'].lower()
+        po_details = data['details']
+        buyer_details, supplier_details = po_details['buyer_details'], po_details['supplier_details']
+        approved_counter = 0
+
+        # Check whether the PO incr factor exists in the buyer table
+        if len(po_details['po_no']) == 0:
+            return response.errorResponse('Kindly enter a valid PO number')
+        if len(buyer_details) == 0 or len(supplier_details) == 0:
+            return response.errorResponse('Kindly enter all the required details')
+        if 'line_items' not in po_details:
+            return response.errorResponse('Kindly add the order line items')
+        if len(po_details['line_items']) == 0:
+            return response.errorResponse('Kindly add the order line items')
+
+        buyer = Buyer(buyer_details['buyer_id'])
+        supplier = Supplier(supplier_details['supplier_id'])
+        po_details['acquisition_id'] = po_details['acquisition_id'] if 'acquisition_id' in po_details else 0
+        po_details['acquisition_type'] = po_details['acquisition_type'] if 'acquisition_type' in po_details else 'adhoc'
+
+        # Fetching the number of confirmed POs for a particular acquisition
+        if po_details['acquisition_id'] != 0 and po_details['acquistion_type'].lower() != "adhoc":
+            lot = Lot().get_lot_for_requisition(requisition_id=po_details['acquisition_id'])
+            # If no lot is found
+            if len(lot) == 0:
+                return response.errorResponse("No lot found against this RFQ")
+            products = Product().get_lot_products(lot_id=lot['lot_id'])
+            if len(products) > 0:
+                # Iterate over the products
+                for i in range(0, len(products)):
+                    # Check whether PO has been generated against the product or not
+                    po_generated = Quote().is_po_generated(charge_id=products[i]['reqn_product_id'])
+                    if po_generated:
+                        approved_counter += 1
+
+        # If the po_incr_factor is less than or equal to the existing po_incr_factor then +1 and update it
+        po_incr_factor = int(po_details['po_no'].split('/')[0])
+        if po_incr_factor <= buyer.get_po_incr_factor():
+            po_incr_factor += 1
+            buyer.update_po_incr_factor(po_incr_factor)
+        else:
+            buyer.update_po_incr_factor(po_incr_factor)
+
+        # Checking and updating buyer details
+        gst_no, business_address, pincode, country = buyer.get_gst_no(), buyer.get_business_address(), buyer.get_pincode(), buyer.get_country()
+        if gst_no == "" or gst_no != buyer_details['gst_no']:
+            buyer.update_gst_no(buyer_details['gst_no'])
+
+        if business_address == "" or business_address != buyer_details['business_address']:
+            buyer.update_business_address(buyer_details['business_address'])
+
+        if pincode == "" or pincode != buyer_details['pincode']:
+            buyer.update_pincode(buyer_details['pincode'])
+
+        if country == "" or country != buyer_details['country']:
+            buyer.update_country(buyer_details['country'])
+
         # create PO in PO table
+        order_date = GenericOps.get_timestamp_from_date(po_details['order_date'])
+        unit_currency = po_details['unit_currency'] if 'unit_currency' in po_details else 'inr'
+        delivery_details = po_details['delivery_address'] if 'delivery_address' in po_details else {}
+        payment_terms = po_details['payment_terms'] if 'payment_terms' in po_details else ''
+        freight_included = po_details['freight_included'] if 'freight_included' in po_details else ''
+        prepared_by = po_details['prepared_by'] if 'prepared_by' in po_details else ''
+        approved_by = po_details['approved_by'] if 'approved_by' in po_details else ''
+        po_id = PO().add_po(po_no=po_details['po_no'], buyer_id=buyer_details['buyer_id'], supplier_id=supplier_details['suppllier_id'],
+                            acquisition_id=po_details['acquisition_id'], acquisition_type=po_details['acquisition_type'],
+                            order_date=order_date, unit_currency=unit_currency, supplier_details=supplier_details,
+                            delivery_details=delivery_details, payment_terms=payment_terms, freight_included=freight_included,
+                            prepared_by=prepared_by, approved_by=approved_by, total_amount=po_details['total_amount'],
+                            total_gst=po_details['total_gst'])
 
         # Add sub orders in the orders table
+        sub_orders = []
+        created_at = GenericOps.get_current_timestamp()
+        for lt in po_details['line_items']:
+            sub_order = [po_id, lt['product_id'], created_at, lt['product_description'], lt['quantity'], lt['gst'],
+                  lt['per_unit'], lt['amount'], lt['delivery_time'], unit_currency]
+            sub = tuple(sub_order)
+            sub_orders.append(sub)
+            Quote(lt['quote_id']).set_po_id(po_id)
+        sub_orders_id = SubOrder().insert_many(sub_orders)
+        approved_counter += 1 if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else 0
 
         # Calculate savings for the order
+        if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":
+            if len(products) == approved_counter:
+                requisition = Requisition(po_details['acquisition_id'])
+                budget = requisition.get_budget()
+                po = PO()
+                total_amount = po.get_total_amount_for_acquisition(po_details['acquisition_id'], po_details['acquisition_type'])
+                savings = budget - total_amount
+                requisition.update_savings(savings)
 
-        # Add supplier, buyer address if not saved
-
-        # If save, then send no email
         # If save and send, then save and send email
 
-        pass
+        return response.customResponse({"response": "PO created and sent to supplier successfully"})
 
     except Exception as e:
         log = Logger(module_name="/buyer/po/create", function_name="buyer_create_po()")

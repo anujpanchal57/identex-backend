@@ -55,7 +55,7 @@ class Order:
     def get_reqn_product_id(self):
         return self.__order['reqn_product_id']
 
-    def add_order(self, product_id, po_no="", saved_amount=0):
+    def add_order(self, buyer_id, supplier_id, quote_id, reqn_product_id, remarks="", acquisition_id=0, acquisition_type="", po_no="", saved_amount=0):
         self.__order['buyer_id'] = buyer_id
         self.__order['supplier_id'] = supplier_id
         self.__order['quote_id'] = quote_id

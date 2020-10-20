@@ -80,6 +80,9 @@ def get_calculated_timestamp(date_time, op_tz):
     ts = int(date_obj.replace(tzinfo=timezone.utc).timestamp())
     return convert_time_offset_to_timestamp(offset, ts)
 
+def get_timestamp_from_date(date_str):
+    date_obj = datetime.datetime.strptime(date_str, "%d-%m-%Y")
+    return int(date_obj.replace(tzinfo=timezone.utc).timestamp())
 
 def convert_time_offset_to_timestamp(offset, utc_timestamp):
     return int(utc_timestamp - ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
