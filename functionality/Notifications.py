@@ -62,7 +62,6 @@ class Notification:
                 params['SUB_TOTAL'] = details['unit_currency'].upper() + " " + str(sub_total)
                 params['TOTAL_GST'] = details['unit_currency'].upper() + " " + str(total_gst)
                 params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
-
                 for key, val in params.items():
                     soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)), 'html.parser')
 
@@ -76,15 +75,18 @@ class Notification:
                 temp_file.write(str(soup))
                 folder_name = str(uuid.uuid4())
                 complete_path = conf.upload_documentation + folder_name
+                pprint(complete_path)
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
                 os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
-
+                pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
-
+                pprint('DELETED TEMP FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
+                pprint('PDF PATH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 aws_file_name = po_no + "_order_created"
+                pprint('AWS FILE NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 data = open(pdf_path, 'rb').read()
                 base64_encoded = base64.b64encode(data).decode('UTF-8')
                 upload_file_path = GenericOps.generate_aws_file_path(client_type="buyer", client_id=buyer_details['buyer_id'],
