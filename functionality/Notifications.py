@@ -23,7 +23,7 @@ class Notification:
             if self.__checkpoint.lower() == "order_created":
                 with open(self.__file, 'r',encoding="utf-8") as order:
                     content = order.read()
-                    soup = BeautifulSoup(content, "html.parser")
+                    soup = BeautifulSoup(content)
 
                 params = {}
                 array_params = {}
@@ -64,10 +64,10 @@ class Notification:
                 params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
 
                 for key, val in params.items():
-                    soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)), "html.parser")
+                    soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
 
                 for key, val in array_params.items():
-                    soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)), "html.parser")
+                    soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
 
                 if not OSOps.path_exists(conf.upload_documentation):
                     OSOps.create_directory(conf.upload_documentation)
