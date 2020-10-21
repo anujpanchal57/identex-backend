@@ -23,7 +23,7 @@ class Notification:
             if self.__checkpoint.lower() == "order_created":
                 with open(self.__file, 'r',encoding="utf-8") as order:
                     content = order.read()
-                    soup = BeautifulSoup(content)
+                    soup = BeautifulSoup(content, "html.parser")
 
                 params = {}
                 array_params = {}
