@@ -69,6 +69,7 @@ class Notification:
             if not OSOps.path_exists(conf.upload_documentation):
                 OSOps.create_directory(conf.upload_documentation)
             temp_file_path = conf.upload_documentation + str(uuid.uuid4()) + ".html"
+		
             temp_file = open(temp_file_path, 'w', encoding='utf-8')
             temp_file.write(str(soup))
             folder_name = str(uuid.uuid4())
@@ -121,3 +122,56 @@ class Notification:
             )
 
         return True
+details = {
+		"po_no": "2340/20-21/COM",
+		"lot_name": "sample testing",
+		"order_date": "20-10-2020",
+		"unit_currency": "inr",
+		"acquisition_id": 1031,
+		"acquisition_type": "rfq",
+		"buyer_details": {
+			"company_name": "Identex",
+			"gst_no": "37AABCI6363G1ZI",
+			"business_address": "B-603, Parshwanath SRA CHS, Bhattipada Road, Bhandup (West)",
+			"pincode": "400078",
+			"country": "India",
+			"buyer_id": 1000,
+			"city": ""
+		},
+		"supplier_details": {
+			"company_name": "Uttam Fabricators",
+			"gst_no": "27AABCI6363G3ZH",
+			"business_address": "18, Jyoti CHS Chheda Nagar, Chembur (W)",
+			"pincode": "400089",
+			"country": "India",
+			"supplier_id": 1001,
+			"city": ""
+		},
+		"delivery_address": {
+			"company_name": "Identex",
+			"company_address": "B-603, Parshwanath SRA CHS, Bhattipada Road, Bhandup (West)",
+			"pincode": "400078",
+			"country": "India"
+		},
+		"line_items": [{
+			"quote_id": 1111,
+			"delivery_date": 1604880000,
+			"gst": 18,
+			"quantity": 100,
+			"unit": "Kilogram",
+			"per_unit": 100,
+			"amount": 11800,
+			"product_id": 1018,
+			"product_description": "20mm thick",
+			"product_name": "304 Stainless Steel Nuts"
+		}],
+		"total_amount": 11800,
+		"total_gst": 1800,
+		"tnc": "",
+		"payment_terms": "45 Days",
+		"freight_included": "no",
+		"prepared_by": "anuj.panchal@identex.in",
+		"approved_by": "anuj.panchal@identex.in"
+	}
+
+pprint(Notification("order_created", conf.po_created_pdf_file).send_notification(details=details))
