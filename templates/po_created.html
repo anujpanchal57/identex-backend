@@ -147,29 +147,26 @@
 </head>
 
 <body>
-  <form [formGroup]="poForm">
+  <form>
     <div class="row">
-      <div class="col-lg-6 col-md-6 col-12" formGroupName="buyer_details">
+      <div class="col-lg-6 col-md-6 col-12">
         <div class="input_container">
-          <div type="text" class="form_card__input-l" placeholder="" formControlName="company_name">{{BUYER_COMPANY}}
+          <div type="text" class="form_card__input-l">{{BUYER_COMPANY}}
           </div>
         </div>
         <div class="input_container">
-          <div type="text" class="form_card__input-s" placeholder="" formControlName="gst_no" style="color:#483737;">
+          <div type="text" class="form_card__input-s" style="color:#483737;">
             {{BUYER_GST_NUMBER}}</div>
         </div>
 
         <div class="input_container">
-          <div type="text" class="form_card__input-s" placeholder="" formControlName="business_address"
-            style="color:#483737;">{{BUYER_COMPANY_ADDRESS}}</div>
+          <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_COMPANY_ADDRESS}}</div>
         </div>
         <div class="input_container">
-          <div type="text" class="form_card__input-s" placeholder="" formControlName="pincode" style="color:#483737;">
-            {{BUYER_PIN_CODE}}</div>
+          <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_PIN_CODE}}</div>
         </div>
         <div class="input_container">
-          <div type="text" class="form_card__input-s" placeholder="" formControlName="country" style="color:#483737;">
-            {{BUYER_COUNTRY}}</div>
+          <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_COUNTRY}}</div>
         </div>
       </div>
       <div class="col-lg-6 col-md-6 col-12">
@@ -189,29 +186,25 @@
 
     <div style="margin-top: 20px;">
       <div class="row">
-        <div class="col-lg-6 col-md-6 col-12" formGroupName="supplier_details">
+        <div class="col-lg-6 col-md-6 col-12">
 
           <div class="input_container">
-            <div type="text" class="form_card__input-l" formControlName="company_name" [matAutocomplete]="vendor"
-              (input)="searchSupplier()">
+            <div type="text" class="form_card__input-l">
               {{SUPPLIER_COMPANY}}</div>
           </div>
           <div class="input_container">
-            <div type="text" class="form_card__input-s" placeholder="" formControlName="gst_no" style="color:#483737;">
+            <div type="text" class="form_card__input-s" style="color:#483737;">
               {{SUPPLIER_GST_NUMBER}}</div>
           </div>
 
           <div class="input_container">
-            <div type="text" class="form_card__input-s" placeholder="Company’s Address"
-              formControlName="business_address" style="color:#483737;">{{SUPPLIER_BUSINESS_ADDRESS}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{SUPPLIER_BUSINESS_ADDRESS}}</div>
           </div>
           <div class="input_container">
-            <div type="text" class="form_card__input-s" placeholder="PIN Code" formControlName="pincode"
-              style="color:#483737;">{{SUPPLIER_PIN_CODE}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{SUPPLIER_PIN_CODE}}</div>
           </div>
           <div class="input_container">
-            <div type="text" class="form_card__input-s" placeholder="Country" formControlName="country"
-              style="color:#483737;">{{SUPPLIER_COUNTRY}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{SUPPLIER_COUNTRY}}</div>
           </div>
         </div>
         <div class="col-lg-6 col-md-6 col-12">
@@ -281,7 +274,8 @@
           </tr>
         </thead>
         <tbody formArrayName="line_items">
-          <tr class='item_table_data_row'>
+          {{{PRODUCTS_INFO}}}
+          <!-- <tr class='item_table_data_row'>
             <td class='item_table_data border_bottom' style='width: 25%;'>
               <div type='text' class='form_card__input-s'>{{PRODUCT_DESCRIPTION}}</div>
             </td>
@@ -305,7 +299,7 @@
               <div type='number' class='form_card__input-s text_l'>{{AMOUNT}}</div>
             </td>
         
-          </tr>
+          </tr> -->
           <tr>
             <td class="item_table_data">
 
@@ -325,7 +319,7 @@
                     </td>
                     <td class="item_table_data">
                       <div class="text_r">
-                        <span>{{SUB_TOTAL}}}</span>
+                        <span>{{SUB_TOTAL}}</span>
                       </div>
                     </td>
                   </tr>
@@ -337,7 +331,7 @@
                     </td>
                     <td class="item_table_data">
                       <div class="text_r">
-                        <span>{{TOTAL_GST}}}</span>
+                        <span>{{TOTAL_GST}}</span>
                       </div>
                     </td>
                   </tr>
@@ -408,27 +402,24 @@
           </div>
         </div>
 
-        <div class="col-lg-6 col-md-6 col-12" formGroupName="delivery_address">
+        <div class="col-lg-6 col-md-6 col-12">
           <div class="input_container">
             <div class="form_card__label-s bld dark">Delivery At:</div>
           </div>
 
           <div class="input_container">
-            <div type="text" class="form_card__input-l" placeholder="Your Company" formControlName="company_name">
+            <div type="text" class="form_card__input-l">
               {{BUYER_COMPANY}}</div>
           </div>
 
           <div class="input_container">
-            <div type="text" class="form_card__input-s" placeholder="Company’s Address"
-              formControlName="company_address" style="color:#483737;">{{BUYER_DELIVERY_ADDRESS}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_DELIVERY_ADDRESS}}</div>
           </div>
           <div class="input_container">
-            <div type="text" (keypress)="onlyNumbers($event)" class="form_card__input-s" placeholder="PIN Code"
-              formControlName="pincode" style="color:#483737;">{{BUYER_DELIVERY_PIN_CODE}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_DELIVERY_PIN_CODE}}</div>
           </div>
           <div class="input_container">
-            <div type="text" class="form_card__input-s" placeholder="Country" formControlName="country"
-              style="color:#483737;">{{BUYER_DELIVERY_COUNTRY}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_DELIVERY_COUNTRY}}</div>
           </div>
         </div>
       </div>

@@ -1,9 +1,15 @@
+import base64
+import uuid
+import os
 from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
 from database.BuyerUserOps import BUser
 from bs4 import BeautifulSoup
-from functionality import GenericOps
+from database.SupplierUserOps import SUser
+from functionality import GenericOps, OSOps, EmailNotifications
+from utility import conf
+from Integrations.AWSOps import AWS
 
 class Notification:
     def __init__(self, checkpoint, file=''):
@@ -12,18 +18,19 @@ class Notification:
 
     def send_notification(self, **kwargs):
         if self.__checkpoint.lower() == "order_created":
-            with open(self.__file, 'r',encoding="utf-8") as booking:
-                content = booking.read()
+            with open(self.__file, 'r',encoding="utf-8") as order:
+                content = order.read()
                 soup = BeautifulSoup(content)
 
             params = {}
             array_params = {}
             details = kwargs['details']
+            po_no = details['po_no'].split('/')[0]
             buyer, supplier = Buyer(details['buyer_details']['buyer_id']), Supplier(details['supplier_details']['supplier_id'])
             buyer_details, supplier_details, delivery_details = details['buyer_details'], details['supplier_details'], details['delivery_address']
 
             # Buyer field details
-            params['BUYER_COMPANY'] = buyer_details['company_name'],
+            params['BUYER_COMPANY'] = buyer_details['company_name']
             params['BUYER_GST_NUMBER'] = buyer_details['gst_no']
             params['BUYER_COMPANY_ADDRESS'], params['BUYER_PIN_CODE'], params['BUYER_COUNTRY'] = buyer_details['business_address'], buyer_details['pincode'], buyer_details['country']
             params['LOGO'] = buyer.get_company_logo()
@@ -41,61 +48,130 @@ class Notification:
             params['BUYER_DELIVERY_ADDRESS'] = delivery_details['company_address']
             params['BUYER_DELIVERY_PIN_CODE'], params['BUYER_DELIVERY_COUNTRY'] = delivery_details['pincode'], delivery_details['country']
 
-            params['CREDIT_TERMS'], params['FREIGHT_INCLUDED'] = details['payment_terms'], details['FREIGHT_INCLUDED']
+            # Payment terms and other fields
+            params['CREDIT_TERMS'], params['FREIGHT_INCLUDED'] = details['payment_terms'], details['freight_included']
             params['TERMS_CONDITIONS'], params['PREPARED_BY'], params['APPROVED_BY'] = details['tnc'], BUser(details['prepared_by']).get_name(), BUser(details['approved_by']).get_name()
 
+            # Products list and totals fields
+            array_params['PRODUCTS_INFO'] = GenericOps.populate_product_line_items(details['line_items'], details['unit_currency'])
+            sub_total, total_gst = GenericOps.round_of(details['total_amount']), GenericOps.round_of(details['total_gst'])
+            grand_total = GenericOps.round_of(sub_total + total_gst)
+            params['SUB_TOTAL'] = details['unit_currency'].upper() + " " + str(sub_total)
+            params['TOTAL_GST'] = details['unit_currency'].upper() + " " + str(total_gst)
+            params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
+
+            for key, val in params.items():
+                soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
+
+            for key, val in array_params.items():
+                soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
+
+            if not OSOps.path_exists(conf.upload_documentation):
+                OSOps.create_directory(conf.upload_documentation)
+            temp_file_path = conf.upload_documentation + str(uuid.uuid4()) + ".html"
+            temp_file = open(temp_file_path, 'w', encoding='utf-8')
+            temp_file.write(str(soup))
+            folder_name = str(uuid.uuid4())
+            complete_path = conf.upload_documentation + folder_name
+            if not OSOps.path_exists(complete_path):
+                OSOps.create_directory(complete_path)
+            os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
+
+            ## UNCOMMENT THIS LINE BEFORE PUSHING
+            OSOps.deletefile(temp_file_path)
+
+            pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
+            aws_file_name = po_no + "_order_created"
+            data = open(pdf_path, 'rb').read()
+            base64_encoded = base64.b64encode(data).decode('UTF-8')
+            upload_file_path = GenericOps.generate_aws_file_path(client_type="buyer", client_id=buyer_details['buyer_id'],
+                                                                 document_type="pdf", notification_type='order_upload',
+                                                                 file_name=aws_file_name)
+            file_link = AWS('s3').upload_file_from_base64(base64_string=base64_encoded, path=upload_file_path)
+
+            suser = SUser(supplier_id=supplier_details['supplier_id'])
+            po_no_display = "inline" if details['po_no'] != "" else "none"
+            op_display = "inline" if details['acquisition_id'] != 0 and details['acquisition_type'].lower() != "adhoc" else "none"
+            products = []
+            for lt in details['line_items']:
+                products.append({"delivery_date": GenericOps.convert_timestamp_to_datestr(lt['delivery_date']),
+                                 "product_name": lt['product_name'],
+                                 "product_description": lt['product_description'],
+                                 "amount": str(lt['amount'])})
+
+            subject = conf.email_endpoints['buyer'][self.__checkpoint]['subject'].replace("{{po_number}}",details['po_no']).replace("{{buyer_company_name}}", buyer.get_company_name())
+            link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
+            pprint(file_link)
+            documents = [{"document_name": aws_file_name + ".pdf", "document_url": file_link}]
+            EmailNotifications.send_handlebars_email(
+                template=conf.email_endpoints['buyer'][self.__checkpoint]['template_id'],
+                subject=subject,
+                recipients=[suser.get_email()],
+                USER=suser.get_first_name(),
+                BUYER_COMPANY_NAME=buyer.get_company_name(),
+                PO_NUMBER_DISPLAY=po_no_display,
+                OPERATION_DISPLAY=op_display,
+                PO_NUMBER=details['po_no'],
+                OPERATION=details['acquisition_type'].upper(),
+                OPERATION_ID=str(details['acquisition_id']),
+                LOT_NAME=details['lot_name'],
+                LINK=link,
+                PRODUCTS=products,
+                documents=documents
+            )
 
         return True
 
-# details = {
-#     "po_no": "1000/20-21/Bhavani",
-#     "unit_currency": "inr",
-#     "order_date": "20-10-2020",
-#     "acquisition_id": 1000,
-#     "acquisition_type": "rfq",
-#     "buyer_details": {
-#         "buyer_id": 1000,
-#         "company_name": "Bhavani Fabricators",
-#         "gst_no": "27AKFPP0597A1Z8",
-#         "business_address": "Wagle Estate",
-#         "city": "",
-#         "pincode": "400610",
-#         "country": "India"
-#     },
-#     "supplier_details": {
-#         "supplier_id": 1000,
-#         "company_name": "ABC pvt ltd",
-#         "gst_no": "27AKFPP0597A1Z8",
-#         "business_address": "Wagle Estate",
-#         "city": "",
-#         "pincode": "400610",
-#         "country": "India"
-#     },
-#     "delivery_address": {
-#         "company_name": "ABC pvt ltd",
-#         "company_address": "Wagle Estate",
-#         "pincode": "400610",
-#         "country": "India"
-#     },
-#     "line_items": [{
-#         "quote_id": 1001,
-#         "product_id": 1001,
-#         "product_name": "copper ball bearings",
-#         "product_description": "Should be made of copper",
-#         "quantity": 3,
-#         "delivery_date": 1603197932,
-#         "gst": 18,
-#         "per_unit": 14000,
-#         "unit": "nos",
-#         "amount": 20000
-#     }],
-#     "total_amount": 20000,
-#     "total_gst": 14000,
-#     "tnc": "sample tnc",
-#     "payment_terms": "abc",
-#     "freight_included": "yes/no",
-#     "prepared_by": "anuj.panchal@exportify.in",
-#     "approved_by": "anuj.panchal@exportify.in"
-# }
+details = {
+    "po_no": "1000/20-21/Bhavani",
+    "unit_currency": "inr",
+    "order_date": "20-10-2020",
+    "acquisition_id": 1000,
+    "acquisition_type": "rfq",
+    "buyer_details": {
+        "buyer_id": 1000,
+        "company_name": "Bhavani Fabricators",
+        "gst_no": "27AKFPP0597A1Z8",
+        "business_address": "Wagle Estate",
+        "city": "",
+        "pincode": "400610",
+        "country": "India"
+    },
+    "supplier_details": {
+        "supplier_id": 1000,
+        "company_name": "ABC pvt ltd",
+        "gst_no": "27AKFPP0597A1Z8",
+        "business_address": "Wagle Estate",
+        "city": "",
+        "pincode": "400610",
+        "country": "India"
+    },
+    "delivery_address": {
+        "company_name": "ABC pvt ltd",
+        "company_address": "Wagle Estate",
+        "pincode": "400610",
+        "country": "India"
+    },
+    "line_items": [{
+        "quote_id": 1001,
+        "product_id": 1001,
+        "product_name": "copper ball bearings",
+        "product_description": "Should be made of copper",
+        "quantity": 3,
+        "delivery_date": 1603197932,
+        "gst": 18,
+        "per_unit": 14000,
+        "unit": "nos",
+        "amount": 20000
+    }],
+    "total_amount": 20000,
+    "lot_name": "Sample tests",
+    "total_gst": 14000,
+    "tnc": "sample tnc",
+    "payment_terms": "abc",
+    "freight_included": "yes/no",
+    "prepared_by": "anuj.panchal@exportify.in",
+    "approved_by": "anuj.panchal@exportify.in"
+}
 
-# pprint(Notification("order_created").send_notification(details=details))
+pprint(Notification("order_created", conf.po_created_pdf_file).send_notification(details=details))

@@ -24,6 +24,7 @@ CORS(app)
 from functionality import DictionaryOps, GenericOps, response
 from models.GenericEmails import Generics
 from functionality.Logger import Logger
+from functionality.Notifications import Notification
 from validations import Validate
 from exceptions import exceptions
 from functools import wraps
@@ -2704,36 +2705,12 @@ def buyer_create_po():
                 requisition.update_savings(savings)
 
         # If save and send, then save and send email
-        suser = SUser(supplier_id=supplier_details['supplier_id'])
-        po_no_display = "block" if po_details['po_no'] != "" else "none"
-        op_display = "block" if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else "none"
-        lot_name = lot['lot_name'] if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else ""
-        products = []
-        for lt in po_details['line_items']:
-            products.append({"delivery_date": GenericOps.convert_timestamp_to_datestr(lt['delivery_date']),
-                             "product_name": lt['product_name'],
-                             "product_description": lt['product_description'],
-                             "amount": str(lt['amount'])})
+        po_details['lot_name'] = lot['lot_name'] if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else ""
 
-        subject = conf.email_endpoints['buyer']['order_created']['subject'].replace("{{po_number}}", po_details['po_no']).replace("{{buyer_company_name}}", buyer.get_company_name())
-        link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
-        p = Process(target=EmailNotifications.send_handlebars_email, kwargs={
-            "template": conf.email_endpoints['buyer']['order_created']['template_id'],
-            "subject": subject,
-            "USER": suser.get_first_name(),
-            "recipients": [suser.get_email()],
-            "BUYER_COMPANY_NAME": buyer.get_company_name(),
-            "PO_NUMBER_DISPLAY": po_no_display,
-            "OPERATION_DISPLAY": op_display,
-            "PO_NUMBER": po_details['po_no'],
-            "OPERATION": po_details['acquisition_type'].upper(),
-            "OPERATION_ID": str(po_details['acquisition_id']),
-            "LOT_NAME": lot_name,
-            "LINK": link,
-            "PRODUCTS": products
-        })
+        # Sending the notifications
+        notif = Notification(checkpoint="order_created", file=conf.po_created_pdf_file)
+        p = Process(target=notif.send_notification, kwargs={"details": po_details})
         p.start()
-
         return response.customResponse({"response": "PO created and sent to supplier successfully"})
 
     except exceptions.IncompleteRequestException as e:

@@ -59,10 +59,15 @@ def generate_token_for_login():
     return link
 
 
-def generate_aws_file_path(client_type, client_id, document_type):
-    if client_type.lower() == "buyer":
-        return "B" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
-    return "S" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+def generate_aws_file_path(client_type, client_id, document_type, notification_type="doc_upload", file_name=''):
+    if notification_type == "doc_upload":
+        if client_type.lower() == "buyer":
+            return "B" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+        return "S" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+    else:
+        if client_type.lower() == "buyer":
+            return "B" + str(client_id) + "/" + file_name + "." + document_type
+        return "S" + str(client_id) + "/" + file_name + "." + document_type
 
 
 def is_url(url):
@@ -140,11 +145,11 @@ def populate_email_template_for_messages(file_path, details):
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
-# def populate_product_line_items(products):
-#     result = ""
-#     for i in range(len(products)):
-#         result += "<tr class='item_table_data_row'>"
-#         "<tr class='item_table_data_row'><td class='item_table_data border_bottom' style='width: 25%;'><div type='text' class='form_card__input-s'>" + products[i]['product_name'] + " (" + products[i]['product_description'] + ")</div></td><td class='item_table_data text_l border_bottom'><div type='date'class='form_card__input-s text_l'>" + convert_timestamp_to_datestr(products[i]['delivery_date']) + "</div></td><td class='item_table_data text_l border_bottom'><div type='number' class='form_card__input-s text_l'>{{GSTN}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>{{QUANTITY}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'> {{UNIT}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>{{UNIT_RATE}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>{{AMOUNT}}</div></td></tr>"
+def populate_product_line_items(products, unit_currency='inr'):
+    result = ""
+    for i in range(len(products)):
+        result += "<tr class='item_table_data_row'><td class='item_table_data border_bottom' style='width: 25%;'><div type='text' class='form_card__input-s'>" + products[i]['product_name'] + " (" + products[i]['product_description'] + ")</div></td><td class='item_table_data text_l border_bottom'><div type='date'class='form_card__input-s text_l'>" + convert_timestamp_to_datestr(products[i]['delivery_date']) + "</div></td><td class='item_table_data text_l border_bottom'><div type='number' class='form_card__input-s text_l'>" + str(products[i]['gst']) + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + str(products[i]['quantity']) + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + products[i]['unit'] + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + unit_currency.upper() + " " + str(round_of(products[i]['per_unit'])) + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + unit_currency.upper() + " " + str(round_of(products[i]['amount'])) + "</div></td></tr>"
+    return result
 
 def get_rank_changed_suppliers(prev_ranks, curr_ranks):
     result = {}
