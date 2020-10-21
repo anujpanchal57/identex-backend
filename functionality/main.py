@@ -2644,6 +2644,7 @@ def buyer_create_po():
         if po_incr_factor <= curr_po_incr_factor:
             po_incr_factor = curr_po_incr_factor
             po_incr_factor += 1
+            po_details['po_no'] = str(po_incr_factor) + "/" + po_suffix
             buyer.update_po_incr_factor(po_incr_factor)
         else:
             buyer.update_po_incr_factor(po_incr_factor)
@@ -2689,7 +2690,8 @@ def buyer_create_po():
                   lt['per_unit'], lt['amount'], lt['delivery_date']]
             sub = tuple(sub_order)
             sub_orders.append(sub)
-            Quote(lt['quote_id']).set_po_id(po_id)
+            if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":
+                Quote(lt['quote_id']).set_po_id(po_id)
         sub_orders_id = SubOrder().insert_many(sub_orders)
         approved_counter += 1 if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else 0
 
@@ -2704,6 +2706,35 @@ def buyer_create_po():
                 requisition.update_savings(savings)
 
         # If save and send, then save and send email
+        suser = SUser(supplier_id=supplier_details['supplier_id'])
+        po_no_display = "block" if po_details['po_no'] != "" else "none"
+        op_display = "block" if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else "none"
+        lot_name = lot['lot_name'] if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else ""
+        products = []
+        for lt in po_details['line_items']:
+            products.append({"delivery_date": GenericOps.convert_timestamp_to_datestr(lt['delivery_date']),
+                             "product_name": lt['product_name'],
+                             "product_description": lt['product_description'],
+                             "amount": str(lt['amount'])})
+
+        subject = conf.email_endpoints['buyer']['order_created']['subject'].replace("{{po_number}}", po_details['po_no']).replace("{{buyer_company_name}}", buyer.get_company_name())
+        link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
+        p = Process(target=EmailNotifications.send_handlebars_email, kwargs={
+            "template": conf.email_endpoints['buyer']['order_created']['template_id'],
+            "subject": subject,
+            "USER": suser.get_first_name(),
+            "recipients": [suser.get_email()],
+            "BUYER_COMPANY_NAME": buyer.get_company_name(),
+            "PO_NUMBER_DISPLAY": po_no_display,
+            "OPERATION_DISPLAY": op_display,
+            "PO_NUMBER": po_details['po_no'],
+            "OPERATION": po_details['acquisition_type'].upper(),
+            "OPERATION_ID": str(po_details['acquisition_id']),
+            "LOT_NAME": lot_name,
+            "LINK": link,
+            "PRODUCTS": products
+        })
+        p.start()
 
         return response.customResponse({"response": "PO created and sent to supplier successfully"})
 

@@ -117,7 +117,7 @@ email_endpoints = {
         },
         "order_created": {
             "page_url": "/orders?type=active",
-            "subject": "",
+            "subject": "You have received an order({{po_number}}) from {{buyer_company_name}}",
             "template_id": "order_created"
         },
         "order_delivered": {

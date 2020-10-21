@@ -113,6 +113,10 @@ def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_
     result = datetime.datetime.fromtimestamp(add_offset_to_utc(offset, ts)).strftime(out_format)
     return result
 
+def convert_timestamp_to_datestr(ts):
+    timestamp = datetime.datetime.fromtimestamp(ts)
+    return timestamp.strftime("%d-%m-%Y")
+
 
 def add_offset_to_utc(offset, utc_ts):
     return int(utc_ts + ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
