@@ -2,6 +2,7 @@ import base64
 import traceback
 import uuid
 import os
+import pdfkit
 from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
@@ -13,6 +14,7 @@ from functionality.Logger import Logger
 from utility import conf
 from Integrations.AWSOps import AWS
 
+
 class Notification:
     def __init__(self, checkpoint, file=''):
         self.__checkpoint = checkpoint
@@ -23,7 +25,7 @@ class Notification:
             if self.__checkpoint.lower() == "order_created":
                 with open(self.__file, 'r',encoding="utf-8") as order:
                     content = order.read()
-                    soup = BeautifulSoup(content, 'html.parser')
+                    soup = BeautifulSoup(content)
 
                 params = {}
                 array_params = {}
@@ -63,10 +65,10 @@ class Notification:
                 params['TOTAL_GST'] = details['unit_currency'].upper() + " " + str(total_gst)
                 params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
                 for key, val in params.items():
-                    soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)), 'html.parser')
+                    soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
 
                 for key, val in array_params.items():
-                    soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)), 'html.parser')
+                    soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
 
                 if not OSOps.path_exists(conf.upload_documentation):
                     OSOps.create_directory(conf.upload_documentation)
@@ -78,12 +80,14 @@ class Notification:
                 pprint(complete_path)
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
-                os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
+                pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
+                pdfkit.from_file(temp_file_path, pdf_path)
+                # os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
                 pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
                 pprint('DELETED TEMP FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
+                # pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
                 pprint('PDF PATH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 aws_file_name = po_no + "_order_created"
                 pprint('AWS FILE NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
