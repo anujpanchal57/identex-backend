@@ -124,3 +124,9 @@ class PO:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
 
+    def update_po_url(self, file_link):
+        self.__po['po_url'] = file_link
+        self.__cursor.execute("""update purchase_orders set po_url = %s where po_id = %s""", (file_link, self.__id))
+        self.__sql.commit()
+        return True
+

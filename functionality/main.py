@@ -2705,6 +2705,7 @@ def buyer_create_po():
                 requisition.update_savings(savings)
 
         # If save and send, then save and send email
+        po_details['po_id'] = po_id
         po_details['lot_name'] = lot['lot_name'] if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else ""
 
         # Sending the notifications

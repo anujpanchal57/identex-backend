@@ -13,6 +13,7 @@ from functionality import GenericOps, OSOps, EmailNotifications, response
 from functionality.Logger import Logger
 from utility import conf
 from Integrations.AWSOps import AWS
+from database.PurchaseOrderOps import PO
 
 
 class Notification:
@@ -75,19 +76,17 @@ class Notification:
                 temp_file_path = conf.upload_documentation + str(uuid.uuid4()) + ".html"
                 temp_file = open(temp_file_path, 'w', encoding='utf-8')
                 temp_file.write(str(soup))
-                folder_name = str(uuid.uuid4())
-                complete_path = conf.upload_documentation + folder_name
+                # folder_name = str(uuid.uuid4())
+                complete_path = conf.upload_documentation
                 pprint(complete_path)
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
-                pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
-                pdfkit.from_file(temp_file_path, pdf_path)
-                # os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
+                os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
                 pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
                 pprint('DELETED TEMP FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                # pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
+                pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
                 pprint('PDF PATH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 aws_file_name = po_no + "_order_created"
                 pprint('AWS FILE NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -97,7 +96,8 @@ class Notification:
                                                                      document_type="pdf", notification_type='order_upload',
                                                                      file_name=aws_file_name)
                 file_link = AWS('s3').upload_file_from_base64(base64_string=base64_encoded, path=upload_file_path)
-
+                # Updating po_url in purchase_orders table
+                PO(details['po_id']).update_po_url(file_link)
                 suser = SUser(supplier_id=supplier_details['supplier_id'])
                 po_no_display = "inline" if details['po_no'] != "" else "none"
                 op_display = "inline" if details['acquisition_id'] != 0 and details['acquisition_type'].lower() != "adhoc" else "none"

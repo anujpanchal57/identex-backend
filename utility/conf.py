@@ -194,7 +194,7 @@ all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
 invoice_excel_sample = app_name + "/templates/Invoice.xlsx"
 quotations_summary_excel_sample = app_name + "/templates/Quotation Summary.xlsx"
 
-upload_documentation = app_name + "/uploads/documentation/"
+upload_documentation = app_name + "/"
 
 po_created_pdf_file = app_name + "/templates/po_created.html"
 
