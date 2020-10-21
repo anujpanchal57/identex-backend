@@ -393,7 +393,7 @@ units_create_table = """create table if not exists units (
                 unit_name varchar(100) not null
             )"""
 
-po_create_table = """CREATE TABLE `purchase_orders` (
+po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
                   `po_id` int(11) NOT NULL AUTO_INCREMENT,
                   `po_no` varchar(200) NOT NULL,
                   `buyer_id` int(11) NOT NULL,
@@ -428,7 +428,7 @@ po_create_table = """CREATE TABLE `purchase_orders` (
                   CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`)
                 ) ENGINE=InnoDB AUTO_INCREMENT=1015 DEFAULT CHARSET=latin1"""
 
-sub_orders_create_table = """CREATE TABLE `sub_orders` (
+sub_orders_create_table = """CREATE TABLE IF NOT EXISTS `sub_orders` (
                           `order_id` int(11) NOT NULL AUTO_INCREMENT,
                           `po_id` int(11) NOT NULL,
                           `product_id` int(11) NOT NULL,
