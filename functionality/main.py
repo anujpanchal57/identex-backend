@@ -2553,11 +2553,10 @@ def po_supplier_quotes_get():
         data = request.json
         result = []
         suppliers = Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])
-        quote = Quote()
+        quote_obj = Quote()
         # supplier_branches, supplier_gst = SupplierBranches(), SupplierGSTDetails()
         for supp in suppliers:
-            supp['quotes'] = quote.get_supplier_quotes_for_po(requisition_id=data['requisition_id'],
-                                                              supplier_id=supp['supplier_id'])
+            supp['quotes'] = quote_obj.get_supplier_quotes_for_po(requisition_id=data['requisition_id'], supplier_id=supp['supplier_id'])
             # supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
             # supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
             if len(supp['quotes']) > 0:
@@ -2700,8 +2699,7 @@ def buyer_create_po():
             if len(products) == approved_counter:
                 requisition = Requisition(po_details['acquisition_id'])
                 budget = requisition.get_budget()
-                po = PO()
-                total_amount = po.get_total_amount_for_acquisition(po_details['acquisition_id'], po_details['acquisition_type'])
+                total_amount = PO().get_total_amount_for_acquisition(po_details['acquisition_id'], po_details['acquisition_type'])
                 savings = budget - total_amount
                 requisition.update_savings(savings)
 

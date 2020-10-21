@@ -113,9 +113,9 @@ def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_
     result = datetime.datetime.fromtimestamp(add_offset_to_utc(offset, ts)).strftime(out_format)
     return result
 
-def convert_timestamp_to_datestr(ts):
+def convert_timestamp_to_datestr(ts, format="%d-%m-%Y"):
     timestamp = datetime.datetime.fromtimestamp(ts)
-    return timestamp.strftime("%d-%m-%Y")
+    return timestamp.strftime(format)
 
 
 def add_offset_to_utc(offset, utc_ts):
@@ -140,6 +140,11 @@ def populate_email_template_for_messages(file_path, details):
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
+# def populate_product_line_items(products):
+#     result = ""
+#     for i in range(len(products)):
+#         result += "<tr class='item_table_data_row'>"
+#         "<tr class='item_table_data_row'><td class='item_table_data border_bottom' style='width: 25%;'><div type='text' class='form_card__input-s'>" + products[i]['product_name'] + " (" + products[i]['product_description'] + ")</div></td><td class='item_table_data text_l border_bottom'><div type='date'class='form_card__input-s text_l'>" + convert_timestamp_to_datestr(products[i]['delivery_date']) + "</div></td><td class='item_table_data text_l border_bottom'><div type='number' class='form_card__input-s text_l'>{{GSTN}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>{{QUANTITY}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'> {{UNIT}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>{{UNIT_RATE}}</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>{{AMOUNT}}</div></td></tr>"
 
 def get_rank_changed_suppliers(prev_ranks, curr_ranks):
     result = {}

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    .form_card {
+      margin: 0 auto;
+      padding: 40px 33px 20px 35px;
+      width: 800px;
+      height: auto;
+      background-color: #fff;
+      box-shadow: 1px 1px 5px #8f8f8f;
+    }
+
+    .form_card_header {
+      text-align: right;
+    }
+
+    .form_card_header_input {
+      font-size: 28px;
+      font-weight: 500;
+      text-align: right;
+      color: #38342c;
+      padding: 4px;
+    }
+
+    .input_conatiner {
+      margin: 2px 0;
+    }
+
+    .form_card__input-l {
+      padding: 4px;
+      font-size: 20px;
+    }
+
+    .form_card__input-s {
+      padding: 1px 2px;
+      font-size: 13px;
+    }
+
+    .form_card_header_input-transparent {
+      background-color: transparent;
+      padding: 1px 2px;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .form_card_header_input-transparent:focus {
+      color: #000;
+    }
+
+    .form_card_header_input-transparent-dark {
+      background-color: transparent;
+      padding: 1px 2px;
+      font-size: 13px;
+    }
+
+    .table_container {
+      overflow: auto;
+    }
+
+    .vendor_table,
+    .item_table {
+      width: 100%;
+    }
+
+    .item_table_head_row {
+      background-color: #666;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .item_table_data {
+      vertical-align: top;
+      padding: 4px 8px;
+    }
+
+    .item_table_data_link {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .border_bottom {
+      border-bottom: 1px solid #e3e3e3;
+    }
+
+    .bld {
+      font-weight: 700;
+    }
+
+    .dark {
+      color: #000;
+    }
+
+    .text_r {
+      text-align: right;
+    }
+
+    .closeIcon {
+      visibility: hidden;
+      cursor: pointer;
+    }
+
+    .item_table_data_row:hover .closeIcon {
+      visibility: visible;
+    }
+
+    .total_value {
+      background: #e3e3e3;
+      border: 1px solid #e3e3e3;
+    }
+
+    .form_card_footer {
+      margin-top: 20px;
+    }
+
+    input,
+    textarea {
+      border: 0;
+    }
+
+    input:focus,
+    textarea:focus {
+      background-color: #ffe0b2;
+    }
+
+    input:disabled {
+      background-color: #fff;
+    }
+
+    select {
+      width: 70px;
+    }
+  </style>
+</head>
+
+<body>
+  <form [formGroup]="poForm">
+    <div class="row">
+      <div class="col-lg-6 col-md-6 col-12" formGroupName="buyer_details">
+        <div class="input_container">
+          <div type="text" class="form_card__input-l" placeholder="" formControlName="company_name">{{BUYER_COMPANY}}
+          </div>
+        </div>
+        <div class="input_container">
+          <div type="text" class="form_card__input-s" placeholder="" formControlName="gst_no" style="color:#483737;">
+            {{BUYER_GST_NUMBER}}</div>
+        </div>
+
+        <div class="input_container">
+          <div type="text" class="form_card__input-s" placeholder="" formControlName="business_address"
+            style="color:#483737;">{{BUYER_COMPANY_ADDRESS}}</div>
+        </div>
+        <div class="input_container">
+          <div type="text" class="form_card__input-s" placeholder="" formControlName="pincode" style="color:#483737;">
+            {{BUYER_PIN_CODE}}</div>
+        </div>
+        <div class="input_container">
+          <div type="text" class="form_card__input-s" placeholder="" formControlName="country" style="color:#483737;">
+            {{BUYER_COUNTRY}}</div>
+        </div>
+      </div>
+      <div class="col-lg-6 col-md-6 col-12">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form_card_header">
+              <div class="form_card_header_input" style="text-align: right;">PURCHASE ORDER</div>
+            </div>
+          </div>
+          <div class="col-md-12 text-center">
+            <img src="{{LOGO}}" style="width: 100px;margin-left: auto;margin-right: 0;display: block;margin-top: 10px;">
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <div class="row">
+        <div class="col-lg-6 col-md-6 col-12" formGroupName="supplier_details">
+
+          <div class="input_container">
+            <div type="text" class="form_card__input-l" formControlName="company_name" [matAutocomplete]="vendor"
+              (input)="searchSupplier()">
+              {{SUPPLIER_COMPANY}}</div>
+          </div>
+          <div class="input_container">
+            <div type="text" class="form_card__input-s" placeholder="" formControlName="gst_no" style="color:#483737;">
+              {{SUPPLIER_GST_NUMBER}}</div>
+          </div>
+
+          <div class="input_container">
+            <div type="text" class="form_card__input-s" placeholder="Company’s Address"
+              formControlName="business_address" style="color:#483737;">{{SUPPLIER_BUSINESS_ADDRESS}}</div>
+          </div>
+          <div class="input_container">
+            <div type="text" class="form_card__input-s" placeholder="PIN Code" formControlName="pincode"
+              style="color:#483737;">{{SUPPLIER_PIN_CODE}}</div>
+          </div>
+          <div class="input_container">
+            <div type="text" class="form_card__input-s" placeholder="Country" formControlName="country"
+              style="color:#483737;">{{SUPPLIER_COUNTRY}}</div>
+          </div>
+        </div>
+        <div class="col-lg-6 col-md-6 col-12">
+          <table class="vendor_table" style="text-align:right;">
+            <tbody>
+              <tr>
+                <td style="width:30%">
+                  <div class="input_container form_card__label-s bld dark">
+                    PO Number
+                  </div>
+                </td>
+                <td style="width: 1%;">
+                  <div class="input_container">
+                    {{PO_NUMBER}}
+
+                  </div>
+                </td>
+
+              </tr>
+              <tr>
+                <td style="width:30%">
+                  <div class="input_container form_card__label-s bld dark">
+                    Order Date
+                  </div>
+                </td>
+                <td>
+                  <div class="input_container">
+                    {{ORDER_DATE}}
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="table_container" style="margin-top: 30px;">
+      <table class="item_table">
+        <thead>
+          <tr class="item_table_head_row">
+            <td class="item_table_data" style="width: 25%;">
+              <div class="form_card_header_input-transparent bld text_l">Item Description
+              </div>
+            </td>
+            <td class="item_table_data">
+              <div class="form_card_header_input-transparent bld text_l">Delivery Date
+              </div>
+            </td>
+            <td class="item_table_data">
+              <div class="form_card_header_input-transparent bld text_l">Tax rate (%)
+              </div>
+            </td>
+            <td class="item_table_data">
+              <div class="form_card_header_input-transparent bld text_l">Qty.</div>
+            </td>
+            <td class="item_table_data">
+              <div class="form_card_header_input-transparent bld text_l">Per</div>
+            </td>
+            <td class="item_table_data">
+              <div class="form_card_header_input-transparent bld text_l">Unit Rate</div>
+            </td>
+            <td class="item_table_data">
+              <div class="form_card_header_input-transparent bld text_l">Amount</div>
+            </td>
+          </tr>
+        </thead>
+        <tbody formArrayName="line_items">
+          <tr class='item_table_data_row'>
+            <td class='item_table_data border_bottom' style='width: 25%;'>
+              <div type='text' class='form_card__input-s'>{{PRODUCT_DESCRIPTION}}</div>
+            </td>
+            <td class='item_table_data text_l border_bottom'>
+              <div type='date'class='form_card__input-s text_l'>
+                {{DELIVERY_DATE}}</div>
+            </td>
+            <td class='item_table_data text_l border_bottom'>
+              <div type='number' class='form_card__input-s text_l'>{{GSTN}}</div>
+            </td>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'>{{QUANTITY}}</div>
+            </td>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'> {{UNIT}}</div>
+            </td>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'>{{UNIT_RATE}}</div>
+            </td>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'>{{AMOUNT}}</div>
+            </td>
+        
+          </tr>
+          <tr>
+            <td class="item_table_data">
+
+            </td>
+            <td></td>
+
+            <td></td>
+
+            <td colspan="4">
+              <table style="width: 100%">
+                <tbody>
+                  <tr>
+                    <td class="item_table_data">
+                      <div class="text_l">
+                        <div style="font-size: inherit;" class="form_card__input-s">Sub Total</div>
+                      </div>
+                    </td>
+                    <td class="item_table_data">
+                      <div class="text_r">
+                        <span>{{SUB_TOTAL}}}</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="item_table_data">
+                      <div class="text_l">
+                        <div style="font-size: inherit;" class="form_card__input-s">Tax</div>
+                      </div>
+                    </td>
+                    <td class="item_table_data">
+                      <div class="text_r">
+                        <span>{{TOTAL_GST}}}</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="total_value">
+                    <td class="item_table_data">
+                      <div class="text_l">
+                        <div style="font-size: inherit;" class="form_card_header_input-transparent-dark">
+                          TOTAL</div>
+                      </div>
+                    </td>
+                    <td class="item_table_data">
+                      <div class="text_r">
+                        <span class="ml-1">{{GRAND_TOTAL}}</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 50px;">
+      <div class="row">
+
+        <div class="col-lg-6 col-md-6 col-12">
+          <table class="vendor_table">
+            <tbody>
+              <tr>
+                <td>
+                  <div class="input_container">
+                    <div class="form_card__label-s bld dark">Credit Terms</div>
+                  </div>
+                </td>
+                <td>
+                  <div class="input_container">
+                    {{CREDIT_TERMS}}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="input_container">
+                    <div class="form_card__label-s bld dark">Freight</div>
+                  </div>
+                </td>
+                <td>
+                  <div class="input_container">
+                    {{FREIGHT_INCLUDED}}
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="input_container">
+                <div class="form_card__input-s bld">Terms & Conditions</div>
+              </div>
+            </div>
+            <div class="col-md-12">
+              {{TERMS_CONDITIONS}}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6 col-md-6 col-12" formGroupName="delivery_address">
+          <div class="input_container">
+            <div class="form_card__label-s bld dark">Delivery At:</div>
+          </div>
+
+          <div class="input_container">
+            <div type="text" class="form_card__input-l" placeholder="Your Company" formControlName="company_name">
+              {{BUYER_COMPANY}}</div>
+          </div>
+
+          <div class="input_container">
+            <div type="text" class="form_card__input-s" placeholder="Company’s Address"
+              formControlName="company_address" style="color:#483737;">{{BUYER_DELIVERY_ADDRESS}}</div>
+          </div>
+          <div class="input_container">
+            <div type="text" (keypress)="onlyNumbers($event)" class="form_card__input-s" placeholder="PIN Code"
+              formControlName="pincode" style="color:#483737;">{{BUYER_DELIVERY_PIN_CODE}}</div>
+          </div>
+          <div class="input_container">
+            <div type="text" class="form_card__input-s" placeholder="Country" formControlName="country"
+              style="color:#483737;">{{BUYER_DELIVERY_COUNTRY}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div style="margin-top: 20px;">
+      <div class="row">
+
+        <div class="col-lg-6 col-md-6 col-12">
+          <table class="vendor_table">
+            <tbody>
+              <tr>
+                <td>
+                  <div class="input_container">
+                    <div class="input_container">
+                      <div class="form_card__label-s bld dark">Prepared By: {{PREPARED_BY}}</div>
+                    </div>
+                  </div>
+                </td>
+
+              </tr>
+              <tr>
+                <td>
+                  <div class="input_container">
+                    <div class="form_card__label-s bld dark">Approved By: {{APPROVED_BY}}</div>
+                  </div>
+                </td>
+
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <div class="col-lg-6 col-md-6 col-12" style="display: flex;align-items: center;">
+          <div class="form_card__label-s bld dark" style="font-size: 16px;">
+            For {{BUYER_COMPANY}}
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </form>
+</body>
+
+</html>
