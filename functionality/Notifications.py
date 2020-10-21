@@ -81,7 +81,8 @@ class Notification:
                 pprint(complete_path)
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
-                os.system('xvfb-run -a --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
+                pprint('xvfb-run -a --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
+                pprint(os.system('xvfb-run -a --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf'))
                 pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
