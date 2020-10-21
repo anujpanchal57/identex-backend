@@ -75,7 +75,7 @@ class Notification:
             complete_path = conf.upload_documentation + folder_name
             if not OSOps.path_exists(complete_path):
                 OSOps.create_directory(complete_path)
-            os.system('sudo xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
+            os.system('xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + '/' + po_no + '_order_created.pdf')
 
             ## UNCOMMENT THIS LINE BEFORE PUSHING
             OSOps.deletefile(temp_file_path)
