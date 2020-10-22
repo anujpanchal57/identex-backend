@@ -36,7 +36,7 @@ class Notification:
                 params['BUYER_COMPANY'] = buyer_details['company_name']
                 params['BUYER_GST_NUMBER'] = buyer_details['gst_no']
                 params['BUYER_COMPANY_ADDRESS'], params['BUYER_PIN_CODE'], params['BUYER_COUNTRY'] = buyer_details['business_address'], buyer_details['pincode'], buyer_details['country']
-                params['LOGO'] = "https://uploads-idntx.s3.ap-south-1.amazonaws.com/B1002/download+(1).png"
+                params['LOGO'] = buyer.get_company_logo()
                 params['PO_NUMBER'] = details['po_no']
                 params['ORDER_DATE'] = details['order_date']
 
@@ -87,6 +87,8 @@ class Notification:
                                                                      document_type="pdf", notification_type='order_upload',
                                                                      file_name=aws_file_name)
                 file_link = AWS('s3').upload_file_from_base64(base64_string=base64_encoded, path=upload_file_path)
+                # Deleting the PDF file
+                OSOps.deletefile(pdf_path)
                 # Updating po_url in purchase_orders table
                 PO(details['po_id']).update_po_url(file_link)
                 suser = SUser(supplier_id=supplier_details['supplier_id'])

@@ -53,7 +53,7 @@ class PO:
                                         supplier_address, supplier_pincode, supplier_country, delivery_address, delivery_pincode, 
                                         delivery_country, payment_terms, freight_included, prepared_by, approved_by, created_at) 
                                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                                        %s, %s, %s, %s)""",
+                                        %s, %s, %s, %s, %s)""",
                                   (values['po_no'], values['buyer_id'], values['supplier_id'],
                                    values['acquisition_id'], values['acquisition_type'], values['order_date'], values['unit_currency'],
                                    values['total_amount'], values['total_gst'], values['notes'], values['tnc'],
