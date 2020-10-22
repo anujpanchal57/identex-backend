@@ -24,7 +24,7 @@ class Notification:
     def send_notification(self, **kwargs):
         try:
             if self.__checkpoint.lower() == "order_created":
-                with open(self.__file, 'r',encoding="utf-8") as order:
+                with open(self.__file, 'r', encoding="utf-8") as order:
                     content = order.read()
                     soup = BeautifulSoup(content)
 
@@ -46,7 +46,7 @@ class Notification:
                 # Supplier field details
                 params['SUPPLIER_COMPANY'] = supplier_details['company_name']
                 params['SUPPLIER_GST_NUMBER'] = supplier_details['gst_no']
-                params['SUPPLIER_BUSINESS_ADDRESS'] = supplier_details['gst_no']
+                params['SUPPLIER_BUSINESS_ADDRESS'] = supplier_details['business_address']
                 params['SUPPLIER_PIN_CODE'] = supplier_details['pincode']
                 params['SUPPLIER_COUNTRY'] = supplier_details['country']
 
@@ -82,7 +82,6 @@ class Notification:
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
                 pprint('Here is order_created.pdf')
-                pprint(subprocess.check_output(['ls', '-l']))
                 pprint(subprocess.check_output(["xvfb-run", "-a", "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/234.pdf"]))
                 os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
                 print('324234234 234543 order_created.pdf')
