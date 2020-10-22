@@ -138,7 +138,9 @@ class Notification:
             return True
 
         except Exception as e:
+            pprint('in error')
             log = Logger(module_name="Notifications", function_name="send_notification()")
+            pprint(traceback.format_exc())
             log.log(traceback.format_exc())
             return response.errorResponse("Some error occurred please try again!")
 
