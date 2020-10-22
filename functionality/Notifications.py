@@ -6,8 +6,6 @@ from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
 from database.BuyerUserOps import BUser
-# from bs4 import BeautifulSoup
-# import bs4
 from weasyprint import HTML
 from database.SupplierUserOps import SUser
 from functionality import GenericOps, OSOps, EmailNotifications, response
@@ -38,7 +36,7 @@ class Notification:
                 params['BUYER_COMPANY'] = buyer_details['company_name']
                 params['BUYER_GST_NUMBER'] = buyer_details['gst_no']
                 params['BUYER_COMPANY_ADDRESS'], params['BUYER_PIN_CODE'], params['BUYER_COUNTRY'] = buyer_details['business_address'], buyer_details['pincode'], buyer_details['country']
-                params['LOGO'] = buyer.get_company_logo()
+                params['LOGO'] = "https://uploads-idntx.s3.ap-south-1.amazonaws.com/B1002/download+(1).png"
                 params['PO_NUMBER'] = details['po_no']
                 params['ORDER_DATE'] = details['order_date']
 
@@ -69,11 +67,6 @@ class Notification:
 
                 for key, val in array_params.items():
                     content = content.replace("{{{" + str(key) + "}}}", str(val))
-                # for key, val in params.items():
-                #     soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
-                #
-                # for key, val in array_params.items():
-                #     soup = bs4.BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
 
                 if not OSOps.path_exists(conf.upload_documentation):
                     OSOps.create_directory(conf.upload_documentation)
@@ -83,15 +76,11 @@ class Notification:
                 complete_path = conf.upload_documentation
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
-                pprint('Here is order_created.pdf')
                 HTML(temp_file_path).write_pdf(complete_path + po_no + "_order_created.pdf")
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
-                pprint('DELETED TEMP FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 pdf_path = complete_path + po_no + "_order_created.pdf"
-                pprint('PDF PATH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 aws_file_name = po_no + "_order_created"
-                pprint('AWS FILE NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 data = open(pdf_path, 'rb').read()
                 base64_encoded = base64.b64encode(data).decode('UTF-8')
                 upload_file_path = GenericOps.generate_aws_file_path(client_type="buyer", client_id=buyer_details['buyer_id'],
@@ -112,7 +101,6 @@ class Notification:
 
                 subject = conf.email_endpoints['buyer'][self.__checkpoint]['subject'].replace("{{po_number}}",details['po_no']).replace("{{buyer_company_name}}", buyer.get_company_name())
                 link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
-                pprint(file_link)
                 documents = [{"document_name": aws_file_name + ".pdf", "document_url": file_link}]
                 EmailNotifications.send_handlebars_email(
                     template=conf.email_endpoints['buyer'][self.__checkpoint]['template_id'],
@@ -130,12 +118,9 @@ class Notification:
                     PRODUCTS=products,
                     documents=documents
                 )
-
             return True
 
         except Exception as e:
-            pprint('in error')
             log = Logger(module_name="Notifications", function_name="send_notification()")
-            pprint(traceback.format_exc())
             log.log(traceback.format_exc())
             return response.errorResponse("Some error occurred please try again!")
