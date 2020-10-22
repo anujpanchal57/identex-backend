@@ -2710,8 +2710,9 @@ def buyer_create_po():
 
         # Sending the notifications
         notif = Notification(checkpoint="order_created", file=conf.po_created_pdf_file)
-        p = Process(target=notif.send_notification, kwargs={"details": po_details})
-        p.start()
+        notif.send_notification(details=po_details)
+        # p = Process(target=notif.send_notification, kwargs={"details": po_details})
+        # p.start()
         return response.customResponse({"response": "PO created and sent to supplier successfully"})
 
     except exceptions.IncompleteRequestException as e:
