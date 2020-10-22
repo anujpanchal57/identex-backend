@@ -8,7 +8,7 @@ from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
 from database.BuyerUserOps import BUser
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 from weasyprint import HTML
 from database.SupplierUserOps import SUser
 from functionality import GenericOps, OSOps, EmailNotifications, response
@@ -27,7 +27,7 @@ class Notification:
             if self.__checkpoint.lower() == "order_created":
                 with open(self.__file, 'r', encoding="utf-8") as order:
                     content = order.read()
-                    soup = BeautifulSoup(content)
+                    #soup = BeautifulSoup(content)
 
                 params = {}
                 array_params = {}
@@ -66,17 +66,17 @@ class Notification:
                 params['SUB_TOTAL'] = details['unit_currency'].upper() + " " + str(sub_total)
                 params['TOTAL_GST'] = details['unit_currency'].upper() + " " + str(total_gst)
                 params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
-                for key, val in params.items():
-                    soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
+                #for key, val in params.items():
+                    #soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
 
-                for key, val in array_params.items():
-                    soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
+                #for key, val in array_params.items():
+                    #soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
 
                 if not OSOps.path_exists(conf.upload_documentation):
                     OSOps.create_directory(conf.upload_documentation)
                 temp_file_path = conf.upload_documentation + str(uuid.uuid4()) + ".html"
                 temp_file = open(temp_file_path, 'w', encoding='utf-8')
-                temp_file.write(str(soup))
+                #temp_file.write(str(soup))
                 # folder_name = str(uuid.uuid4())
                 complete_path = conf.upload_documentation
                 pprint(complete_path)
