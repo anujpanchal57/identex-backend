@@ -8,7 +8,8 @@ from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
 from database.BuyerUserOps import BUser
-#from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
+import bs4
 from weasyprint import HTML
 from database.SupplierUserOps import SUser
 from functionality import GenericOps, OSOps, EmailNotifications, response
@@ -27,7 +28,7 @@ class Notification:
             if self.__checkpoint.lower() == "order_created":
                 with open(self.__file, 'r', encoding="utf-8") as order:
                     content = order.read()
-                    #soup = BeautifulSoup(content)
+                    soup = bs4.BeautifulSoup(content, 'html.parser')
 
                 params = {}
                 array_params = {}
@@ -66,18 +67,17 @@ class Notification:
                 params['SUB_TOTAL'] = details['unit_currency'].upper() + " " + str(sub_total)
                 params['TOTAL_GST'] = details['unit_currency'].upper() + " " + str(total_gst)
                 params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
-                #for key, val in params.items():
-                    #soup = BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
+                for key, val in params.items():
+                    soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
 
-                #for key, val in array_params.items():
-                    #soup = BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
+                for key, val in array_params.items():
+                    soup = bs4.BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
 
                 if not OSOps.path_exists(conf.upload_documentation):
                     OSOps.create_directory(conf.upload_documentation)
                 temp_file_path = conf.upload_documentation + str(uuid.uuid4()) + ".html"
                 temp_file = open(temp_file_path, 'w', encoding='utf-8')
-                #temp_file.write(str(soup))
-                # folder_name = str(uuid.uuid4())
+                temp_file.write(str(soup))
                 complete_path = conf.upload_documentation
                 pprint(complete_path)
                 if not OSOps.path_exists(complete_path):
@@ -85,16 +85,16 @@ class Notification:
                 pprint('Here is order_created.pdf')
                 # pprint(subprocess.check_output(['ls', '-l']))
                 # pprint(subprocess.check_output(["xvfb-run", "-a", '--server-args="-screen 0 1024x768x24"', "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/sample_234.pdf"]))
-                HTML('/opt/backend/27bbc45c-143e-4f3a-8e1f-b348bb3e87db.html').write_pdf('/opt/backend/weasyprint-website.pdf')
-                pprint('Ran!!!!!!!!!!!!!!')
-                # os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
-                pprint('Ran2!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                print('324234234 234543 order_created.pdf')
-                pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                # HTML('/opt/backend/27bbc45c-143e-4f3a-8e1f-b348bb3e87db.html').write_pdf('/opt/backend/weasyprint-website.pdf')
+                # pprint('Ran!!!!!!!!!!!!!!')
+                os.system('xvfb-run -a --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + po_no + "_order_created.pdf")
+                # pprint('Ran2!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                # print('324234234 234543 order_created.pdf')
+                # pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
                 pprint('DELETED TEMP FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                pdf_path = complete_path + "/" + po_no + "_order_created.pdf"
+                pdf_path = complete_path + po_no + "_order_created.pdf"
                 pprint('PDF PATH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 aws_file_name = po_no + "_order_created"
                 pprint('AWS FILE NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -146,3 +146,56 @@ class Notification:
             log.log(traceback.format_exc())
             return response.errorResponse("Some error occurred please try again!")
 
+details = {
+    "po_no": "1000/20-21/Bhavani",
+    "unit_currency": "inr",
+    "order_date": "20-10-2020",
+    "acquisition_id": 1000,
+    "acquisition_type": "rfq",
+    "buyer_details": {
+        "buyer_id": 1000,
+        "company_name": "Bhavani Fabricators",
+        "gst_no": "27AKFPP0597A1Z8",
+        "business_address": "Wagle Estate",
+        "city": "",
+        "pincode": "400610",
+        "country": "India"
+    },
+    "supplier_details": {
+        "supplier_id": 1000,
+        "company_name": "ABC pvt ltd",
+        "gst_no": "27AKFPP0597A1Z8",
+        "business_address": "Wagle Estate",
+        "city": "",
+        "pincode": "400610",
+        "country": "India"
+    },
+    "delivery_address": {
+        "company_name": "ABC pvt ltd",
+        "company_address": "Wagle Estate",
+        "pincode": "400610",
+        "country": "India"
+    },
+    "line_items": [{
+        "quote_id": 1001,
+        "product_id": 1001,
+        "product_name": "copper ball bearings",
+        "product_description": "Should be made of copper",
+        "quantity": 3,
+        "delivery_date": 1603197932,
+        "gst": 18,
+        "per_unit": 14000,
+        "unit": "nos",
+        "amount": 20000
+    }],
+    "total_amount": 20000,
+    "lot_name": "Sample tests",
+    "total_gst": 14000,
+    "tnc": "sample tnc",
+    "payment_terms": "abc",
+    "freight_included": "yes/no",
+    "prepared_by": "anuj.panchal@exportify.in",
+    "approved_by": "anuj.panchal@exportify.in"
+}
+
+pprint(Notification("order_created", conf.po_created_pdf_file).send_notification(details=details))
