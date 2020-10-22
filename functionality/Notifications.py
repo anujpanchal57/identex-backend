@@ -82,8 +82,8 @@ class Notification:
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
                 pprint('Here is order_created.pdf')
-                pprint(subprocess.check_output(['ls', '-l']))
-                pprint(subprocess.check_output(["xvfb-run", "-a", "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/234.pdf"]))
+                #pprint(subprocess.check_output(['ls', '-l']))
+                pprint(subprocess.check_output(["wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/234.pdf"]))
                 os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
                 print('324234234 234543 order_created.pdf')
                 pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
