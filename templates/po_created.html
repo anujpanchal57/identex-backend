@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
@@ -73,9 +73,30 @@
       overflow: auto;
     }
 
+    table {
+      border-collapse: collapse;
+    }
+
     .vendor_table,
     .item_table {
       width: 100%;
+    }
+
+    .credit_table {
+      width: 100%;
+      border: 2px solid #000;
+    }
+
+    .credit_table_header {
+      width: 40%;
+      border-right: 2px solid #000;
+      background-color: #d6d600;
+      padding: 0 4px;
+    }
+
+    .credit_table_data {
+      background-color: bisque;
+      padding: 0 4px;
     }
 
     .item_table_head_row {
@@ -150,12 +171,20 @@
       display: flex;
     }
 
+    .col-lg-5,
+    .col-md-5 {
+      width: 42%;
+    }
 
     .col-lg-6,
     .col-md-6 {
       width: 50%;
     }
 
+    .col-lg-7,
+    .col-md-7 {
+      width: 58%;
+    }
 
     @media only screen and (max-width: 768px) {
       .col-12 {
@@ -170,49 +199,53 @@
     <div class="row">
       <div class="col-lg-6 col-md-6 col-12">
         <div class="input_container">
-          <div class="form_card__input-l" type="text">{{BUYER_COMPANY}}
+          <div type="text" class="form_card__input-l">{{BUYER_COMPANY}}
           </div>
         </div>
         <div class="input_container">
-          <div class="form_card__input-s" style="color:#483737;" type="text">
+          <div type="text" class="form_card__input-s" style="color:#483737;">
             {{BUYER_GST_NUMBER}}</div>
         </div>
+
         <div class="input_container">
-          <div class="form_card__input-s" style="color:#483737;" type="text">{{BUYER_COMPANY_ADDRESS}}</div>
+          <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_COMPANY_ADDRESS}}</div>
         </div>
         <div class="input_container">
-          <div class="form_card__input-s" style="color:#483737;" type="text">{{BUYER_PIN_CODE}}</div>
+          <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_PIN_CODE}}</div>
         </div>
         <div class="input_container">
-          <div class="form_card__input-s" style="color:#483737;" type="text">{{BUYER_COUNTRY}}</div>
+          <div type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_COUNTRY}}</div>
         </div>
       </div>
       <div class="col-lg-6 col-md-6 col-12">
         <div class="form_card_header">
           <div class="form_card_header_input" style="text-align: right;">PURCHASE ORDER</div>
         </div>
-        <img src="{{LOGO}}" style="width: 100px;margin-left: auto;margin-right: 0;display: block;margin-top: 10px;" />
+        <img src="{{LOGO}}" style="width: 100px;margin-left: auto;margin-right: 0;display: block;margin-top: 10px;">
       </div>
     </div>
+
     <div style="margin-top: 20px;">
       <div class="row">
         <div class="col-lg-6 col-md-6 col-12">
+
           <div class="input_container">
-            <div class="form_card__input-l" type="text">
+            <div type="text" class="form_card__input-l">
               {{SUPPLIER_COMPANY}}</div>
           </div>
           <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">
+            <div type="text" class="form_card__input-s" style="color:#483737;">
               {{SUPPLIER_GST_NUMBER}}</div>
           </div>
+
           <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">{{SUPPLIER_BUSINESS_ADDRESS}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{SUPPLIER_BUSINESS_ADDRESS}}</div>
           </div>
           <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">{{SUPPLIER_PIN_CODE}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{SUPPLIER_PIN_CODE}}</div>
           </div>
           <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">{{SUPPLIER_COUNTRY}}</div>
+            <div type="text" class="form_card__input-s" style="color:#483737;">{{SUPPLIER_COUNTRY}}</div>
           </div>
         </div>
         <div class="col-lg-6 col-md-6 col-12">
@@ -225,10 +258,12 @@
                   </div>
                 </td>
                 <td style="width: 30%;">
-                  <div class="input_container">
+                  <div class="input_container" style="font-size: 13px;">
                     {{PO_NUMBER}}
+
                   </div>
                 </td>
+
               </tr>
               <tr>
                 <td style="width:30%">
@@ -237,16 +272,18 @@
                   </div>
                 </td>
                 <td>
-                  <div class="input_container">
+                  <div class="input_container" style="font-size: 13px;">
                     {{ORDER_DATE}}
                   </div>
                 </td>
               </tr>
+
             </tbody>
           </table>
         </div>
       </div>
     </div>
+
     <div class="table_container" style="margin-top: 30px;">
       <table class="item_table">
         <thead>
@@ -269,51 +306,56 @@
             <td class="item_table_data">
               <div class="form_card_header_input-transparent bld text_l">Per</div>
             </td>
-            <td class="item_table_data" style="width: 15%">
+            <td class="item_table_data" style="width: 15%;">
               <div class="form_card_header_input-transparent bld text_l">Unit Rate</div>
             </td>
-            <td class="item_table_data" style="width: 15%">
+            <td class="item_table_data" style="width: 15%;">
               <div class="form_card_header_input-transparent bld text_l">Amount</div>
             </td>
           </tr>
         </thead>
-        <tbody formarrayname="line_items">
+        <tbody formArrayName="line_items">
           {{{PRODUCTS_INFO}}}
-          <!-- <tr class="item_table_data_row">
-            <td class="item_table_data border_bottom" style="width: 25%;">
-              <div class="form_card__input-s" type="text">copper ball bearings (Should be made of copper)</div>
+          <!-- <tr class='item_table_data_row'>
+            <td class='item_table_data border_bottom' style='width: 25%;'>
+              <div type='text' class='form_card__input-s'>{{PRODUCT_DESCRIPTION}}</div>
             </td>
-            <td class="item_table_data text_l border_bottom">
-              <div class="form_card__input-s text_l" type="date">20-10-2020</div>
+            <td class='item_table_data text_l border_bottom'>
+              <div type='date'class='form_card__input-s text_l'>
+                {{DELIVERY_DATE}}</div>
             </td>
-            <td class="item_table_data text_l border_bottom">
-              <div class="form_card__input-s text_l" type="number">18</div>
+            <td class='item_table_data text_l border_bottom'>
+              <div type='number' class='form_card__input-s text_l'>{{GSTN}}</div>
             </td>
-            <td class="item_table_data border_bottom text_l">
-              <div class="form_card__input-s text_l" type="number">3</div>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'>{{QUANTITY}}</div>
             </td>
-            <td class="item_table_data border_bottom text_l">
-              <div class="form_card__input-s text_l" type="number">nos</div>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'> {{UNIT}}</div>
             </td>
-            <td class="item_table_data border_bottom text_l">
-              <div class="form_card__input-s text_l" type="number">INR 14000</div>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'>{{UNIT_RATE}}</div>
             </td>
-            <td class="item_table_data border_bottom text_l">
-              <div class="form_card__input-s text_l" type="number">INR 20000</div>
+            <td class='item_table_data border_bottom text_l'>
+              <div type='number' class='form_card__input-s text_l'>{{AMOUNT}}</div>
             </td>
+        
           </tr> -->
           <tr>
             <td class="item_table_data">
+
             </td>
             <td></td>
+
             <td></td>
+
             <td colspan="4">
               <table style="width: 100%">
                 <tbody>
                   <tr>
                     <td class="item_table_data">
                       <div class="text_l">
-                        <div class="form_card__input-s" style="font-size: inherit;">Sub Total</div>
+                        <div style="font-size: inherit;" class="form_card__input-s">Sub Total</div>
                       </div>
                     </td>
                     <td class="item_table_data">
@@ -325,7 +367,7 @@
                   <tr>
                     <td class="item_table_data">
                       <div class="text_l">
-                        <div class="form_card__input-s" style="font-size: inherit;">Tax</div>
+                        <div style="font-size: inherit;" class="form_card__input-s">Tax</div>
                       </div>
                     </td>
                     <td class="item_table_data">
@@ -337,7 +379,7 @@
                   <tr class="total_value">
                     <td class="item_table_data">
                       <div class="text_l">
-                        <div class="form_card_header_input-transparent-dark" style="font-size: inherit;">
+                        <div style="font-size: inherit;" class="form_card_header_input-transparent-dark">
                           TOTAL</div>
                       </div>
                     </td>
@@ -355,66 +397,74 @@
         </tbody>
       </table>
     </div>
+
     <div style="margin-top: 50px;">
       <div class="row">
-        <div class="col-lg-6 col-md-6 col-12">
-          <table class="vendor_table">
+        <div class="col-lg-12 col-md-12 col-12">
+          <div class="input_container">
+            <div class="form_card__label-s bld dark" style="font-size: 15px;">Delivery At:</div>
+          </div>
+
+
+          <span type="text" class="form_card__input-s">
+            {{BUYER_COMPANY}},
+          </span>
+
+          <span type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_DELIVERY_ADDRESS}}, </span>
+
+          <span type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_DELIVERY_PIN_CODE}}, </span>
+
+          <span type="text" class="form_card__input-s" style="color:#483737;">{{BUYER_DELIVERY_COUNTRY}}</span>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 24px;">
+        <div class="col-lg-7 col-md-7 col-12">
+          <div class="input_container">
+            <div class="form_card__input-s bld" style="font-size: 15px;">Terms & Conditions</div>
+          </div >
+          <div class="form_card__input-s">
+          {{TERMS_CONDITIONS}}</div>
+        </div>
+        <div class="col-lg-5 col-md-5 col-12">
+          <table class="credit_table">
             <tbody>
-              <tr>
-                <td>
+              <tr style="border-bottom: 2px solid #000;">
+                <td class="credit_table_header">
                   <div class="input_container">
-                    <div class="form_card__label-s bld dark">Credit Terms</div>
+                    <div class="form_card__label-s bld dark" style="font-size: 15px;">Credit Terms</div>
                   </div>
                 </td>
-                <td>
+                <td class="credit_table_data">
                   <div class="input_container">
                     {{CREDIT_TERMS}}
                   </div>
                 </td>
               </tr>
               <tr>
-                <td>
+                <td class="credit_table_header">
                   <div class="input_container">
-                    <div class="form_card__label-s bld dark">Freight</div>
+                    <div class="form_card__label-s bld dark" style="font-size: 15px;">Freight</div>
                   </div>
                 </td>
-                <td>
+                <td class="credit_table_data">
                   <div class="input_container">
                     {{FREIGHT_INCLUDED}}
                   </div>
                 </td>
               </tr>
+
             </tbody>
           </table>
-          <div class="input_container">
-            <div class="form_card__input-s bld">Terms &amp; Conditions</div>
-          </div>
-          <div>
-            {{TERMS_CONDITIONS}}
-          </div>
-        </div>
-        <div class="col-lg-6 col-md-6 col-12">
-          <div class="input_container">
-            <div class="form_card__label-s bld dark">Delivery At:</div>
-          </div>
-          <div class="input_container">
-            <div class="form_card__input-l" type="text">
-              {{BUYER_COMPANY}}</div>
-          </div>
-          <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">{{BUYER_DELIVERY_ADDRESS}}</div>
-          </div>
-          <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">{{BUYER_DELIVERY_PIN_CODE}}</div>
-          </div>
-          <div class="input_container">
-            <div class="form_card__input-s" style="color:#483737;" type="text">{{BUYER_DELIVERY_COUNTRY}}</div>
-          </div>
         </div>
       </div>
+
     </div>
+
+
+
     <div style="margin-top: 20px;">
       <div class="row">
+
         <div class="col-lg-6 col-md-6 col-12">
           <table class="vendor_table">
             <tbody>
@@ -426,6 +476,7 @@
                     </div>
                   </div>
                 </td>
+
               </tr>
               <tr>
                 <td>
@@ -433,15 +484,20 @@
                     <div class="form_card__label-s bld dark">Approved By: {{APPROVED_BY}}</div>
                   </div>
                 </td>
+
               </tr>
+
             </tbody>
           </table>
         </div>
-        <div class="col-lg-6 col-md-6 col-12" style="display: flex;align-items: center;">
+
+        <div class="col-lg-6 col-md-6 col-12" style="display: flex;align-items: center; justify-content: flex-end">
           <div class="form_card__label-s bld dark" style="font-size: 16px;">
             For {{BUYER_COMPANY}}
           </div>
         </div>
+
+
       </div>
     </div>
   </form>
