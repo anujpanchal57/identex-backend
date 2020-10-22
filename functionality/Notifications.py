@@ -83,7 +83,7 @@ class Notification:
                     OSOps.create_directory(complete_path)
                 pprint('Here is order_created.pdf')
                 # pprint(subprocess.check_output(['ls', '-l']))
-                pprint(subprocess.check_output(["xvfb-run", "-a", "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/sample_234.pdf"]))
+                pprint(subprocess.check_output(["xvfb-run", "-a", '--server-args="-screen 0 1024x768x24"', "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/sample_234.pdf"]))
                 pprint('Ran!!!!!!!!!!!!!!')
                 os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
                 pprint('Ran2!!!!!!!!!!!!!!!!!!!!!!!!!!')
