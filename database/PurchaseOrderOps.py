@@ -40,6 +40,7 @@ class PO:
         self.__po['delivery_country'] = delivery_details['country'] if 'country' in delivery_details else ''
         self.__po['payment_terms'], self.__po['freight_included'] = payment_terms, freight_included
         self.__po['prepared_by'], self.__po['approved_by'] = prepared_by, approved_by
+        self.__po['created_at'] = GenericOps.get_current_timestamp()
         self.__po['po_id'] = self.insert(self.__po)
         return self.__po['po_id']
 
@@ -50,7 +51,7 @@ class PO:
             self.__cursor.execute("""INSERT INTO purchase_orders (po_no, buyer_id, supplier_id, acquisition_id, acquisition_type, 
                                         order_date, unit_currency, total_amount, total_gst, notes, tnc, supplier_gst_no, 
                                         supplier_address, supplier_pincode, supplier_country, delivery_address, delivery_pincode, 
-                                        delivery_country, payment_terms, freight_included, prepared_by, approved_by) 
+                                        delivery_country, payment_terms, freight_included, prepared_by, approved_by, created_at) 
                                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
                                         %s, %s, %s, %s)""",
                                   (values['po_no'], values['buyer_id'], values['supplier_id'],
@@ -59,7 +60,7 @@ class PO:
                                    values['supplier_gst_no'], values['supplier_address'], values['supplier_pincode'],
                                    values['supplier_country'], values['delivery_address'], values['delivery_pincode'],
                                    values['delivery_country'], values['payment_terms'], values['freight_included'],
-                                   values['prepared_by'], values['approved_by']))
+                                   values['prepared_by'], values['approved_by'], values['created_at']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
@@ -123,6 +124,82 @@ class PO:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_total_gst_for_acquisition()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
+
+    def get_purchase_orders(self, client_id, client_type, request_type="active", start_limit=0, end_limit=5):
+        try:
+            if client_type.lower() == "buyer":
+                self.__cursor.execute("""select po.po_id, po.po_no, po.buyer_id, po.supplier_id, po.acquisition_id, po.acquisition_type, 
+                                        po.order_date, po.unit_currency, po.total_amount, po.total_gst, po.tnc, po.po_url, 
+                                        po.po_status, po.payment_status, po.delivery_status, s.company_name as supplier_company_name
+                                        from purchase_orders as po
+                                        join suppliers as s
+                                        on po.supplier_id = s.supplier_id
+                                        where po.buyer_id = %s and po.po_status = %s
+                                        order by po.created_at desc
+                                        limit %s, %s""", (client_id, request_type, start_limit, end_limit))
+                res = self.__cursor.fetchall()
+                if res is None:
+                    return []
+                return res
+            else:
+                self.__cursor.execute("""select po.po_id, po.po_no, po.buyer_id, po.supplier_id, po.acquisition_id, po.acquisition_type, 
+                                        po.order_date, po.unit_currency, po.total_amount, po.total_gst, po.tnc, po.po_url, 
+                                        po.po_status, po.payment_status, po.delivery_status, b.company_name as buyer_company_name
+                                        from purchase_orders as po
+                                        join buyers as b
+                                        on po.buyer_id = b.buyer_id
+                                        where po.supplier_id = %s and po.po_status = %s
+                                        order by po.created_at desc
+                                        limit %s, %s""", (client_id, request_type, start_limit, end_limit))
+                res = self.__cursor.fetchall()
+                if res is None:
+                    return []
+                return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_purchase_orders()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch purchase orders, please try again")
+        except Exception as e:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_purchase_orders()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to fetch purchase orders, please try again")
+
+    def get_buyer_purchase_orders_count(self, buyer_id, request_type="active"):
+        try:
+            self.__cursor.execute("""select count(*) as total_count from purchase_orders
+                                    where buyer_id = %s and po_status = %s""", (buyer_id, request_type))
+            res = self.__cursor.fetchone()
+            if res is None:
+                return 0
+            return res['total_count']
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_buyer_purchase_orders_count()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_buyer_purchase_orders_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
+
+    def get_supplier_purchase_orders_count(self, supplier_id, request_type="active"):
+        try:
+            self.__cursor.execute("""select count(*) as total_count from purchase_orders
+                                    where supplier_id = %s and po_status = %s""", (supplier_id, request_type))
+            res = self.__cursor.fetchone()
+            if res is None:
+                return 0
+            return res['total_count']
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_supplier_purchase_orders_count()')
+            log.log(str(error), priority='highest')
+            return 0
+        except Exception as e:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_supplier_purchase_orders_count()')
+            log.log(traceback.format_exc(), priority='highest')
+            return 0
 
     def update_po_url(self, file_link):
         self.__po['po_url'] = file_link

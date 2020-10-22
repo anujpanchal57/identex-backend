@@ -5,7 +5,7 @@ default_bteam_id = "All_Users"
 # 30 mins for requisition as well as auction
 deadline_change_time_factor = 30 * 60
 
-buyer_create_table = """CREATE TABLE `buyers` (
+buyer_create_table = """CREATE TABLE IF NOT EXISTS `buyers` (
                   `buyer_id` int(11) NOT NULL AUTO_INCREMENT,
                   `company_name` varchar(100) NOT NULL,
                   `auto_join` tinyint(1) NOT NULL,
@@ -41,7 +41,7 @@ supplier_create_table = """create table if not exists suppliers (
                 company_nature varchar(30) not null default ''
             ) ENGINE=InnoDB auto_increment=1000"""
 
-supplier_branches_create_table = """CREATE TABLE `supplier_branches` (
+supplier_branches_create_table = """CREATE TABLE IF NOT EXISTS `supplier_branches` (
               `branch_id` int(11) NOT NULL AUTO_INCREMENT,
               `supplier_id` int(11) NOT NULL,
               `city` varchar(50) NOT NULL DEFAULT '',
@@ -421,6 +421,7 @@ po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
                   `po_status` varchar(50) NOT NULL DEFAULT 'active',
                   `payment_status` varchar(50) NOT NULL DEFAULT 'unpaid',
                   `delivery_status` varchar(50) NOT NULL DEFAULT 'on_time',
+                  `created_at` int(11) NOT NULL DEFAULT '0',
                   PRIMARY KEY (`po_id`),
                   KEY `buyer_id` (`buyer_id`),
                   KEY `supplier_id` (`supplier_id`),

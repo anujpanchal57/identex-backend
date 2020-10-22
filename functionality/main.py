@@ -1632,11 +1632,6 @@ def send_message():
             suser = SUser(supplier_id=data['receiver_id'])
             subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
             link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower())
-            if type_of_request == "RFQ":
-                lot_name = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])['lot_name']
-            else:
-                reqn_product_id = Order(data['operation_id']).get_reqn_product_id()
-                lot_name = Product(reqn_product_id).get_product_details()['product_name']
             sender = buser.get_name() + " (" + buyer.get_company_name() + ")"
             p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [suser.get_email()],
                                                                               "template": conf.email_endpoints['supplier']['message_received']['template_id'],
@@ -1645,7 +1640,6 @@ def send_message():
                                                                               "USER": suser.get_first_name(),
                                                                               "TYPE_OF_REQUEST": type_of_request,
                                                                               "REQUEST_ID": str(data['operation_id']),
-                                                                              "LOT_NAME": lot_name,
                                                                               "SENDER": sender,
                                                                               "MESSAGE": data['message'],
                                                                               "documents": data['documents']})
@@ -1656,11 +1650,6 @@ def send_message():
             busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
             subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
             link = conf.ENV_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower()).replace("{{action_type}}", "quotes").replace("{{operation_id}}", str(data['operation_id']))
-            if type_of_request == "RFQ":
-                lot_name = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])['lot_name']
-            else:
-                reqn_product_id = Order(data['operation_id']).get_reqn_product_id()
-                lot_name = Product(reqn_product_id).get_product_details()['product_name']
             sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
             for user in busers:
                 p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [user['email']],
@@ -1670,7 +1659,6 @@ def send_message():
                                                                                   "USER": user['name'].split(" ")[0],
                                                                                   "TYPE_OF_REQUEST": type_of_request,
                                                                                   "REQUEST_ID": str(data['operation_id']),
-                                                                                  "LOT_NAME": lot_name,
                                                                                   "SENDER": sender,
                                                                                   "MESSAGE": data['message'],
                                                                                   "documents": data['documents']})
@@ -2341,20 +2329,21 @@ def buyer_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['limit']
-        orders = Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
-                                     request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)
+        order_obj = PO()
+        orders = order_obj.get_purchase_orders(client_id=data['buyer_id'], client_type="buyer",
+                                               request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)
+
+        # Populating sub-orders
         if len(orders) > 0:
+            sb_obj = SubOrder()
             for order in orders:
-                if order['grn_uploaded']:
-                    order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'],
-                                                                     operation_type="order")
+                order['sub_orders'] = sb_obj.get_sub_order_by_po_id(po_id=order['po_id'])
 
         # Fetching the orders count for different categories
-        join_obj = Join()
         count = {
-            "active": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="active"),
-            "delivered": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="delivered"),
-            "cancelled": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="cancelled")
+            "active": order_obj.get_buyer_purchase_orders_count(buyer_id=data['buyer_id'], request_type="active"),
+            "delivered": order_obj.get_buyer_purchase_orders_count(buyer_id=data['buyer_id'], request_type="delivered"),
+            "cancelled": order_obj.get_buyer_purchase_orders_count(buyer_id=data['buyer_id'], request_type="cancelled")
         }
         return response.customResponse({"orders": orders, "count": count})
 
@@ -2375,18 +2364,22 @@ def supplier_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['limit']
-        orders = Order().get_orders(client_id=data['supplier_id'], client_type="supplier", request_type=data['type'].lower(),
-                                    start_limit=start_limit, end_limit=end_limit)
-        for order in orders:
-            if order['grn_uploaded']:
-                order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'], operation_type="order")
+        order_obj = PO()
+        orders = order_obj.get_purchase_orders(client_id=data['supplier_id'], client_type="supplier",
+                                               request_type=data['type'].lower(), start_limit=start_limit,
+                                               end_limit=end_limit)
+
+        # Populating sub-orders
+        if len(orders) > 0:
+            sb_obj = SubOrder()
+            for order in orders:
+                order['sub_orders'] = sb_obj.get_sub_order_by_po_id(po_id=order['po_id'])
 
         # Fetching the orders count for different categories
-        join_obj = Join()
         count = {
-            "active": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="active"),
-            "delivered": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="delivered"),
-            "cancelled": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="cancelled")
+            "active": order_obj.get_supplier_purchase_orders_count(supplier_id=data['supplier_id'], request_type="active"),
+            "delivered": order_obj.get_supplier_purchase_orders_count(supplier_id=data['supplier_id'], request_type="delivered"),
+            "cancelled": order_obj.get_supplier_purchase_orders_count(supplier_id=data['supplier_id'], request_type="cancelled")
         }
         return response.customResponse({"orders": orders, "count": count})
 

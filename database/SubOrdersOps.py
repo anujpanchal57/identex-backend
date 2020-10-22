@@ -45,3 +45,27 @@ class SubOrder:
             log = Logger(module_name='SubOrderOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to add order line items, please try again')
+
+    def get_sub_order_by_po_id(self, po_id):
+        try:
+            self.__cursor.execute("""select sb.order_id, sb.po_id, sb.product_id, sb.payment_status, 
+                                    sb.order_status, sb.product_description, sb.quantity, sb.unit, sb.gst, 
+                                    sb.per_unit, sb.amount, sb.delivery_time, sb.qty_received, sb.delivery_status, 
+                                    sb.quantity - sb.qty_received as rem_quantity, pm.product_name
+                                    from sub_orders as sb
+                                    join product_master as pm
+                                    on sb.product_id = pm.product_id
+                                    where sb.po_id = %s""", (po_id, ))
+            res = self.__cursor.fetchall()
+            if res is None:
+                return []
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SubOrderOps', function_name='get_sub_order_by_po_id()')
+            log.log(str(error), priority='critical')
+            raise exceptions.IncompleteRequestException('Failed to fetch PO line items, please try again')
+        except Exception as e:
+            log = Logger(module_name='SubOrderOps', function_name='get_sub_order_by_po_id()')
+            log.log(traceback.format_exc(), priority='critical')
+            raise exceptions.IncompleteRequestException('Failed to fetch PO line items, please try again')
