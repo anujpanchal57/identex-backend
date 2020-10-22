@@ -4,12 +4,12 @@ import uuid
 import os
 import subprocess
 import pdfkit
-from weasyprint import HTML
 from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
 from database.BuyerUserOps import BUser
 from bs4 import BeautifulSoup
+from weasyprint import HTML
 from database.SupplierUserOps import SUser
 from functionality import GenericOps, OSOps, EmailNotifications, response
 from functionality.Logger import Logger
