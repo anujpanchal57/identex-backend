@@ -4,6 +4,7 @@ import uuid
 import os
 import subprocess
 import pdfkit
+from weasyprint import HTML
 from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
@@ -83,9 +84,10 @@ class Notification:
                     OSOps.create_directory(complete_path)
                 pprint('Here is order_created.pdf')
                 # pprint(subprocess.check_output(['ls', '-l']))
-                pprint(subprocess.check_output(["xvfb-run", "-a", '--server-args="-screen 0 1024x768x24"', "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/sample_234.pdf"]))
+                # pprint(subprocess.check_output(["xvfb-run", "-a", '--server-args="-screen 0 1024x768x24"', "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/sample_234.pdf"]))
+                HTML('/opt/backend/27bbc45c-143e-4f3a-8e1f-b348bb3e87db.html').write_pdf('/opt/backend/weasyprint-website.pdf')
                 pprint('Ran!!!!!!!!!!!!!!')
-                os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
+                # os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
                 pprint('Ran2!!!!!!!!!!!!!!!!!!!!!!!!!!')
                 print('324234234 234543 order_created.pdf')
                 pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
