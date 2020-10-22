@@ -2,14 +2,12 @@ import base64
 import traceback
 import uuid
 import os
-import subprocess
-import pdfkit
 from pprint import pprint
 from database.BuyerOps import Buyer
 from database.SupplierOps import Supplier
 from database.BuyerUserOps import BUser
 # from bs4 import BeautifulSoup
-import bs4
+# import bs4
 from weasyprint import HTML
 from database.SupplierUserOps import SUser
 from functionality import GenericOps, OSOps, EmailNotifications, response
@@ -28,7 +26,6 @@ class Notification:
             if self.__checkpoint.lower() == "order_created":
                 with open(self.__file, 'r', encoding="utf-8") as order:
                     content = order.read()
-                    soup = bs4.BeautifulSoup(content, 'html.parser')
 
                 params = {}
                 array_params = {}
@@ -68,29 +65,26 @@ class Notification:
                 params['TOTAL_GST'] = details['unit_currency'].upper() + " " + str(total_gst)
                 params['GRAND_TOTAL'] = details['unit_currency'].upper() + " " + str(grand_total)
                 for key, val in params.items():
-                    soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
+                    content = content.replace("{{" + str(key) +  "}}", str(val))
 
                 for key, val in array_params.items():
-                    soup = bs4.BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
+                    content = content.replace("{{{" + str(key) + "}}}", str(val))
+                # for key, val in params.items():
+                #     soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key) + "}}", str(val)))
+                #
+                # for key, val in array_params.items():
+                #     soup = bs4.BeautifulSoup(str(soup).replace("{{{" + str(key) + "}}}", str(val)))
 
                 if not OSOps.path_exists(conf.upload_documentation):
                     OSOps.create_directory(conf.upload_documentation)
                 temp_file_path = conf.upload_documentation + str(uuid.uuid4()) + ".html"
                 temp_file = open(temp_file_path, 'w', encoding='utf-8')
-                temp_file.write(str(soup))
+                temp_file.write(content)
                 complete_path = conf.upload_documentation
-                pprint(complete_path)
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
                 pprint('Here is order_created.pdf')
-                # pprint(subprocess.check_output(['ls', '-l']))
-                # pprint(subprocess.check_output(["xvfb-run", "-a", '--server-args="-screen 0 1024x768x24"', "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/sample_234.pdf"]))
-                # HTML('/opt/backend/27bbc45c-143e-4f3a-8e1f-b348bb3e87db.html').write_pdf('/opt/backend/weasyprint-website.pdf')
-                # pprint('Ran!!!!!!!!!!!!!!')
-                os.system('xvfb-run -a --server-args="-screen 0 1024x768x24" wkhtmltopdf ' + temp_file_path + ' ' + complete_path + po_no + "_order_created.pdf")
-                # pprint('Ran2!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                # print('324234234 234543 order_created.pdf')
-                # pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                HTML(temp_file_path).write_pdf(complete_path + po_no + "_order_created.pdf")
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
                 pprint('DELETED TEMP FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
