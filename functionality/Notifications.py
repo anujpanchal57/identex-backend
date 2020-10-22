@@ -2,6 +2,7 @@ import base64
 import traceback
 import uuid
 import os
+import subprocess
 import pdfkit
 from pprint import pprint
 from database.BuyerOps import Buyer
@@ -14,7 +15,6 @@ from functionality.Logger import Logger
 from utility import conf
 from Integrations.AWSOps import AWS
 from database.PurchaseOrderOps import PO
-
 
 class Notification:
     def __init__(self, checkpoint, file=''):
@@ -82,6 +82,7 @@ class Notification:
                 if not OSOps.path_exists(complete_path):
                     OSOps.create_directory(complete_path)
                 pprint('Here is order_created.pdf')
+                pprint(subprocess.check_output(["xvfb-run", "-a", "wkhtmltopdf", "/opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html", "/opt/backend/234.pdf"]))
                 os.system('xvfb-run -a wkhtmltopdf /opt/backend/5e9e59e2-7dc3-4ea5-875d-c8ffe146f29d.html /opt/backend/234.pdf')
                 print('324234234 234543 order_created.pdf')
                 pprint('completed PDF MAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
