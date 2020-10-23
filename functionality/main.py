@@ -2088,7 +2088,9 @@ def buyer_products_search():
     try:
         data = request.json
         if data['product_str'] == "":
-            return response.customResponse({"products": []})
+            return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower(),
+                                                                                        buyer_id=data['buyer_id'],
+                                                                                        start_limit=0, end_limit=10)})
         return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower(),
                                                                                     buyer_id=data['buyer_id'])})
 
@@ -2496,6 +2498,18 @@ def po_metadata_get():
 
     except Exception as e:
         log = Logger(module_name="/po/metadata/get", function_name="po_metadata_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to record deliveries of products
+@app.route("/po/product-delivery/update", methods=['POST'])
+@validate_buyer_access_token
+def po_product_delivery_update():
+    try:
+        pass
+
+    except Exception as e:
+        log = Logger(module_name="/po/product-delivery/update", function_name="po_product_delivery_update()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
