@@ -2465,11 +2465,11 @@ def po_supplier_quotes_get():
         result = []
         suppliers = Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])
         quote_obj = Quote()
-        # supplier_branches, supplier_gst = SupplierBranches(), SupplierGSTDetails()
+        supplier_branches, supplier_gst = SupplierBranches(), SupplierGSTDetails()
         for supp in suppliers:
             supp['quotes'] = quote_obj.get_supplier_quotes_for_po(requisition_id=data['requisition_id'], supplier_id=supp['supplier_id'])
-            # supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
-            # supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
+            supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
+            supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
             if len(supp['quotes']) > 0:
                 for quote in supp['quotes']:
                     quote['delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
