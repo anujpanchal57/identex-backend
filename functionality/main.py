@@ -2234,91 +2234,6 @@ def buyer_product_sub_categories_get():
 
 ########################################### ORDERS SECTION ############################################################
 
-# POST request for adding orders
-@app.route("/buyer/order/create", methods=['POST'])
-@validate_buyer_access_token
-def buyer_order_create():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        details = data['details']
-        if details['acquisition_type'].lower() == "rfq":
-            requisition = Requisition(details['acquisition_id'])
-            lot = Lot().get_lot_for_requisition(requisition_id=details['acquisition_id'])
-            # If no lot is found
-            if len(lot) == 0:
-                return response.errorResponse("No lot found against this RFQ")
-            products = Product().get_lot_products(lot_id=lot['lot_id'])
-
-            # Calculate the amount saved
-            highest_quote = Quote().get_highest_quote_for_product(requisition_id=details['acquisition_id'], buyer_id=data['buyer_id'],
-                                                                  charge_id=details['reqn_product_id'])
-            quote_amount = Quote(details['quote_id']).get_amount()
-            details['saved_amount'] = highest_quote - quote_amount
-
-            if len(products) > 0:
-                approved_counter = 0
-                # Iterate over the products
-                for i in range(0, len(products)):
-                    # Check whether the product is confirmed or not
-                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
-                    if product_confirmed:
-                        approved_counter += 1
-
-                # Create an order for the product if not
-                order_created = Order().add_order(buyer_id=data['buyer_id'], supplier_id=details['supplier_id'],
-                                                  po_no=details['po_no'],
-                                                  acquisition_id=details['acquisition_id'],
-                                                  acquisition_type=details['acquisition_type'],
-                                                  quote_id=details['quote_id'],
-                                                  reqn_product_id=details['reqn_product_id'],
-                                                  remarks=details['remarks'],
-                                                  saved_amount=details['saved_amount'])
-                # Mark the particular quote as confirmed
-                if order_created:
-                    Quote(details['quote_id']).set_confirmed(True)
-                    approved_counter += 1
-                # If all the products are ordered then set the requisition status as approved
-                if approved_counter == len(products):
-                    requisition.set_request_type(request_type="approved")
-                    requisition.drop_sql_event()
-                # Email to supplier
-                pprint(order_created)
-                order_obj = Order(order_created)
-                suser = SUser(supplier_id=details['supplier_id'])
-                buyer = Buyer(data['buyer_id'])
-                product = order_obj.get_order_product_details()
-                lot_name = order_obj.get_order_lot()
-                po_number = order_obj.get_po_no()
-                po_no_toggle = "block" if po_number != "" else "none"
-                link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
-                # Framing the subject of email
-                if po_number != "":
-                    subject = "Order confirmed for " + product['product_name'] + " with PO Number: " + po_number + " by " + buyer.get_company_name()
-                else:
-                    subject = "Order confirmed for " + product['product_name'] + " by " + buyer.get_company_name()
-                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
-                                                                                  "subject": subject,
-                                                                                  "template": conf.email_endpoints['buyer']['order_created']['template_id'],
-                                                                                  "USER": suser.get_first_name(),
-                                                                                  "PO_NUMBER_DISPLAY": po_no_toggle,
-                                                                                  "PO_NUMBER": po_number,
-                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
-                                                                                  "OPERATION": details['acquisition_type'].upper(),
-                                                                                  "OPERATION_ID": str(details['acquisition_id']),
-                                                                                  "LOT_NAME": lot_name,
-                                                                                  "LINK": link})
-                p.start()
-                return response.customResponse({"response": "Order created successfully"})
-            return response.errorResponse("No products found in this lot")
-        return response.errorResponse("Invalid acquisition type")
-
-    except exceptions.IncompleteRequestException as e:
-        return response.errorResponse(e.error)
-    except Exception as e:
-        log = Logger(module_name="/buyer/order/create", function_name="buyer_order_create()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
 # POST request for listing orders for buyer
 @app.route("/buyer/orders/get", methods=['POST'])
 @validate_buyer_access_token
@@ -2431,7 +2346,7 @@ def buyer_order_cancel():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for uploading GRN against an order
+# POST request for uploading GRN against an order (Not being used as of now)
 @app.route("/buyer/order/grn/upload", methods=['POST'])
 @validate_buyer_access_token
 def buyer_order_grn_upload():
@@ -2494,7 +2409,7 @@ def buyer_order_grn_upload():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for updating payment status of an order
+# POST request for updating payment status of an order (Not being used as of now)
 @app.route("/buyer/order/payment-status/update", methods=['POST'])
 @validate_buyer_access_token
 def buyer_order_payment_status_update():
