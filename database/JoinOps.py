@@ -409,7 +409,7 @@ class Join:
     def get_buyer_total_orders(self, buyer_id):
         try:
             self.__cursor.execute("""select count(*) as total_orders
-                                    from purchase_orders where buyer_id = %s and order_status != 'cancelled'""",
+                                    from purchase_orders where buyer_id = %s and po_status != 'cancelled'""",
                                   (buyer_id, ))
             res = self.__cursor.fetchone()['total_orders']
             if res is None:
