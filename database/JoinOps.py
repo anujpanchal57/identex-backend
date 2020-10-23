@@ -326,9 +326,9 @@ class Join:
                                     on po.supplier_id = s.supplier_id
                                     join sub_orders as sb
                                     on sb.po_id = po.po_id
-                                    where po.buyer_id = 1000 and sb.order_status in ('active', 'delivered') 
+                                    where po.buyer_id = %s and sb.order_status in ('active', 'delivered') 
                                     group by po.supplier_id
-                                    order by total_procurement desc""", (buyer_id, ))
+                                    order by total_procurement desc;""", (buyer_id, ))
             res = self.__cursor.fetchall()
             return res
 
@@ -409,7 +409,7 @@ class Join:
     def get_buyer_total_orders(self, buyer_id):
         try:
             self.__cursor.execute("""select count(*) as total_orders
-                                    from orders where buyer_id = %s and order_status != 'cancelled'""",
+                                    from purchase_orders where buyer_id = %s and order_status != 'cancelled'""",
                                   (buyer_id, ))
             res = self.__cursor.fetchone()['total_orders']
             if res is None:

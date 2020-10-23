@@ -2011,7 +2011,7 @@ def get_supplier_order_distribution():
         # Total procurement till now
         buyer_total_procurement = Order().get_buyer_total_procurement(buyer_id=data['buyer_id'])
         # Fetching the distribution by querying the database
-        suppliers =  Join().get_buyer_supplier_order_distribution(buyer_id=data['buyer_id'])
+        suppliers = Join().get_buyer_supplier_order_distribution(buyer_id=data['buyer_id'])
         # Calculating the metrics required for chart
         if len(suppliers) > 0:
             for supplier in suppliers:
