@@ -23,6 +23,15 @@ class SubOrder:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_qty_received(self):
+        return self.__sub_order['qty_received']
+
+    def get_quantity(self):
+        return self.__sub_order['quantity']
+
+    def get_delivery_status(self):
+        return self.__sub_order['delivery_status']
+
     def insert_many(self, values):
         try:
             self.__cursor.execute(Implementations.sub_orders_create_table)
@@ -69,3 +78,20 @@ class SubOrder:
             log = Logger(module_name='SubOrderOps', function_name='get_sub_order_by_po_id()')
             log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to fetch PO line items, please try again')
+
+    def update_order_delivery(self, qty_recd, order_status):
+        try:
+            self.__sub_order['qty_received'], self.__sub_order['order_status'] = qty_recd, order_status
+            self.__cursor.execute("""update sub_orders set qty_received = %s, order_status = %s where order_id %s""",
+                                  (qty_recd, order_status, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SubOrderOps', function_name='update_order_delivery()')
+            log.log(str(error), priority='critical')
+            raise exceptions.IncompleteRequestException('Failed to record order delivery, please try again')
+        except Exception as e:
+            log = Logger(module_name='SubOrderOps', function_name='update_order_delivery()')
+            log.log(traceback.format_exc(), priority='critical')
+            raise exceptions.IncompleteRequestException('Failed to record order delivery, please try again')

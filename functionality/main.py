@@ -2506,7 +2506,30 @@ def po_metadata_get():
 @validate_buyer_access_token
 def po_product_delivery_update():
     try:
-        pass
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        del_counter = 0
+        if len(data['products']) > 0:
+            for prod in data['products']:
+                sub_order_obj = SubOrder(prod['order_id'])
+                # If product is already delivered then append it in delivery list and continue
+                if prod['delivery_status'].lower() == "delivered":
+                    del_counter += 1
+                    continue
+                # Record the delivery if not delivered
+                if prod['qty_received'] > 0:
+                    if prod['qty_received'] <= prod['rem_quantity'] and prod['qty_received'] <= prod['quantity']:
+                        order_status = "delivered" if prod['qty_received'] == prod['quantity'] else prod['order_status']
+                        if order_status == "delivered":
+                            del_counter += 1
+                        sub_order_obj.update_order_delivery(qty_recd=prod['qty_received'], order_status=order_status)
+
+            # Mark the PO as delivered if all the products are delivered
+            if del_counter == len(data['products']):
+                PO(data['po_id']).set_po_status(po_status="delivered")
+        products = SubOrder().get_sub_order_by_po_id(po_id=data['po_id'])
+        return response.customResponse({"response": "Product delivery recorded successfully",
+                                        "products": products})
 
     except Exception as e:
         log = Logger(module_name="/po/product-delivery/update", function_name="po_product_delivery_update()")

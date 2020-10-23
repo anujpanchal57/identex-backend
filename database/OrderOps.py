@@ -171,11 +171,8 @@ class Order:
 
     def get_buyer_total_procurement(self, buyer_id):
         try:
-            self.__cursor.execute("""select sum(qu.amount) as total_procurement
-                                    from quotes as qu
-                                    join orders as o
-                                    on qu.quote_id = o.quote_id
-                                    where o.buyer_id = %s and o.order_status in ('active', 'delivered')""", (buyer_id, ))
+            self.__cursor.execute("""select sum(total_amount) as total_procurement from purchase_orders 
+                                    where buyer_id = %s and po_status in ('active', 'delivered');""", (buyer_id, ))
             res = self.__cursor.fetchone()['total_procurement']
             return res
 

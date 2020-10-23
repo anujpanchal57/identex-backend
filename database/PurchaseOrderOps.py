@@ -89,6 +89,22 @@ class PO:
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException("Failed to update PO number, please try again")
 
+    def set_po_status(self, po_status):
+        try:
+            self.__po['po_status'] = po_status
+            self.__cursor.execute("""update purchase_orders set po_status = %s where po_id = %s""", (po_status, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='PurchaseOrderOps', function_name='set_po_status()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update PO status, please try again")
+        except Exception as e:
+            log = Logger(module_name='PurchaseOrderOps', function_name='set_po_status()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update PO status, please try again")
+
     def get_total_amount_for_acquisition(self, acquisition_id, acquisition_type="rfq"):
         try:
             self.__cursor.execute("""select sum(total_amount) as total_amount from purchase_orders where acquisition_id = %s and acquisition_type = %s""",
