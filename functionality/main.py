@@ -2519,14 +2519,18 @@ def po_product_delivery_update():
                 # Record the delivery if not delivered
                 if prod['qty_received'] > 0:
                     if prod['qty_received'] <= prod['rem_quantity'] and prod['qty_received'] <= prod['quantity']:
-                        order_status = "delivered" if prod['qty_received'] == prod['quantity'] else prod['order_status']
+                        order_status = "delivered" if prod['qty_received'] == prod['rem_quantity'] else prod['order_status']
+                        delivery_status = order_status if order_status.lower() == "delivered" else prod['delivery_status']
                         if order_status == "delivered":
                             del_counter += 1
-                        sub_order_obj.update_order_delivery(qty_recd=prod['qty_received'], order_status=order_status)
+                        sub_order_obj.update_order_delivery(qty_recd=prod['qty_received'], order_status=order_status,
+                                                            delivery_status=delivery_status)
 
             # Mark the PO as delivered if all the products are delivered
             if del_counter == len(data['products']):
-                PO(data['po_id']).set_po_status(po_status="delivered")
+                po_obj = PO(data['po_id'])
+                po_obj.set_po_status(po_status="delivered")
+                po_obj.set_delivery_status(delivery_status="delivered")
         products = SubOrder().get_sub_order_by_po_id(po_id=data['po_id'])
         return response.customResponse({"response": "Product delivery recorded successfully",
                                         "products": products})

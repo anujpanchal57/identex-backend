@@ -223,3 +223,20 @@ class PO:
         self.__sql.commit()
         return True
 
+    def set_delivery_status(self, delivery_status):
+        try:
+            self.__po['delivery_status'] = delivery_status
+            self.__cursor.execute("""update purchase_orders set delivery_status = %s where po_id = %s""",
+                                  (delivery_status, self.__id))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='PurchaseOrderOps', function_name='set_delivery_status()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update PO delivery status, please try again")
+        except Exception as e:
+            log = Logger(module_name='PurchaseOrderOps', function_name='set_delivery_status()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException("Failed to update PO delivery status, please try again")
+

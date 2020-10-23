@@ -79,11 +79,12 @@ class SubOrder:
             log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to fetch PO line items, please try again')
 
-    def update_order_delivery(self, qty_recd, order_status):
+    def update_order_delivery(self, qty_recd, order_status, delivery_status):
         try:
-            self.__sub_order['qty_received'], self.__sub_order['order_status'] = qty_recd, order_status
-            self.__cursor.execute("""update sub_orders set qty_received = %s, order_status = %s where order_id %s""",
-                                  (qty_recd, order_status, self.__id))
+            qty_recd += self.get_qty_received()
+            self.__sub_order['qty_received'], self.__sub_order['order_status'], self.__sub_order['delivery_status'] = qty_recd, order_status, delivery_status
+            self.__cursor.execute("""update sub_orders set qty_received = %s, order_status = %s, delivery_status = %s 
+                                    where order_id = %s""", (qty_recd, order_status, delivery_status, self.__id))
             self.__sql.commit()
             return True
 
@@ -95,3 +96,5 @@ class SubOrder:
             log = Logger(module_name='SubOrderOps', function_name='update_order_delivery()')
             log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to record order delivery, please try again')
+
+# pprint(SubOrder().get_sub_order_by_po_id(1015))
