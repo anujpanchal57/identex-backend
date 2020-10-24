@@ -2949,7 +2949,6 @@ def gst_details_get():
         log = Logger(module_name="/gst/details/get", function_name="gst_details_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
-
 ########################################### PROJECTS SECTION ##########################################################
 
 # POST request for creating a new project
