@@ -117,7 +117,7 @@ email_endpoints = {
         },
         "order_created": {
             "page_url": "/orders?type=active",
-            "subject": "",
+            "subject": "You have received an order({{po_number}}) from {{buyer_company_name}}",
             "template_id": "order_created"
         },
         "order_delivered": {
@@ -193,4 +193,8 @@ default_submission_limit = 3
 all_quotations_excel_sample = app_name + "/templates/Supplier Quotations.xlsx"
 invoice_excel_sample = app_name + "/templates/Invoice.xlsx"
 quotations_summary_excel_sample = app_name + "/templates/Quotation Summary.xlsx"
+
+upload_documentation = app_name + "/"
+
+po_created_pdf_file = app_name + "/templates/po_created.html"
 

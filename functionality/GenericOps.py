@@ -59,10 +59,15 @@ def generate_token_for_login():
     return link
 
 
-def generate_aws_file_path(client_type, client_id, document_type):
-    if client_type.lower() == "buyer":
-        return "B" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
-    return "S" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+def generate_aws_file_path(client_type, client_id, document_type, notification_type="doc_upload", file_name=''):
+    if notification_type == "doc_upload":
+        if client_type.lower() == "buyer":
+            return "B" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+        return "S" + str(client_id) + "/" + ''.join(str(uuid.uuid4()).split('-')) + "." + document_type
+    else:
+        if client_type.lower() == "buyer":
+            return "B" + str(client_id) + "/" + file_name + "." + document_type
+        return "S" + str(client_id) + "/" + file_name + "." + document_type
 
 
 def is_url(url):
@@ -80,6 +85,9 @@ def get_calculated_timestamp(date_time, op_tz):
     ts = int(date_obj.replace(tzinfo=timezone.utc).timestamp())
     return convert_time_offset_to_timestamp(offset, ts)
 
+def get_timestamp_from_date(date_str):
+    date_obj = datetime.datetime.strptime(date_str, "%d-%m-%Y")
+    return int(date_obj.replace(tzinfo=timezone.utc).timestamp())
 
 def convert_time_offset_to_timestamp(offset, utc_timestamp):
     return int(utc_timestamp - ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
@@ -110,6 +118,10 @@ def calculate_closing_time(utc_deadline, op_tz, in_format="%Y-%m-%d %H:%M", out_
     result = datetime.datetime.fromtimestamp(add_offset_to_utc(offset, ts)).strftime(out_format)
     return result
 
+def convert_timestamp_to_datestr(ts, format="%d-%m-%Y"):
+    timestamp = datetime.datetime.fromtimestamp(ts)
+    return timestamp.strftime(format)
+
 
 def add_offset_to_utc(offset, utc_ts):
     return int(utc_ts + ((int(offset[0:3]) * 60 * 60) + (int(offset[3:]) * 60)))
@@ -133,6 +145,11 @@ def populate_email_template_for_messages(file_path, details):
         soup = bs4.BeautifulSoup(str(soup).replace("{{" + str(key.upper()) + "}}", str(val)))
     return soup
 
+def populate_product_line_items(products, unit_currency='inr'):
+    result = ""
+    for i in range(len(products)):
+        result += "<tr class='item_table_data_row'><td class='item_table_data border_bottom' style='width: 25%;'><div type='text' class='form_card__input-s'>" + products[i]['product_name'] + " (" + products[i]['product_description'] + ")</div></td><td class='item_table_data text_l border_bottom'><div type='date'class='form_card__input-s text_l'>" + convert_timestamp_to_datestr(products[i]['delivery_date']) + "</div></td><td class='item_table_data text_l border_bottom'><div type='number' class='form_card__input-s text_l'>" + str(products[i]['gst']) + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + str(products[i]['quantity']) + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + products[i]['unit'] + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + unit_currency.upper() + " " + str(round_of(products[i]['per_unit'])) + "</div></td><td class='item_table_data border_bottom text_l'><div type='number' class='form_card__input-s text_l'>" + unit_currency.upper() + " " + str(round_of(products[i]['amount'])) + "</div></td></tr>"
+    return result
 
 def get_rank_changed_suppliers(prev_ranks, curr_ranks):
     result = {}

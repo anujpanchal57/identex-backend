@@ -33,8 +33,7 @@ class SupplierBranches:
         try:
             self.__cursor.execute(Implementations.supplier_branches_create_table)
             # Checking whether the record is added or not
-            self.__cursor.execute("""select * from supplier_branches where supplier_id = %s""",
-                                  (values['supplier_id'],))
+            self.__cursor.execute("""select * from supplier_branches where supplier_id = %s""", (values['supplier_id'], ))
             branch = self.__cursor.fetchall()
             if branch is None:
                 is_branch_added = False
@@ -83,4 +82,25 @@ class SupplierBranches:
             log = Logger(module_name='SupplierBranchesOps', function_name='insert_many()')
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to add address details, please try again')
+
+    def get_address_details(self, supplier_id):
+        try:
+            self.__cursor.execute(
+                """select city, business_address, pincode, country from supplier_branches where supplier_id = %s""",
+                (supplier_id,))
+            res = self.__cursor.fetchall()
+            if len(res) == 0:
+                res = {}
+                return res
+            res = res[0]
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='SupplierBranchesOps', function_name='get_address_details()')
+            log.log(str(error), priority='highest')
+            return {}
+        except Exception as e:
+            log = Logger(module_name='SupplierBranchesOps', function_name='get_address_details()')
+            log.log(traceback.format_exc(), priority='highest')
+            return {}
 

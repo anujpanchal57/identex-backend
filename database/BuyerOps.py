@@ -82,6 +82,42 @@ class Buyer:
         self.__sql.commit()
         return True
 
+    def update_po_incr_factor(self, po_incr_factor):
+        self.__buyer['po_incr_factor'] = po_incr_factor
+        self.__cursor.execute("update buyers set po_incr_factor = %s where buyer_id = %s", (po_incr_factor, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_po_suffix(self, po_suffix):
+        self.__buyer['po_suffix'] = po_suffix
+        self.__cursor.execute("update buyers set po_suffix = %s where buyer_id = %s", (po_suffix, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_gst_no(self, gst_no):
+        self.__buyer['gst_no'] = gst_no
+        self.__cursor.execute("update buyers set gst_no = %s where buyer_id = %s", (gst_no, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_business_address(self, business_address):
+        self.__buyer['business_address'] = business_address
+        self.__cursor.execute("update buyers set business_address = %s where buyer_id = %s", (business_address, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_pincode(self, pincode):
+        self.__buyer['pincode'] = pincode
+        self.__cursor.execute("update buyers set pincode = %s where buyer_id = %s", (pincode, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_country(self, country):
+        self.__buyer['country'] = country
+        self.__cursor.execute("update buyers set country = %s where buyer_id = %s", (country, self.__id))
+        self.__sql.commit()
+        return True
+
     def get_activation_status(self):
         return self.__buyer['activation_status']
 
@@ -99,6 +135,33 @@ class Buyer:
 
     def get_company_name(self):
         return self.__buyer['company_name']
+
+    def get_city(self):
+        return self.__buyer['city']
+
+    def get_business_address(self):
+        return self.__buyer['business_address']
+
+    def get_pincode(self):
+        return self.__buyer['pincode']
+
+    def get_gst_no(self):
+        return self.__buyer['gst_no']
+
+    def get_filing_frequency(self):
+        return self.__buyer['filing_frequency']
+
+    def get_gst_status(self):
+        return self.__buyer['gst_status']
+
+    def get_country(self):
+        return self.__buyer['country']
+
+    def get_po_incr_factor(self):
+        return self.__buyer['po_incr_factor']
+
+    def get_po_suffix(self):
+        return self.__buyer['po_suffix']
 
     def search_suppliers(self, search_str, category="all", supplier_category="all"):
         try:

@@ -33,8 +33,7 @@ class SupplierGSTDetails:
         try:
             self.__cursor.execute(Implementations.supplier_gst_details_create_table)
             # Checking whether the record is added or not
-            self.__cursor.execute("""select * from supplier_gst_details where supplier_id = %s""",
-                                  (values['supplier_id'],))
+            self.__cursor.execute("""select * from supplier_gst_details where supplier_id = %s""", (values['supplier_id'], ))
             gst = self.__cursor.fetchall()
             if gst is None:
                 is_gst_added = False

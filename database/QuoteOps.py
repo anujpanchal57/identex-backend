@@ -26,6 +26,9 @@ class Quote:
     def get_amount(self):
         return self.__quote['amount']
 
+    def get_confirmed(self):
+        return self.__quote['confirmed']
+
     def add_quote(self, quotation_id, charge_id, charge_name, quantity, gst, per_unit, amount, delivery_time, confirmed=False):
         self.__quote['quotation_id'] = quotation_id
         self.__quote['charge_id'] = charge_id
@@ -103,7 +106,7 @@ class Quote:
         try:
             self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
                                     qu.charge_id, qu.quote_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
-                                    qu.logistics_included, q.payment_terms, q.remarks
+                                    qu.logistics_included, q.payment_terms, q.remarks, qu.po_id
                                     from suppliers as s
                                     join quotations as q
                                     on s.supplier_id = q.supplier_id
@@ -206,7 +209,7 @@ class Quote:
             if category.lower() == "cheapest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
                                         qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
-                                        qu.logistics_included, q.payment_terms, q.remarks
+                                        qu.logistics_included, q.payment_terms, q.remarks, qu.po_id
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
@@ -222,7 +225,7 @@ class Quote:
             elif category.lower() == "fastest":
                 self.__cursor.execute("""select s.company_name as supplier_company_name, s.supplier_id, qu.amount, qu.delivery_time, q.quote_validity,
                                         qu.quote_id, qu.charge_id, qu.confirmed, qu.charge_name, qu.quantity, qu.gst, qu.per_unit,
-                                        qu.logistics_included, q.payment_terms, q.remarks
+                                        qu.logistics_included, q.payment_terms, q.remarks, qu.po_id
                                         from suppliers as s
                                         join quotations as q
                                         on s.supplier_id = q.supplier_id
@@ -260,6 +263,24 @@ class Quote:
             log.log(traceback.format_exc(), priority='highest')
             return False
 
+    def is_po_generated(self, charge_id, confirmed=True):
+        try:
+            self.__cursor.execute("select po_id from quotes where charge_id = %s and confirmed = %s and po_id != 0",
+                                  (charge_id, confirmed, ))
+            res = self.__cursor.fetchone()
+            if res is None:
+                return False
+            return True if res['po_id'] != 0 else False
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='is_po_generated()')
+            log.log(str(error), priority='highest')
+            return False
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='is_po_generated()')
+            log.log(traceback.format_exc(), priority='highest')
+            return False
+
     def set_confirmed(self, confirmed):
         try:
             self.__quote['confirmed'] = confirmed
@@ -292,6 +313,52 @@ class Quote:
             log = Logger(module_name='QuoteOps', function_name='get_quotes_for_quotation()')
             log.log(traceback.format_exc(), priority='highest')
             return []
+
+    def get_supplier_quotes_for_po(self, requisition_id, supplier_id, confirmed=True):
+        try:
+            self.__cursor.execute("""select pm.product_id, qu.charge_name, qu.quantity, p.product_description, 
+                                    qu.gst, qu.per_unit, qu.amount, qu.delivery_time, qu.logistics_included, qu.po_id,
+                                    r.currency, p.unit, q.payment_terms, qu.quote_id
+                                    from quotes as qu
+                                    join quotations as q
+                                    on qu.quotation_id = q.quotation_id
+                                    join products as p
+                                    on qu.charge_id = p.reqn_product_id
+                                    join product_master as pm
+                                    on p.product_id = pm.product_id
+                                    join requisitions as r
+                                    on q.requisition_id = r.requisition_id
+                                    where q.supplier_id = %s and qu.confirmed = %s and q.requisition_id = %s""",
+                                  (supplier_id, confirmed, requisition_id))
+            res = self.__cursor.fetchall()
+            if res is None:
+                return []
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='get_supplier_quotes_for_po()')
+            log.log(str(error), priority='highest')
+            return []
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='get_supplier_quotes_for_po()')
+            log.log(traceback.format_exc(), priority='highest')
+            return []
+
+    def set_po_id(self, po_id):
+        try:
+            self.__quote['po_id'] = po_id
+            self.__cursor.execute("""update quotes set po_id = %s where quote_id = %s""", (po_id, self.__id,))
+            self.__sql.commit()
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='QuoteOps', function_name='set_po_id()')
+            log.log(str(error), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update quote details, please try again')
+        except Exception as e:
+            log = Logger(module_name='QuoteOps', function_name='set_po_id()')
+            log.log(traceback.format_exc(), priority='highest')
+            return exceptions.IncompleteRequestException('Failed to update quote details, please try again')
 
 # pprint(Quote().insert_many([(1000, 1000, 'ABCD', 2, 18, 1000.23, 1180.2326),
 #  (1000, 1001, 'DEC', 3, 18, 2000.265, 2360.12354)]))

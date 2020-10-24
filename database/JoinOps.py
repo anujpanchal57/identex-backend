@@ -297,16 +297,14 @@ class Join:
     def get_buyer_product_order_distribution(self, buyer_id, start_limit=0, end_limit=5):
         try:
             self.__cursor.execute("""select pm.product_id, pm.product_name, pm.product_category, pm.product_sub_category, 
-                                    sum(qu.amount) as total_procurement
+                                    sum(sb.amount) as total_procurement
                                     from product_master as pm
-                                    join products as p
-                                    on pm.product_id = p.product_id
-                                    join quotes as qu
-                                    on p.reqn_product_id = qu.charge_id
-                                    join orders as o
-                                    on qu.quote_id = o.quote_id
-                                    where p.buyer_id = %s and o.order_status in ('active', 'delivered')
-                                    group by p.product_id
+                                    join sub_orders as sb
+                                    on sb.product_id = pm.product_id
+                                    join purchase_orders as po
+                                    on sb.po_id = po.po_id
+                                    where po.buyer_id = %s and sb.order_status in ('active', 'delivered')
+                                    group by pm.product_id
                                     order by total_procurement desc""", (buyer_id, ))
             res = self.__cursor.fetchall()
             return res
@@ -322,15 +320,15 @@ class Join:
 
     def get_buyer_supplier_order_distribution(self, buyer_id, start_limit=0, end_limit=5):
         try:
-            self.__cursor.execute("""select s.supplier_id, s.company_name as supplier_company_name, sum(qu.amount) as total_procurement
+            self.__cursor.execute("""select s.supplier_id, s.company_name as supplier_company_name, sum(sb.amount) as total_procurement
                                     from suppliers as s
-                                    join orders as o
-                                    on s.supplier_id = o.supplier_id
-                                    join quotes as qu
-                                    on o.quote_id = qu.quote_id
-                                    where buyer_id = %s and o.order_status in ('active', 'delivered') 
-                                    group by o.supplier_id
-                                    order by total_procurement desc""", (buyer_id, ))
+                                    join purchase_orders as po
+                                    on po.supplier_id = s.supplier_id
+                                    join sub_orders as sb
+                                    on sb.po_id = po.po_id
+                                    where po.buyer_id = %s and sb.order_status in ('active', 'delivered') 
+                                    group by po.supplier_id
+                                    order by total_procurement desc;""", (buyer_id, ))
             res = self.__cursor.fetchall()
             return res
 
@@ -411,7 +409,7 @@ class Join:
     def get_buyer_total_orders(self, buyer_id):
         try:
             self.__cursor.execute("""select count(*) as total_orders
-                                    from orders where buyer_id = %s and order_status != 'cancelled'""",
+                                    from purchase_orders where buyer_id = %s and po_status != 'cancelled'""",
                                   (buyer_id, ))
             res = self.__cursor.fetchone()['total_orders']
             if res is None:
@@ -470,9 +468,9 @@ class Join:
 
     def get_buyer_total_savings(self, buyer_id):
         try:
-            self.__cursor.execute("""select sum(saved_amount) as total_savings
-                                    from orders
-                                    where buyer_id = %s and order_status != 'cancelled'""",
+            self.__cursor.execute("""select sum(savings) as total_savings
+                                    from requisitions
+                                    where buyer_id = %s and request_type != 'cancelled'""",
                                   (buyer_id, ))
             res = self.__cursor.fetchone()['total_savings']
             if res is None:

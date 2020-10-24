@@ -128,6 +128,9 @@ class Requisition:
     def get_submission_limit(self):
         return self.__requisition['submission_limit']
 
+    def get_budget(self):
+        return self.__requisition['budget']
+
     def update_deadline(self, deadline, utc_deadline):
         try:
             self.__requisition['deadline'] = deadline
@@ -230,6 +233,21 @@ class Requisition:
             log = Logger(module_name='RequisitionOps', function_name='update_ref_no()')
             log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException("Failed to update reference number, please try again")
+
+    def update_savings(self, savings):
+        try:
+            self.__cursor.execute("""update requisitions set savings = %s where requisition_id = %s""",
+                                  (savings, self.__id))
+            return True
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='RequisitionOps', function_name='update_savings()')
+            log.log(str(error), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update savings, please try again")
+        except Exception as e:
+            log = Logger(module_name='RequisitionOps', function_name='update_savings()')
+            log.log(traceback.format_exc(), priority='highest')
+            raise exceptions.IncompleteRequestException("Failed to update savings, please try again")
 
 # pprint(Requisition().get_all_ref_nos(1000))
 # pprint(Requisition(1000).cancel_rfq())

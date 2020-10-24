@@ -24,6 +24,7 @@ CORS(app)
 from functionality import DictionaryOps, GenericOps, response
 from models.GenericEmails import Generics
 from functionality.Logger import Logger
+from functionality.Notifications import Notification
 from validations import Validate
 from exceptions import exceptions
 from functools import wraps
@@ -68,6 +69,8 @@ from database.ProjectOps import Project
 from database.ProjectMembersOps import ProjectMembers
 from database.ProjectLotsOps import ProjectLots
 from database.UnitOps import Unit
+from database.PurchaseOrderOps import PO
+from database.SubOrdersOps import SubOrder
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -372,6 +375,10 @@ def buyer_login_verify():
                                                 "auto_join": buyer.get_auto_join(),
                                                 "company_logo": buyer.get_company_logo(),
                                                 "default_currency": buyer.get_default_currency(),
+                                                "business_address": buyer.get_business_address(),
+                                                "city": buyer.get_city(),
+                                                "pincode": buyer.get_pincode(),
+                                                "gst_no": buyer.get_gst_no(),
                                                 "created_at": buser.get_created_at(),
                                                 "updated_at": buser.get_updated_at()
                                             }})
@@ -709,7 +716,7 @@ def upload_documents():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request uploading documents
+# POST request activating a buyer account
 @app.route('/buyer/activation-status/update', methods=['POST'])
 def buyer_activation_status_update():
     try:
@@ -731,6 +738,28 @@ def buyer_activation_status_update():
 
     except Exception as e:
         log = Logger(module_name="/buyer/activation-status/update", function_name="buyer_activation_status_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the address of buyer
+@app.route('/buyer/business-address/get', methods=['POST'])
+@validate_buyer_access_token
+def buyer_business_address_get():
+    try:
+        data = request.json
+        buyer = Buyer(data['buyer_id'])
+        details = {
+            "city": buyer.get_city(),
+            "business_address": buyer.get_business_address(),
+            "pincode": buyer.get_pincode(),
+            "gst_no": buyer.get_gst_no(),
+            "filing_frequency": buyer.get_filing_frequency(),
+            "gst_status": buyer.get_gst_status()
+        }
+        return response.customResponse({"address": details})
+
+    except Exception as e:
+        log = Logger(module_name="/buyer/business-address/get", function_name="buyer_business_address_get()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
@@ -1309,6 +1338,38 @@ def buyer_product_units_get():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for approving a quote
+@app.route("/buyer/rfq/quote/approve", methods=["POST"])
+@validate_buyer_access_token
+def buyer_rfq_quote_approve():
+    try:
+        data = request.json
+        quote = Quote(data['quote_id'])
+        requisition = Requisition(data['requisition_id'])
+        lot = Lot().get_lot_for_requisition(requisition_id=data['requisition_id'])
+        products = Product().get_lot_products(lot_id=lot['lot_id'])
+        if quote.set_confirmed(confirmed=True):
+            if len(products) > 0:
+                approved_counter = 0
+                # Iterate over the products
+                for i in range(0, len(products)):
+                    # Check whether the product is confirmed or not
+                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
+                    if product_confirmed:
+                        approved_counter += 1
+                # If all the products are approved then set the requisition type to approved
+                if len(products) == approved_counter:
+                    requisition.set_request_type(request_type="approved")
+                    requisition.drop_sql_event()
+            return response.customResponse({"response": "Quote confirmed successfully", "is_confirmed": True})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/rfq/quote/approve", function_name="buyer_rfq_quote_approve()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 ########################################### SUPPLIER RFQ SECTION #####################################################
 
 # POST request for listing the RFQs for buyer
@@ -1571,11 +1632,6 @@ def send_message():
             suser = SUser(supplier_id=data['receiver_id'])
             subject = conf.email_endpoints['supplier']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
             link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['supplier']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower())
-            if type_of_request == "RFQ":
-                lot_name = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])['lot_name']
-            else:
-                reqn_product_id = Order(data['operation_id']).get_reqn_product_id()
-                lot_name = Product(reqn_product_id).get_product_details()['product_name']
             sender = buser.get_name() + " (" + buyer.get_company_name() + ")"
             p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [suser.get_email()],
                                                                               "template": conf.email_endpoints['supplier']['message_received']['template_id'],
@@ -1584,7 +1640,6 @@ def send_message():
                                                                               "USER": suser.get_first_name(),
                                                                               "TYPE_OF_REQUEST": type_of_request,
                                                                               "REQUEST_ID": str(data['operation_id']),
-                                                                              "LOT_NAME": lot_name,
                                                                               "SENDER": sender,
                                                                               "MESSAGE": data['message'],
                                                                               "documents": data['documents']})
@@ -1595,11 +1650,6 @@ def send_message():
             busers = BUser().get_busers_for_buyer_id(buyer_id=data['receiver_id'])
             subject = conf.email_endpoints['buyer']['message_received']['subject'].replace("{{requisition_id}}", str(data['operation_id'])).replace("{{operation_type}}", type_of_request)
             link = conf.ENV_ENDPOINT + conf.email_endpoints['buyer']['message_received']['page_url'].replace("{{operation}}", type_of_request.lower()).replace("{{action_type}}", "quotes").replace("{{operation_id}}", str(data['operation_id']))
-            if type_of_request == "RFQ":
-                lot_name = Lot().get_lot_for_requisition(requisition_id=data['operation_id'])['lot_name']
-            else:
-                reqn_product_id = Order(data['operation_id']).get_reqn_product_id()
-                lot_name = Product(reqn_product_id).get_product_details()['product_name']
             sender = suser.get_name() + " (" + supplier.get_company_name() + ")"
             for user in busers:
                 p = Process(target=EmailNotifications.send_message_email, kwargs={"recipients": [user['email']],
@@ -1609,7 +1659,6 @@ def send_message():
                                                                                   "USER": user['name'].split(" ")[0],
                                                                                   "TYPE_OF_REQUEST": type_of_request,
                                                                                   "REQUEST_ID": str(data['operation_id']),
-                                                                                  "LOT_NAME": lot_name,
                                                                                   "SENDER": sender,
                                                                                   "MESSAGE": data['message'],
                                                                                   "documents": data['documents']})
@@ -1873,8 +1922,10 @@ def buyer_suppliers_search():
                                                              supplier_category=supplier_category.lower())
         # Adding the gst validity details
         if len(suppliers) > 0:
+            supplier_gst, supplier_branches = SupplierGSTDetails(), SupplierBranches()
             for supp in suppliers:
-                supp['gst_details'] = SupplierGSTDetails().get_gst_details(supplier_id=supp['supplier_id'])
+                supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
+                supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
         return response.customResponse({"suppliers": suppliers})
 
     except Exception as e:
@@ -1960,7 +2011,7 @@ def get_supplier_order_distribution():
         # Total procurement till now
         buyer_total_procurement = Order().get_buyer_total_procurement(buyer_id=data['buyer_id'])
         # Fetching the distribution by querying the database
-        suppliers =  Join().get_buyer_supplier_order_distribution(buyer_id=data['buyer_id'])
+        suppliers = Join().get_buyer_supplier_order_distribution(buyer_id=data['buyer_id'])
         # Calculating the metrics required for chart
         if len(suppliers) > 0:
             for supplier in suppliers:
@@ -2037,7 +2088,9 @@ def buyer_products_search():
     try:
         data = request.json
         if data['product_str'] == "":
-            return response.customResponse({"products": []})
+            return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower(),
+                                                                                        buyer_id=data['buyer_id'],
+                                                                                        start_limit=0, end_limit=10)})
         return response.customResponse({"products": ProductMaster().search_products(product_str=data['product_str'].lower(),
                                                                                     buyer_id=data['buyer_id'])})
 
@@ -2183,91 +2236,6 @@ def buyer_product_sub_categories_get():
 
 ########################################### ORDERS SECTION ############################################################
 
-# POST request for adding orders
-@app.route("/buyer/order/create", methods=['POST'])
-@validate_buyer_access_token
-def buyer_order_create():
-    try:
-        data = DictionaryOps.set_primary_key(request.json, "email")
-        details = data['details']
-        if details['acquisition_type'].lower() == "rfq":
-            requisition = Requisition(details['acquisition_id'])
-            lot = Lot().get_lot_for_requisition(requisition_id=details['acquisition_id'])
-            # If no lot is found
-            if len(lot) == 0:
-                return response.errorResponse("No lot found against this RFQ")
-            products = Product().get_lot_products(lot_id=lot['lot_id'])
-
-            # Calculate the amount saved
-            highest_quote = Quote().get_highest_quote_for_product(requisition_id=details['acquisition_id'], buyer_id=data['buyer_id'],
-                                                                  charge_id=details['reqn_product_id'])
-            quote_amount = Quote(details['quote_id']).get_amount()
-            details['saved_amount'] = highest_quote - quote_amount
-
-            if len(products) > 0:
-                approved_counter = 0
-                # Iterate over the products
-                for i in range(0, len(products)):
-                    # Check whether the product is confirmed or not
-                    product_confirmed = Quote().is_product_quote_confirmed(charge_id=products[i]['reqn_product_id'])
-                    if product_confirmed:
-                        approved_counter += 1
-
-                # Create an order for the product if not
-                order_created = Order().add_order(buyer_id=data['buyer_id'], supplier_id=details['supplier_id'],
-                                                  po_no=details['po_no'],
-                                                  acquisition_id=details['acquisition_id'],
-                                                  acquisition_type=details['acquisition_type'],
-                                                  quote_id=details['quote_id'],
-                                                  reqn_product_id=details['reqn_product_id'],
-                                                  remarks=details['remarks'],
-                                                  saved_amount=details['saved_amount'])
-                # Mark the particular quote as confirmed
-                if order_created:
-                    Quote(details['quote_id']).set_confirmed(True)
-                    approved_counter += 1
-                # If all the products are ordered then set the requisition status as approved
-                if approved_counter == len(products):
-                    requisition.set_request_type(request_type="approved")
-                    requisition.drop_sql_event()
-                # Email to supplier
-                pprint(order_created)
-                order_obj = Order(order_created)
-                suser = SUser(supplier_id=details['supplier_id'])
-                buyer = Buyer(data['buyer_id'])
-                product = order_obj.get_order_product_details()
-                lot_name = order_obj.get_order_lot()
-                po_number = order_obj.get_po_no()
-                po_no_toggle = "block" if po_number != "" else "none"
-                link = conf.SUPPLIERS_ENDPOINT + conf.email_endpoints['buyer']['order_created']['page_url']
-                # Framing the subject of email
-                if po_number != "":
-                    subject = "Order confirmed for " + product['product_name'] + " with PO Number: " + po_number + " by " + buyer.get_company_name()
-                else:
-                    subject = "Order confirmed for " + product['product_name'] + " by " + buyer.get_company_name()
-                p = Process(target=EmailNotifications.send_template_mail, kwargs={"recipients": [suser.get_email()],
-                                                                                  "subject": subject,
-                                                                                  "template": conf.email_endpoints['buyer']['order_created']['template_id'],
-                                                                                  "USER": suser.get_first_name(),
-                                                                                  "PO_NUMBER_DISPLAY": po_no_toggle,
-                                                                                  "PO_NUMBER": po_number,
-                                                                                  "BUYER_COMPANY_NAME": buyer.get_company_name(),
-                                                                                  "OPERATION": details['acquisition_type'].upper(),
-                                                                                  "OPERATION_ID": str(details['acquisition_id']),
-                                                                                  "LOT_NAME": lot_name,
-                                                                                  "LINK": link})
-                p.start()
-                return response.customResponse({"response": "Order created successfully"})
-            return response.errorResponse("No products found in this lot")
-        return response.errorResponse("Invalid acquisition type")
-
-    except exceptions.IncompleteRequestException as e:
-        return response.errorResponse(e.error)
-    except Exception as e:
-        log = Logger(module_name="/buyer/order/create", function_name="buyer_order_create()")
-        log.log(traceback.format_exc())
-        return response.errorResponse("Some error occurred please try again!")
-
 # POST request for listing orders for buyer
 @app.route("/buyer/orders/get", methods=['POST'])
 @validate_buyer_access_token
@@ -2278,20 +2246,21 @@ def buyer_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['limit']
-        orders = Order().get_orders(client_id=data['buyer_id'], client_type="buyer",
-                                     request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)
+        order_obj = PO()
+        orders = order_obj.get_purchase_orders(client_id=data['buyer_id'], client_type="buyer",
+                                               request_type=data['type'].lower(), start_limit=start_limit, end_limit=end_limit)
+
+        # Populating sub-orders
         if len(orders) > 0:
+            sb_obj = SubOrder()
             for order in orders:
-                if order['grn_uploaded']:
-                    order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'],
-                                                                     operation_type="order")
+                order['sub_orders'] = sb_obj.get_sub_order_by_po_id(po_id=order['po_id'])
 
         # Fetching the orders count for different categories
-        join_obj = Join()
         count = {
-            "active": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="active"),
-            "delivered": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="delivered"),
-            "cancelled": join_obj.get_buyer_orders_count(buyer_id=data['buyer_id'], req_type="cancelled")
+            "active": order_obj.get_buyer_purchase_orders_count(buyer_id=data['buyer_id'], request_type="active"),
+            "delivered": order_obj.get_buyer_purchase_orders_count(buyer_id=data['buyer_id'], request_type="delivered"),
+            "cancelled": order_obj.get_buyer_purchase_orders_count(buyer_id=data['buyer_id'], request_type="cancelled")
         }
         return response.customResponse({"orders": orders, "count": count})
 
@@ -2312,18 +2281,22 @@ def supplier_orders_get():
         data['limit'] = data['limit'] if 'limit' in data else 5
         start_limit = data['offset']
         end_limit = data['limit']
-        orders = Order().get_orders(client_id=data['supplier_id'], client_type="supplier", request_type=data['type'].lower(),
-                                    start_limit=start_limit, end_limit=end_limit)
-        for order in orders:
-            if order['grn_uploaded']:
-                order['grn_url'] = Document().get_order_docs_url(operation_id=order['order_id'], operation_type="order")
+        order_obj = PO()
+        orders = order_obj.get_purchase_orders(client_id=data['supplier_id'], client_type="supplier",
+                                               request_type=data['type'].lower(), start_limit=start_limit,
+                                               end_limit=end_limit)
+
+        # Populating sub-orders
+        if len(orders) > 0:
+            sb_obj = SubOrder()
+            for order in orders:
+                order['sub_orders'] = sb_obj.get_sub_order_by_po_id(po_id=order['po_id'])
 
         # Fetching the orders count for different categories
-        join_obj = Join()
         count = {
-            "active": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="active"),
-            "delivered": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="delivered"),
-            "cancelled": join_obj.get_supplier_orders_count(supplier_id=data['supplier_id'], req_type="cancelled")
+            "active": order_obj.get_supplier_purchase_orders_count(supplier_id=data['supplier_id'], request_type="active"),
+            "delivered": order_obj.get_supplier_purchase_orders_count(supplier_id=data['supplier_id'], request_type="delivered"),
+            "cancelled": order_obj.get_supplier_purchase_orders_count(supplier_id=data['supplier_id'], request_type="cancelled")
         }
         return response.customResponse({"orders": orders, "count": count})
 
@@ -2375,7 +2348,7 @@ def buyer_order_cancel():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for uploading GRN against an order
+# POST request for uploading GRN against an order (Not being used as of now)
 @app.route("/buyer/order/grn/upload", methods=['POST'])
 @validate_buyer_access_token
 def buyer_order_grn_upload():
@@ -2438,7 +2411,7 @@ def buyer_order_grn_upload():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for updating payment status of an order
+# POST request for updating payment status of an order (Not being used as of now)
 @app.route("/buyer/order/payment-status/update", methods=['POST'])
 @validate_buyer_access_token
 def buyer_order_payment_status_update():
@@ -2465,14 +2438,14 @@ def buyer_order_payment_status_update():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
-# POST request for updating PO number of an order
+# POST request for updating PO number of an purchase order
 @app.route("/order/po-number/update", methods=['POST'])
-@validate_access_token
+@validate_buyer_access_token
 def update_order_po_number():
     try:
         data = request.json
-        order = Order(data['order_id'])
-        if order.set_po_no(data['po_number']):
+        po = PO(data['po_id'])
+        if po.set_po_no(data['po_number']):
             return response.customResponse({"response": "PO number updated successfully",
                                             "po_number": data['po_number']})
 
@@ -2480,6 +2453,221 @@ def update_order_po_number():
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/order/po-number/update", function_name="update_order_po_number()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to fetch quotes of a supplier to raise a PO
+@app.route("/po/supplier-quotes/get", methods=['POST'])
+@validate_buyer_access_token
+def po_supplier_quotes_get():
+    try:
+        data = request.json
+        result = []
+        suppliers = Supplier().get_suppliers_for_po(requisition_id=data['requisition_id'])
+        quote_obj = Quote()
+        supplier_branches, supplier_gst = SupplierBranches(), SupplierGSTDetails()
+        for supp in suppliers:
+            supp['quotes'] = quote_obj.get_supplier_quotes_for_po(requisition_id=data['requisition_id'], supplier_id=supp['supplier_id'])
+            supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
+            supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
+            if len(supp['quotes']) > 0:
+                for quote in supp['quotes']:
+                    quote['delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
+                result.append(copy.deepcopy(supp))
+        return response.customResponse({"suppliers": result})
+
+    except Exception as e:
+        log = Logger(module_name="/po/supplier-quotes/get", function_name="po_supplier_quotes_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to fetch metadata to create a PO
+@app.route("/po/metadata/get", methods=['POST'])
+@validate_buyer_access_token
+def po_metadata_get():
+    try:
+        data = request.json
+        buyer = Buyer(data['buyer_id'])
+        result = {}
+        result['po_incr_factor'], result['po_suffix'] = buyer.get_po_incr_factor(), buyer.get_po_suffix()
+        result['approvers'] = BUser().get_busers_for_buyer_id(buyer_id=data['buyer_id'])
+        result['business_address'], result['pincode'], result['country'] = buyer.get_business_address(), \
+                                                                           buyer.get_pincode(), buyer.get_country()
+        result['gst_no'] = buyer.get_gst_no()
+        return response.customResponse({"metadata": result})
+
+    except Exception as e:
+        log = Logger(module_name="/po/metadata/get", function_name="po_metadata_get()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request to record deliveries of products
+@app.route("/po/product-delivery/update", methods=['POST'])
+@validate_buyer_access_token
+def po_product_delivery_update():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        del_counter = 0
+        if len(data['products']) > 0:
+            for prod in data['products']:
+                sub_order_obj = SubOrder(prod['order_id'])
+                # If product is already delivered then append it in delivery list and continue
+                if prod['delivery_status'].lower() == "delivered":
+                    del_counter += 1
+                    continue
+                # Record the delivery if not delivered
+                if prod['qty_received'] > 0:
+                    if prod['qty_received'] <= prod['rem_quantity'] and prod['qty_received'] <= prod['quantity']:
+                        order_status = "delivered" if prod['qty_received'] == prod['rem_quantity'] else prod['order_status']
+                        delivery_status = order_status if order_status.lower() == "delivered" else prod['delivery_status']
+                        if order_status == "delivered":
+                            del_counter += 1
+                        sub_order_obj.update_order_delivery(qty_recd=prod['qty_received'], order_status=order_status,
+                                                            delivery_status=delivery_status)
+
+            # Mark the PO as delivered if all the products are delivered
+            if del_counter == len(data['products']):
+                po_obj = PO(data['po_id'])
+                po_obj.set_po_status(po_status="delivered")
+                po_obj.set_delivery_status(delivery_status="delivered")
+        products = SubOrder().get_sub_order_by_po_id(po_id=data['po_id'])
+        return response.customResponse({"response": "Product delivery recorded successfully",
+                                        "products": products})
+
+    except Exception as e:
+        log = Logger(module_name="/po/product-delivery/update", function_name="po_product_delivery_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for creating a PO
+@app.route("/buyer/po/create", methods=['POST'])
+@validate_buyer_access_token
+def buyer_create_po():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        po_details = data['details']
+        buyer_details, supplier_details = po_details['buyer_details'], po_details['supplier_details']
+        approved_counter = 0
+
+        # Check whether the PO incr factor exists in the buyer table
+        if len(po_details['po_no']) == 0:
+            return response.errorResponse('Kindly enter a valid PO number')
+        if len(buyer_details) == 0 or len(supplier_details) == 0:
+            return response.errorResponse('Kindly enter all the required details')
+        if 'line_items' not in po_details:
+            return response.errorResponse('Kindly add the order line items')
+        if len(po_details['line_items']) == 0:
+            return response.errorResponse('Kindly add the order line items')
+
+        buyer = Buyer(buyer_details['buyer_id'])
+        supplier = Supplier(supplier_details['supplier_id'])
+        po_details['acquisition_id'] = po_details['acquisition_id'] if 'acquisition_id' in po_details else 0
+        po_details['acquisition_type'] = po_details['acquisition_type'] if 'acquisition_type' in po_details else 'adhoc'
+
+        # Fetching the number of confirmed POs for a particular acquisition
+        if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":
+            lot = Lot().get_lot_for_requisition(requisition_id=po_details['acquisition_id'])
+            # If no lot is found
+            if len(lot) == 0:
+                return response.errorResponse("No lot found against this RFQ")
+            products = Product().get_lot_products(lot_id=lot['lot_id'])
+            if len(products) > 0:
+                # Iterate over the products
+                for i in range(0, len(products)):
+                    # Check whether PO has been generated against the product or not
+                    po_generated = Quote().is_po_generated(charge_id=products[i]['reqn_product_id'])
+                    if po_generated:
+                        approved_counter += 1
+
+        # If the po_incr_factor is less than or equal to the existing po_incr_factor then +1 and update it
+        curr_po_incr_factor, curr_po_suffix = buyer.get_po_incr_factor(), buyer.get_po_suffix()
+        po_no_split = po_details['po_no'].split('/')
+        po_incr_factor = int(po_no_split[0])
+        # remove the first index from the split list
+        del po_no_split[0]
+        po_suffix = '/'.join(po_no_split)
+
+        # Update the PO incr factor
+        if po_incr_factor <= curr_po_incr_factor:
+            po_incr_factor = curr_po_incr_factor
+            po_incr_factor += 1
+            po_details['po_no'] = str(po_incr_factor) + "/" + po_suffix
+            buyer.update_po_incr_factor(po_incr_factor)
+        else:
+            buyer.update_po_incr_factor(po_incr_factor)
+
+        # Update the PO suffix, if it doesn't match
+        if curr_po_suffix != po_suffix:
+            buyer.update_po_suffix(po_suffix)
+
+        # Checking and updating buyer details
+        gst_no, business_address, pincode, country = buyer.get_gst_no(), buyer.get_business_address(), buyer.get_pincode(), buyer.get_country()
+        if gst_no == "" or gst_no != buyer_details['gst_no']:
+            buyer.update_gst_no(buyer_details['gst_no'])
+
+        if business_address == "" or business_address != buyer_details['business_address']:
+            buyer.update_business_address(buyer_details['business_address'])
+
+        if pincode == "" or pincode != buyer_details['pincode']:
+            buyer.update_pincode(buyer_details['pincode'])
+
+        if country == "" or country != buyer_details['country']:
+            buyer.update_country(buyer_details['country'])
+
+        # create PO in PO table
+        order_date = GenericOps.get_timestamp_from_date(po_details['order_date'])
+        unit_currency = po_details['unit_currency'] if 'unit_currency' in po_details else 'inr'
+        delivery_details = po_details['delivery_address'] if 'delivery_address' in po_details else {}
+        payment_terms = po_details['payment_terms'] if 'payment_terms' in po_details else ''
+        freight_included = po_details['freight_included'] if 'freight_included' in po_details else ''
+        prepared_by = po_details['prepared_by'] if 'prepared_by' in po_details else ''
+        approved_by = po_details['approved_by'] if 'approved_by' in po_details else ''
+        po_id = PO().add_po(po_no=po_details['po_no'], buyer_id=buyer_details['buyer_id'], supplier_id=supplier_details['supplier_id'],
+                            acquisition_id=po_details['acquisition_id'], acquisition_type=po_details['acquisition_type'],
+                            order_date=order_date, unit_currency=unit_currency, supplier_details=supplier_details,
+                            delivery_details=delivery_details, payment_terms=payment_terms, freight_included=freight_included,
+                            prepared_by=prepared_by, approved_by=approved_by, total_amount=po_details['total_amount'],
+                            total_gst=po_details['total_gst'])
+
+        # Add sub orders in the orders table
+        sub_orders = []
+        created_at = GenericOps.get_current_timestamp()
+        for lt in po_details['line_items']:
+            sub_order = [po_id, lt['product_id'], created_at, lt['product_description'], lt['quantity'], lt['unit'], lt['gst'],
+                  lt['per_unit'], lt['amount'], lt['delivery_date']]
+            sub = tuple(sub_order)
+            sub_orders.append(sub)
+            if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":
+                Quote(lt['quote_id']).set_po_id(po_id)
+        sub_orders_id = SubOrder().insert_many(sub_orders)
+        approved_counter += 1 if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else 0
+
+        # Calculate savings for the order
+        if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":
+            if len(products) == approved_counter:
+                requisition = Requisition(po_details['acquisition_id'])
+                budget = requisition.get_budget()
+                total_amount = PO().get_total_amount_for_acquisition(po_details['acquisition_id'], po_details['acquisition_type'])
+                savings = budget - total_amount
+                requisition.update_savings(savings)
+
+        # If save and send, then save and send email
+        po_details['po_id'] = po_id
+        po_details['lot_name'] = lot['lot_name'] if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc" else ""
+
+        # Sending the notifications
+        notif = Notification(checkpoint="order_created", file=conf.po_created_pdf_file)
+        # notif.send_notification(details=po_details)
+        p = Process(target=notif.send_notification, kwargs={"details": po_details})
+        p.start()
+        return response.customResponse({"response": "PO created and sent to supplier successfully"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/po/create", function_name="buyer_create_po()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
