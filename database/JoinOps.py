@@ -470,7 +470,7 @@ class Join:
         try:
             self.__cursor.execute("""select sum(savings) as total_savings
                                     from requisitions
-                                    where buyer_id = %s and req_type != 'cancelled'""",
+                                    where buyer_id = %s and request_type != 'cancelled'""",
                                   (buyer_id, ))
             res = self.__cursor.fetchone()['total_savings']
             if res is None:
