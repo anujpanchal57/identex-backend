@@ -158,7 +158,7 @@ class Invoice:
             self.__ws.cell(product_line+count, 2).value = "{}-{}".format(line_item['product_name'],line_item['product_description'])
             self.__ws.cell(product_line+count, 2).alignment = Alignment(horizontal='left', vertical='center')
             self.__ws.cell(product_line+count, 2).font = Font(color='000000', size=10)
-            self.__ws.cell(product_line+count, 4).value = str(int(line_item['quantity'])) + " " + line_item['unit']
+            self.__ws.cell(product_line+count, 4).value = str(float(line_item['quantity'])) + " " + line_item['unit']
             self.__ws.cell(product_line+count, 4).alignment = Alignment(horizontal='center', vertical='center')
             self.__ws.cell(product_line+count, 4).font = Font(color='000000')
             self.__ws.cell(product_line+count, 5).value = "{:,.2f}".format(line_item['per_unit'])
@@ -170,8 +170,8 @@ class Invoice:
             self.__ws.cell(product_line+count, 7).value = "{:,.2f}".format(line_item['amount'])
             self.__ws.cell(product_line+count, 7).font = Font(color='000000')
             self.__ws.cell(product_line+count, 7).alignment = Alignment(horizontal='right', vertical='center')
-            sub_total += line_item['amount']/(1+line_item['gst']/100)
-            total_gst += line_item['amount'] - line_item['amount']/(1+line_item['gst']/100)
+            sub_total += line_item['per_unit']*float(line_item['quantity'])
+            total_gst += (line_item['per_unit']*float(line_item['quantity']))*(line_item['gst']/100)
             count += 1
         self.__ws.cell(product_line+count, 7).value = "{:,.2f}".format(sub_total)
         self.__ws.cell(product_line+count, 7).alignment = Alignment(horizontal='right', vertical='center')
