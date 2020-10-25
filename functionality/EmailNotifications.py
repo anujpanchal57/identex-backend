@@ -84,9 +84,10 @@ def send_handlebars_email(subject, template, recipients=[], sender='Identex <bus
         cc.append(conf.default_recipient)
 
     # For attaching documents in the mail
-    if len(kwargs['documents']) > 0:
-        for doc in kwargs['documents']:
-            files.append(("attachment", (doc['document_name'], urllib.request.urlopen(doc['document_url']).read())))
+    if 'documents' in kwargs:
+        if len(kwargs['documents']) > 0:
+            for doc in kwargs['documents']:
+                files.append(("attachment", (doc['document_name'], urllib.request.urlopen(doc['document_url']).read())))
     auth = ("api", conf.MAILGUN_API_KEY)
     data = {
         "from": sender,

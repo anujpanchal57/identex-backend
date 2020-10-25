@@ -2509,6 +2509,7 @@ def po_product_delivery_update():
         data = request.json
         data['_id'] = data['_id'].lower()
         del_counter = 0
+        buyer = Buyer(data['buyer_id'])
         if len(data['products']) > 0:
             for prod in data['products']:
                 sub_order_obj = SubOrder(prod['order_id'])
@@ -2526,12 +2527,39 @@ def po_product_delivery_update():
                         sub_order_obj.update_order_delivery(qty_recd=prod['qty_received'], order_status=order_status,
                                                             delivery_status=delivery_status)
 
+
             # Mark the PO as delivered if all the products are delivered
             if del_counter == len(data['products']):
                 po_obj = PO(data['po_id'])
                 po_obj.set_po_status(po_status="delivered")
                 po_obj.set_delivery_status(delivery_status="delivered")
         products = SubOrder().get_sub_order_by_po_id(po_id=data['po_id'])
+
+        # Email to supplier
+        suser = SUser(supplier_id=data['supplier_id'])
+        po_obj = PO(data['po_id'])
+        po_no = po_obj.get_po_no()
+        subject = conf.email_endpoints['buyer']['order_received']['subject'].replace("{{po_no}}", po_no)
+        email_products = []
+        current_ts = GenericOps.get_current_timestamp()
+        for prod in data['products']:
+            if prod['qty_received'] > 0:
+                email_products.append({"product_name": prod['product_name'],
+                                       "product_description": prod['product_description'],
+                                       "delivery_date": GenericOps.convert_timestamp_to_datestr(current_ts),
+                                       "received_quantity": prod['qty_received'],
+                                       "total_quantity": prod['quantity'],
+                                       "remaining_quantity": SubOrder(prod['order_id']).get_rem_quantity()})
+
+        p = Process(target=EmailNotifications.send_handlebars_email, kwargs={"subject": subject,
+                                                                             "recipients": [suser.get_email()],
+                                                                             "template": conf.email_endpoints['buyer']['order_received']['template_id'],
+                                                                             "USER": suser.get_first_name(),
+                                                                             "BUYER_COMPANY_NAME": buyer.get_company_name(),
+                                                                             "PRODUCTS": email_products,
+                                                                             "PO_NUMBER": po_no})
+        p.start()
+
         return response.customResponse({"response": "Product delivery recorded successfully",
                                         "products": products})
 

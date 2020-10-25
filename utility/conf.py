@@ -129,6 +129,11 @@ email_endpoints = {
             "page_url": "/invoices?type=paid",
             "subject": "Invoice paid by {{buyer_company_name}}",
             "template_id": "invoice_paid"
+        },
+        "order_received": {
+            "page_url": "",
+            "subject": "Delivery against your purchase order {{po_no}} has been recorded",
+            "template_id": "order_received"
         }
     },
     "supplier": {
