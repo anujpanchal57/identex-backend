@@ -23,6 +23,9 @@ class PO:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_po_no(self):
+        return self.__po['po_no']
+
     def add_po(self, po_no, buyer_id, supplier_id, acquisition_id, acquisition_type, order_date, total_amount, total_gst,
                unit_currency, supplier_details, delivery_details, payment_terms, freight_included, prepared_by, approved_by,
                notes='', tnc=''):
