@@ -2527,6 +2527,7 @@ def po_product_delivery_update():
                         sub_order_obj.update_order_delivery(qty_recd=prod['qty_received'], order_status=order_status,
                                                             delivery_status=delivery_status)
 
+
             # Mark the PO as delivered if all the products are delivered
             if del_counter == len(data['products']):
                 po_obj = PO(data['po_id'])
@@ -2548,7 +2549,7 @@ def po_product_delivery_update():
                                        "delivery_date": GenericOps.convert_timestamp_to_datestr(current_ts),
                                        "received_quantity": prod['qty_received'],
                                        "total_quantity": prod['quantity'],
-                                       "remaining_quantity": prod['rem_quantity']})
+                                       "remaining_quantity": SubOrder(prod['order_id']).get_rem_quantity()})
 
         p = Process(target=EmailNotifications.send_handlebars_email, kwargs={"subject": subject,
                                                                              "recipients": [suser.get_email()],

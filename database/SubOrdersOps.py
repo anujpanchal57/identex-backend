@@ -32,6 +32,9 @@ class SubOrder:
     def get_delivery_status(self):
         return self.__sub_order['delivery_status']
 
+    def get_rem_quantity(self):
+        return GenericOps.round_of(self.__sub_order['quantity'] - self.__sub_order['qty_received'])
+
     def insert_many(self, values):
         try:
             self.__cursor.execute(Implementations.sub_orders_create_table)
@@ -96,5 +99,6 @@ class SubOrder:
             log = Logger(module_name='SubOrderOps', function_name='update_order_delivery()')
             log.log(traceback.format_exc(), priority='critical')
             raise exceptions.IncompleteRequestException('Failed to record order delivery, please try again')
+
 
 # pprint(SubOrder().get_sub_order_by_po_id(1015))
