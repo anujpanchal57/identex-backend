@@ -80,7 +80,7 @@ class Notification:
                 ## UNCOMMENT THIS LINE BEFORE PUSHING
                 OSOps.deletefile(temp_file_path)
                 pdf_path = complete_path + po_no + "_order_created.pdf"
-                aws_file_name = po_no + "_order_created"
+                aws_file_name = "Purchase Order - " + po_no
                 data = open(pdf_path, 'rb').read()
                 base64_encoded = base64.b64encode(data).decode('UTF-8')
                 upload_file_path = GenericOps.generate_aws_file_path(client_type="buyer", client_id=buyer_details['buyer_id'],
