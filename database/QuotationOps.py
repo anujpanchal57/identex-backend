@@ -23,6 +23,9 @@ class Quotation:
             self.__cursor.close()
             self.__sql.close()
 
+    def get_created_at(self):
+        return self.__quotation['created_at']
+
     def add_quotation(self, supplier_id, requisition_id, total_amount, total_gst, quote_validity, status=True, payment_terms=0, remarks=''):
         self.__quotation['supplier_id'] = supplier_id
         self.__quotation['requisition_id'] = requisition_id

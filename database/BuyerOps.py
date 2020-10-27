@@ -118,6 +118,24 @@ class Buyer:
         self.__sql.commit()
         return True
 
+    def update_cin(self, cin):
+        self.__buyer['cin'] = cin
+        self.__cursor.execute("update buyers set cin = %s where buyer_id = %s", (cin, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_company_email_address(self, company_email_address):
+        self.__buyer['company_email_address'] = company_email_address
+        self.__cursor.execute("update buyers set company_email_address = %s where buyer_id = %s", (company_email_address, self.__id))
+        self.__sql.commit()
+        return True
+
+    def update_company_contact_number(self, company_contact_number):
+        self.__buyer['company_contact_number'] = company_contact_number
+        self.__cursor.execute("update buyers set company_contact_number = %s where buyer_id = %s", (company_contact_number, self.__id))
+        self.__sql.commit()
+        return True
+
     def get_activation_status(self):
         return self.__buyer['activation_status']
 
@@ -162,6 +180,15 @@ class Buyer:
 
     def get_po_suffix(self):
         return self.__buyer['po_suffix']
+
+    def get_cin(self):
+        return self.__buyer['cin']
+
+    def get_company_contact_number(self):
+        return self.__buyer['company_contact_number']
+
+    def get_company_email_address(self):
+        return self.__buyer['company_email_address']
 
     def search_suppliers(self, search_str, category="all", supplier_category="all"):
         try:

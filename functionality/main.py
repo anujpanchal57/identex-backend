@@ -12,6 +12,7 @@ import platform
 import jwt
 import flask
 import copy
+import json
 
 app_name = '/'.join(os.path.dirname(os.path.realpath(__file__)).split('/')[:-1])
 
@@ -59,18 +60,12 @@ from database.Reports import Reports
 from database.MCXSpotRateOps import MCXSpotRate
 from database.RatingOps import Rating
 from database.PincodeOps import Pincode
-from database.IdntxCategoryOps import IdntxCategory
-from database.IdntxSubCategoryOps import IdntxSubCategory
-from database.IdntxProductMasterOps import IdntxProductMaster
-from database.SupplierIndustriesOps import SupplierIndustries
 from database.SupplierBranchesOps import SupplierBranches
 from database.SupplierGSTDetailsOps import SupplierGSTDetails
-from database.ProjectOps import Project
-from database.ProjectMembersOps import ProjectMembers
-from database.ProjectLotsOps import ProjectLots
 from database.UnitOps import Unit
 from database.PurchaseOrderOps import PO
 from database.SubOrdersOps import SubOrder
+from database.TemplateConfigOps import TemplateConfig
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -2467,9 +2462,11 @@ def po_supplier_quotes_get():
         quote_obj = Quote()
         supplier_branches, supplier_gst = SupplierBranches(), SupplierGSTDetails()
         for supp in suppliers:
+            suser = SUser(supplier_id=supp['supplier_id'])
             supp['quotes'] = quote_obj.get_supplier_quotes_for_po(requisition_id=data['requisition_id'], supplier_id=supp['supplier_id'])
             supp['address_details'] = supplier_branches.get_address_details(supplier_id=supp['supplier_id'])
             supp['gst_details'] = supplier_gst.get_gst_details(supplier_id=supp['supplier_id'])
+            supp['company_email_address'], supp['company_contact_number'] = suser.get_email(), suser.get_name()
             if len(supp['quotes']) > 0:
                 for quote in supp['quotes']:
                     quote['delivery_date'] = GenericOps.get_current_timestamp() + (quote['delivery_time'] * 24 * 60 * 60)
@@ -2488,12 +2485,36 @@ def po_metadata_get():
     try:
         data = request.json
         buyer = Buyer(data['buyer_id'])
+        acquisition_id, acquisition_type = data['acquisition_id'], data['acquisition_type'].lower()
+        if acquisition_id != 0 and acquisition_type != "adhoc":
+            acquisition, quotation = Requisition(data['acquisition_id']), Quotation(data['quotation_id'])
         result = {}
         result['po_incr_factor'], result['po_suffix'] = buyer.get_po_incr_factor(), buyer.get_po_suffix()
         result['approvers'] = BUser().get_busers_for_buyer_id(buyer_id=data['buyer_id'])
         result['business_address'], result['pincode'], result['country'] = buyer.get_business_address(), \
                                                                            buyer.get_pincode(), buyer.get_country()
         result['gst_no'] = buyer.get_gst_no()
+        result['cin'] = buyer.get_cin()
+        result['company_email_address'], result['company_contact_number'] = buyer.get_company_email_address(), buyer.get_company_contact_number()
+
+        template_metadata = TemplateConfig().get_template_config(buyer_id=data['buyer_id'])
+        if len(template_metadata) > 0:
+            template_config = json.loads(template_metadata['template_config'])
+            result['template_metadata'] = {
+                "template_id": template_metadata['template_id'],
+                "template_name": template_metadata['template_name'],
+                "template_type": template_metadata['template_type'],
+                "template_config": template_config
+            }
+
+            if acquisition_id != 0 and acquisition_type != "adhoc":
+                result['template_data'] = Join().get_template_config_data(buyer_id=data['buyer_id'], template_config=template_config,
+                                                                          quotation_id=data['quotation_id'],
+                                                                          acquisition_id=acquisition_id)
+
+        else:
+            result['template_metadata'], result['template_data'] = {}, {}
+
         return response.customResponse({"metadata": result})
 
     except Exception as e:
@@ -2631,7 +2652,8 @@ def buyer_create_po():
             buyer.update_po_suffix(po_suffix)
 
         # Checking and updating buyer details
-        gst_no, business_address, pincode, country = buyer.get_gst_no(), buyer.get_business_address(), buyer.get_pincode(), buyer.get_country()
+        gst_no, business_address, pincode, country, cin, company_email_address, company_contact_number = buyer.get_gst_no(), buyer.get_business_address(), buyer.get_pincode(), buyer.get_country(), buyer.get_cin(), buyer.get_company_email_address(), buyer.get_company_contact_number()
+
         if gst_no == "" or gst_no != buyer_details['gst_no']:
             buyer.update_gst_no(buyer_details['gst_no'])
 
@@ -2644,6 +2666,15 @@ def buyer_create_po():
         if country == "" or country != buyer_details['country']:
             buyer.update_country(buyer_details['country'])
 
+        if cin == "" or cin != buyer_details['cin']:
+            buyer.update_cin(buyer_details['cin'])
+
+        if company_email_address == "" or company_email_address != buyer_details['company_email_address']:
+            buyer.update_company_email_address(buyer_details['company_email_address'])
+
+        if company_contact_number == "" or company_contact_number != buyer_details['company_contact_number']:
+            buyer.update_company_contact_number(buyer_details['company_contact_details'])
+
         # create PO in PO table
         order_date = GenericOps.get_timestamp_from_date(po_details['order_date'])
         unit_currency = po_details['unit_currency'] if 'unit_currency' in po_details else 'inr'
@@ -2652,19 +2683,24 @@ def buyer_create_po():
         freight_included = po_details['freight_included'] if 'freight_included' in po_details else ''
         prepared_by = po_details['prepared_by'] if 'prepared_by' in po_details else ''
         approved_by = po_details['approved_by'] if 'approved_by' in po_details else ''
+        notes = po_details['notes'] if 'notes' in po_details else ''
+        po_metadata = json.dumps(po_details['po_metadata']) if 'po_metadata' in po_details else ''
+        total_in_words = po_details['total_in_words'] if 'total_in_words' in po_details else ''
         po_id = PO().add_po(po_no=po_details['po_no'], buyer_id=buyer_details['buyer_id'], supplier_id=supplier_details['supplier_id'],
                             acquisition_id=po_details['acquisition_id'], acquisition_type=po_details['acquisition_type'],
                             order_date=order_date, unit_currency=unit_currency, supplier_details=supplier_details,
                             delivery_details=delivery_details, payment_terms=payment_terms, freight_included=freight_included,
                             prepared_by=prepared_by, approved_by=approved_by, total_amount=po_details['total_amount'],
-                            total_gst=po_details['total_gst'])
+                            total_gst=po_details['total_gst'], notes=notes, po_metadata=po_metadata, total_in_words=total_in_words)
 
         # Add sub orders in the orders table
         sub_orders = []
         created_at = GenericOps.get_current_timestamp()
         for lt in po_details['line_items']:
+            lt['hsn'] = lt['hsn'] if 'hsn' in lt else ''
+            lt['weight'] = lt['weight'] if 'weight' in lt else ''
             sub_order = [po_id, lt['product_id'], created_at, lt['product_description'], lt['quantity'], lt['unit'], lt['gst'],
-                  lt['per_unit'], lt['amount'], lt['delivery_date']]
+                  lt['per_unit'], lt['amount'], lt['delivery_date'], lt['hsn'], lt['weight'], lt['discount']]
             sub = tuple(sub_order)
             sub_orders.append(sub)
             if po_details['acquisition_id'] != 0 and po_details['acquisition_type'].lower() != "adhoc":

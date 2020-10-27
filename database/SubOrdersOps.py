@@ -40,8 +40,8 @@ class SubOrder:
             self.__cursor.execute(Implementations.sub_orders_create_table)
             # Inserting the record in the table
             self.__cursor.executemany("""INSERT INTO sub_orders (po_id, product_id, created_at, product_description, 
-                                        quantity, unit, gst, per_unit, amount, delivery_time) 
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
+                                        quantity, unit, gst, per_unit, amount, delivery_time, hsn, weight, discount) 
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", values)
             self.__sql.commit()
             last_row_id = self.__cursor.lastrowid
             result_ids = [last_row_id]
@@ -63,7 +63,8 @@ class SubOrder:
             self.__cursor.execute("""select sb.order_id, sb.po_id, sb.product_id, sb.payment_status, 
                                     sb.order_status, sb.product_description, sb.quantity, sb.unit, sb.gst, 
                                     sb.per_unit, sb.amount, sb.delivery_time, sb.qty_received, sb.delivery_status, 
-                                    sb.quantity - sb.qty_received as rem_quantity, pm.product_name
+                                    sb.quantity - sb.qty_received as rem_quantity, pm.product_name, sb.hsn, sb.weight, 
+                                    sb.discount
                                     from sub_orders as sb
                                     join product_master as pm
                                     on sb.product_id = pm.product_id

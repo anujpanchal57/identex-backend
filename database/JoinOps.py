@@ -486,6 +486,49 @@ class Join:
             log.log(traceback.format_exc(), priority='highest')
             return 0
 
+    def get_template_config_data(self, buyer_id, template_config, **kwargs):
+        try:
+            result = {}
+            if len(template_config) > 0:
+                for obj in template_config:
+                    if obj['property']['data'] == "quotation.quotation_id":
+                        result['quotation_id'] = kwargs['quotation_id'] if 'quotation_id' in kwargs else 0
+                        if result['quotation_id'] != 0:
+                            self.__cursor.execute("""select created_at from quotations where quotation_id = %s""", (result['quotation_id'], ))
+                            res_created_at = self.__cursor.fetchone()
+                            if res_created_at is None:
+                                result['quotation_date'] = 0
+                            else:
+                                result['quotation_date'] = res_created_at['created_at']
+                    elif obj['property']['data'] == "requisitions.ref_no":
+                        if 'acquisition_id' in kwargs:
+                            if kwargs['acquisition_id'] != 0:
+                                self.__cursor.execute("""select ref_no from requisitions where requisition_id = %s""", (kwargs['acquisition_id'], ))
+                                res_ref_no = self.__cursor.fetchone()
+                                if res_ref_no is None:
+                                    result['project_no'] = ""
+                                else:
+                                    result['project_no'] = res_ref_no['ref_no']
+                    elif obj['property']['data'] == "quotation.created_at":
+                        if 'quotation_id' in kwargs:
+                            if kwargs['quotation_id'] != 0:
+                                self.__cursor.execute("""select created_at from quotations where quotation_id = %s""", (kwargs['quotation_id'], ))
+                                res_created_at = self.__cursor.fetchone()
+                                if res_created_at is None:
+                                    result['quotation_date'] = 0
+                                else:
+                                    result['quotation_date'] = res_created_at['created_at']
+            return result
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='JoinOps', function_name='get_template_config_data()')
+            log.log(str(error), priority='highest')
+            return {}
+        except Exception as e:
+            log = Logger(module_name='JoinOps', function_name='get_template_config_data()')
+            log.log(traceback.format_exc(), priority='highest')
+            return {}
+
 # pprint(Join().get_buyer_total_savings(1000))
 # pprint(Join().get_buyer_total_suppliers(1000, False))
 # pprint(Join().get_buyer_total_amount_due(1000))

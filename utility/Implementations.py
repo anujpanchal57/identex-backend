@@ -25,6 +25,9 @@ buyer_create_table = """CREATE TABLE IF NOT EXISTS `buyers` (
                       `country` varchar(100) NOT NULL DEFAULT 'India',
                       `po_incr_factor` int(11) NOT NULL DEFAULT '1000',
                       `po_suffix` varchar(200) NOT NULL DEFAULT '',
+                      `cin` varchar(200) NOT NULL DEFAULT '',
+                      `company_email_address` varchar(200) NOT NULL DEFAULT '',
+                      `company_contact_number` varchar(50) NOT NULL DEFAULT '',
                       PRIMARY KEY (`buyer_id`)
                     ) ENGINE=InnoDB AUTO_INCREMENT=1008 DEFAULT CHARSET=latin1"""
 
@@ -405,7 +408,7 @@ po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
                   `total_amount` float(20,2) NOT NULL DEFAULT '0.00',
                   `total_gst` float(20,2) NOT NULL DEFAULT '0.00',
                   `notes` varchar(500) NOT NULL DEFAULT '',
-                  `tnc` varchar(500) NOT NULL DEFAULT '',
+                  `tnc` varchar(5000) NOT NULL DEFAULT '',
                   `po_url` varchar(500) NOT NULL DEFAULT '',
                   `supplier_gst_no` varchar(100) NOT NULL DEFAULT '',
                   `supplier_address` varchar(500) NOT NULL DEFAULT '',
@@ -422,6 +425,8 @@ po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
                   `payment_status` varchar(50) NOT NULL DEFAULT 'unpaid',
                   `delivery_status` varchar(50) NOT NULL DEFAULT 'on_time',
                   `created_at` int(11) NOT NULL DEFAULT '0',
+                  `total_in_words` varchar(1000) NOT NULL DEFAULT '',
+                  `po_metadata` varchar(5000) NOT NULL DEFAULT '',
                   PRIMARY KEY (`po_id`),
                   KEY `buyer_id` (`buyer_id`),
                   KEY `supplier_id` (`supplier_id`),
@@ -445,7 +450,22 @@ sub_orders_create_table = """CREATE TABLE IF NOT EXISTS `sub_orders` (
                           `delivery_time` int(11) NOT NULL DEFAULT '0',
                           `qty_received` float(20,2) NOT NULL DEFAULT '0.00',
                           `delivery_status` varchar(50) NOT NULL DEFAULT 'on_time',
+                          `hsn` varchar(100) NOT NULL DEFAULT '',
+                          `weight` float(20,2) NOT NULL DEFAULT '0.00',
+                          `discount` float(20,2) NOT NULL DEFAULT '0.00',
                           PRIMARY KEY (`order_id`),
                           KEY `po_id` (`po_id`),
                           CONSTRAINT `sub_orders_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`)
                         ) ENGINE=InnoDB AUTO_INCREMENT=1013 DEFAULT CHARSET=latin1"""
+
+template_configs_create_table = """CREATE TABLE IF NOT EXISTS `template_configs` (
+                                  `template_id` int(11) NOT NULL AUTO_INCREMENT,
+                                  `buyer_id` int(11) NOT NULL,
+                                  `template_name` varchar(300) NOT NULL,
+                                  `template_type` varchar(50) NOT NULL DEFAULT 'purchase_order',
+                                  `template_config` varchar(5000) NOT NULL,
+                                  `updated_at` int(11) NOT NULL,
+                                  PRIMARY KEY (`template_id`),
+                                  KEY `buyer_id` (`buyer_id`),
+                                  CONSTRAINT `template_configs_ibfk_1` FOREIGN KEY (`buyer_id`) REFERENCES `buyers` (`buyer_id`)
+                                ) ENGINE=InnoDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1"""

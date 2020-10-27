@@ -28,7 +28,7 @@ class PO:
 
     def add_po(self, po_no, buyer_id, supplier_id, acquisition_id, acquisition_type, order_date, total_amount, total_gst,
                unit_currency, supplier_details, delivery_details, payment_terms, freight_included, prepared_by, approved_by,
-               notes='', tnc=''):
+               notes='', tnc='', po_metadata='', total_in_words=''):
         self.__po['po_no'], self.__po['buyer_id'], self.__po['supplier_id'] = po_no, buyer_id, supplier_id
         self.__po['total_amount'], self.__po['total_gst'] = total_amount, total_gst
         self.__po['notes'], self.__po['tnc'] = notes, tnc
@@ -44,6 +44,8 @@ class PO:
         self.__po['payment_terms'], self.__po['freight_included'] = payment_terms, freight_included
         self.__po['prepared_by'], self.__po['approved_by'] = prepared_by, approved_by
         self.__po['created_at'] = GenericOps.get_current_timestamp()
+        self.__po['po_metadata'] = po_metadata
+        self.__po['total_in_words'] = total_in_words
         self.__po['po_id'] = self.insert(self.__po)
         return self.__po['po_id']
 
@@ -54,16 +56,18 @@ class PO:
             self.__cursor.execute("""INSERT INTO purchase_orders (po_no, buyer_id, supplier_id, acquisition_id, acquisition_type, 
                                         order_date, unit_currency, total_amount, total_gst, notes, tnc, supplier_gst_no, 
                                         supplier_address, supplier_pincode, supplier_country, delivery_address, delivery_pincode, 
-                                        delivery_country, payment_terms, freight_included, prepared_by, approved_by, created_at) 
+                                        delivery_country, payment_terms, freight_included, prepared_by, approved_by, created_at, 
+                                        po_metadata, total_in_words) 
                                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                                        %s, %s, %s, %s, %s)""",
+                                        %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['po_no'], values['buyer_id'], values['supplier_id'],
                                    values['acquisition_id'], values['acquisition_type'], values['order_date'], values['unit_currency'],
                                    values['total_amount'], values['total_gst'], values['notes'], values['tnc'],
                                    values['supplier_gst_no'], values['supplier_address'], values['supplier_pincode'],
                                    values['supplier_country'], values['delivery_address'], values['delivery_pincode'],
                                    values['delivery_country'], values['payment_terms'], values['freight_included'],
-                                   values['prepared_by'], values['approved_by'], values['created_at']))
+                                   values['prepared_by'], values['approved_by'], values['created_at'], values['po_metadata'],
+                                   values['total_in_words']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
