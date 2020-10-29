@@ -2527,7 +2527,7 @@ def get_po_addl_note_details():
         data = request.json
         buyer = Buyer(data['buyer_id'])
         addl_note = POAdditionalNotes(data['note_id'])
-        return response.customResponse({"template_details": {"template_id": data['note_id'],
+        return response.customResponse({"template_details": {"note_id": data['note_id'],
                                                              "template_name": addl_note.get_template_name(),
                                                              "template_config": addl_note.get_template_config(),
                                                              "is_default": True if buyer.get_default_po_additional_note_id() == data['note_id'] else False}})
@@ -2601,7 +2601,7 @@ def add_po_additional_note():
                                                           template_config=template['template_config'])
             if template['is_default']:
                 buyer.update_default_po_additional_note_id(template_id=note_id)
-            return response.customResponse({"response": "Template added successfully", "template_id": note_id})
+            return response.customResponse({"response": "Template added successfully", "note_id": note_id})
         else:
             po_addl_note = POAdditionalNotes(template['note_id'])
             po_addl_note.update_addl_note(template_details=template)
