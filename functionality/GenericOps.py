@@ -69,6 +69,9 @@ def generate_aws_file_path(client_type, client_id, document_type, notification_t
             return "B" + str(client_id) + "/" + file_name + "." + document_type
         return "S" + str(client_id) + "/" + file_name + "." + document_type
 
+def get_aws_folder_name(client_type, client_id):
+    client_prefix = "B" if client_type == "buyer" else "S"
+    return client_prefix + str(client_id)
 
 def is_url(url):
     return 'http://' in url or 'https://' in url

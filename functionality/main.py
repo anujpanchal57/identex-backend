@@ -66,6 +66,8 @@ from database.UnitOps import Unit
 from database.PurchaseOrderOps import PO
 from database.SubOrdersOps import SubOrder
 from database.TemplateConfigOps import TemplateConfig
+from database.PODocumentOps import PODocument
+from database.POAdditionalNotesOps import POAdditionalNotes
 
 ##################################### ACCESS TOKEN VALIDATORS (DECORATORS) ############################################
 
@@ -2451,6 +2453,168 @@ def update_order_po_number():
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
+# POST request for validating the name of a po document
+@app.route("/po/document-name/validate", methods=['POST'])
+@validate_buyer_access_token
+def validate_po_document_name():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        if not PODocument().check_document_name(buyer_id=data['buyer_id'], document_name=data['document_name']):
+            return response.customResponse({"is_valid": True, "response": "Document name is valid"})
+        return response.customResponse({"is_valid": False, "response": "Document with above name already exists, please enter a different name"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/document-name/validate", function_name="validate_po_document_name()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for validating the name of a po additional note template
+@app.route("/po/addl-note-name/validate", methods=['POST'])
+@validate_buyer_access_token
+def validate_po_addl_note_name():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        if not POAdditionalNotes().check_template_name(buyer_id=data['buyer_id'], template_name=data['template_name']):
+            return response.customResponse({"is_valid": True, "response": "Template name is valid"})
+        return response.customResponse({"is_valid": False, "response": "Template with above name already exists, please enter a different name"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/addl-note-name/validate", function_name="validate_po_addl_note_name()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the list of PO documents
+@app.route("/po/documents/get", methods=['POST'])
+@validate_buyer_access_token
+def get_po_documents():
+    try:
+        data = request.json
+        return response.customResponse({"documents": PODocument().get_documents(buyer_id=data['buyer_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/documents/get", function_name="get_po_documents()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the list of additional notes templates
+@app.route("/po/addl-notes/get", methods=['POST'])
+@validate_buyer_access_token
+def get_po_addl_notes():
+    try:
+        data = request.json
+        return response.customResponse({"templates": POAdditionalNotes().get_addl_notes(buyer_id=data['buyer_id'])})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/addl-notes/get", function_name="get_po_addl_notes()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for fetching the details of a particular additional note template
+@app.route("/po/addl-note-details/get", methods=['POST'])
+@validate_buyer_access_token
+def get_po_addl_note_details():
+    try:
+        data = request.json
+        addl_note = POAdditionalNotes(data['note_id'])
+        return response.customResponse({"template_details": {"template_id": data['note_id'],
+                                                             "template_name": addl_note.get_template_name(),
+                                                             "template_config": addl_note.get_template_config()}})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/addl-note-details/get", function_name="get_po_addl_note_details()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for adding a new PO document
+@app.route("/po/document/add", methods=['POST'])
+@validate_buyer_access_token
+def add_po_document():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        document = data['document']
+        po_document = PODocument()
+        if po_document.check_document_name(buyer_id=data['buyer_id'], document_name=document['document_name']):
+            return response.errorResponse('Document with above name already exists, please enter a different name')
+        document_format = document['document_url'].split('.')[-1]
+        if PODocument().add_po_document(buyer_id=data['buyer_id'], document_name=document['document_name'],
+                                        document_format=document_format, document_url=document['document_url'],
+                                        uploaded_on=GenericOps.get_current_timestamp(), uploaded_by=data['_id']):
+            return response.customResponse({"response": "Document uploaded successfully"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/document/add", function_name="add_po_document()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for deleting a PO document
+@app.route("/po/document/delete", methods=['POST'])
+@validate_buyer_access_token
+def delete_po_document():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        document = data['document']
+        aws_file_key = GenericOps.get_aws_folder_name(client_id=data['buyer_id'], client_type="buyer") + "/" + document['document_url'].split('/')[-1]
+        if PODocument(document['document_id']).delete_document():
+            p = Process(target=AWS('s3').delete_file, kwargs={"key": aws_file_key})
+            p.start()
+            return response.customResponse({"response": "Document deleted successfully"})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/document/delete", function_name="delete_po_document()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for adding a new PO addl note template
+@app.route("/po/addl-note/update", methods=['POST'])
+@validate_buyer_access_token
+def add_po_additional_note():
+    try:
+        data = request.json
+        data['_id'] = data['_id'].lower()
+        template = data['template']
+        if 'note_id' not in template:
+            po_addl_note = POAdditionalNotes()
+            if po_addl_note.check_template_name(buyer_id=data['buyer_id'], template_name=template['template_name']):
+                return response.errorResponse('Template with above name already exists, please enter a different name')
+            buyer = Buyer(data['buyer_id'])
+            note_id = po_addl_note.add_po_additional_note(buyer_id=data['buyer_id'], template_name=template['template_name'],
+                                                          template_config=template['template_config'])
+            if template['is_default']:
+                buyer.update_default_po_additional_note_id(template_id=note_id)
+            return response.customResponse({"response": "Template added successfully", "template_id": note_id})
+        else:
+            po_addl_note = POAdditionalNotes(template['note_id'])
+            po_addl_note.update_addl_note(template_details=template)
+            buyer = Buyer(data['buyer_id'])
+            if template['is_default']:
+                buyer.update_default_po_additional_note_id(template_id=template['note_id'])
+            return response.customResponse({"response": "Template updated successfully", "template": template})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/po/addl-note/add", function_name="add_po_additional_note()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
 # POST request to fetch quotes of a supplier to raise a PO
 @app.route("/po/supplier-quotes/get", methods=['POST'])
 @validate_buyer_access_token
@@ -2486,8 +2650,6 @@ def po_metadata_get():
         data = request.json
         buyer = Buyer(data['buyer_id'])
         acquisition_id, acquisition_type = data['acquisition_id'], data['acquisition_type'].lower()
-        if acquisition_id != 0 and acquisition_type != "adhoc":
-            acquisition, quotation = Requisition(data['acquisition_id']), Quotation(data['quotation_id'])
         result = {}
         result['po_incr_factor'], result['po_suffix'] = buyer.get_po_incr_factor(), buyer.get_po_suffix()
         result['approvers'] = BUser().get_busers_for_buyer_id(buyer_id=data['buyer_id'])
@@ -2496,7 +2658,17 @@ def po_metadata_get():
         result['gst_no'] = buyer.get_gst_no()
         result['cin'] = buyer.get_cin()
         result['company_email_address'], result['company_contact_number'] = buyer.get_company_email_address(), buyer.get_company_contact_number()
-
+        last_po = PO().get_last_po(buyer_id=data['buyer_id'])
+        result['tnc'] = last_po['tnc'] if 'tnc' in last_po else ''
+        result['form_no'] = last_po['form_no'] if 'form_no' in last_po else ''
+        result['notes'] = last_po['notes'] if 'notes' in last_po else ''
+        result['narration'] = last_po['narration'] if 'narration' in last_po else ''
+        default_po_addl_note_id = buyer.get_default_po_additional_note_id()
+        if default_po_addl_note_id != 0:
+            result['po_additional_notes'] = POAdditionalNotes(default_po_addl_note_id).get_addl_note()
+        else:
+            result['po_additional_notes'] = {}
+        result['po_documents'] = PODocument().get_frequent_uploaded_docs(buyer_id=data['buyer_id'])
         template_metadata = TemplateConfig().get_template_config(buyer_id=data['buyer_id'])
         if len(template_metadata) > 0:
             template_config = json.loads(template_metadata['template_config'])
@@ -2506,12 +2678,12 @@ def po_metadata_get():
                 "template_type": template_metadata['template_type'],
                 "template_config": template_config
             }
-
             if acquisition_id != 0 and acquisition_type != "adhoc":
                 result['template_data'] = Join().get_template_config_data(buyer_id=data['buyer_id'], template_config=template_config,
                                                                           quotation_id=data['quotation_id'],
                                                                           acquisition_id=acquisition_id)
-
+            else:
+                result['template_data'] = {}
         else:
             result['template_metadata'], result['template_data'] = {}, {}
 
@@ -2686,12 +2858,15 @@ def buyer_create_po():
         notes = po_details['notes'] if 'notes' in po_details else ''
         po_metadata = json.dumps(po_details['po_metadata']) if 'po_metadata' in po_details else ''
         total_in_words = po_details['total_in_words'] if 'total_in_words' in po_details else ''
+        form_no = po_details['form_no'] if 'form_no' in po_details else ''
+        narration = po_details['narration'] if 'narration' in po_details else ''
         po_id = PO().add_po(po_no=po_details['po_no'], buyer_id=buyer_details['buyer_id'], supplier_id=supplier_details['supplier_id'],
                             acquisition_id=po_details['acquisition_id'], acquisition_type=po_details['acquisition_type'],
                             order_date=order_date, unit_currency=unit_currency, supplier_details=supplier_details,
                             delivery_details=delivery_details, payment_terms=payment_terms, freight_included=freight_included,
                             prepared_by=prepared_by, approved_by=approved_by, total_amount=po_details['total_amount'],
-                            total_gst=po_details['total_gst'], notes=notes, po_metadata=po_metadata, total_in_words=total_in_words)
+                            total_gst=po_details['total_gst'], notes=notes, po_metadata=po_metadata, total_in_words=total_in_words,
+                            form_no=form_no, narration=narration)
 
         # Add sub orders in the orders table
         sub_orders = []

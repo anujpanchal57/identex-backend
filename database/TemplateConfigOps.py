@@ -36,9 +36,9 @@ class TemplateConfig:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='TemplateConfigOps', function_name='get_template_config()')
-            log.log(str(error), priority='critical')
+            log.log(str(error), priority='highest')
             return []
         except Exception as e:
             log = Logger(module_name='TemplateConfigOps', function_name='get_template_config()')
-            log.log(traceback.format_exc(), priority='critical')
+            log.log(traceback.format_exc(), priority='highest')
             return []

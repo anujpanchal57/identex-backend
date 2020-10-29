@@ -31,6 +31,10 @@ class AWS:
     def upload_file_from_content(self, data, key, bucket = conf.aws['bucket_name']['uploads']):
         return self.__aws_client.put_object(ACL='public-read', Body=data, Bucket=bucket, Key=key)
 
+    ## FOR DELETING AN OBJECT FROM THE BUCKET
+    def delete_file(self, key, bucket=conf.aws['bucket_name']['uploads']):
+        return self.__aws_client.delete_object(Bucket=bucket, Key=key)
+
     ## FOR UPLOADING A FILE FROM BASE64 CONTENT
     def upload_file_from_base64(self, base64_string, path, bucket=conf.aws['bucket_name']['uploads']):
         if "," in base64_string:
@@ -44,4 +48,5 @@ class AWS:
 # path = "/opt/backend/Integrations/sample_upload.png"
 # pprint(aws.upload_files(path=path, path_in_aws="test_uploads/hbaskhascbsdffdsfc.png"))
 # pprint(aws.get_url_of_file(key="B1001/jhbaskhascbfdsfc.xlsx"))
-# pprint(aws.upload_file_from_base64(base64_string=base64_str, path="test_uploads/akdhcbdksjfcbhsgfv.png"))
+# pprint(aws.upload_file_from_base64(base64_string=base64_str, path="test_uploads/sample_del_upload.png"))
+# pprint(aws.delete_file(key="test_uploads/sample_del_upload.png"))

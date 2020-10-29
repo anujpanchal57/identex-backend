@@ -5,7 +5,7 @@ default_bteam_id = "All_Users"
 # 30 mins for requisition as well as auction
 deadline_change_time_factor = 30 * 60
 
-buyer_create_table = """CREATE TABLE IF NOT EXISTS `buyers` (
+buyer_create_table = """CREATE TABLE `buyers` (
                       `buyer_id` int(11) NOT NULL AUTO_INCREMENT,
                       `company_name` varchar(100) NOT NULL,
                       `auto_join` tinyint(1) NOT NULL,
@@ -28,6 +28,7 @@ buyer_create_table = """CREATE TABLE IF NOT EXISTS `buyers` (
                       `cin` varchar(200) NOT NULL DEFAULT '',
                       `company_email_address` varchar(200) NOT NULL DEFAULT '',
                       `company_contact_number` varchar(50) NOT NULL DEFAULT '',
+                      `default_po_additional_note_id` int(11) NOT NULL DEFAULT '0',
                       PRIMARY KEY (`buyer_id`)
                     ) ENGINE=InnoDB AUTO_INCREMENT=1008 DEFAULT CHARSET=latin1"""
 
@@ -396,7 +397,7 @@ units_create_table = """create table if not exists units (
                 unit_name varchar(100) not null
             )"""
 
-po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
+po_create_table = """CREATE TABLE `purchase_orders` (
                   `po_id` int(11) NOT NULL AUTO_INCREMENT,
                   `po_no` varchar(200) NOT NULL,
                   `buyer_id` int(11) NOT NULL,
@@ -427,6 +428,8 @@ po_create_table = """CREATE TABLE IF NOT EXISTS `purchase_orders` (
                   `created_at` int(11) NOT NULL DEFAULT '0',
                   `total_in_words` varchar(1000) NOT NULL DEFAULT '',
                   `po_metadata` varchar(5000) NOT NULL DEFAULT '',
+                  `form_no` varchar(100) NOT NULL DEFAULT '',
+                  `narration` varchar(500) NOT NULL DEFAULT '',
                   PRIMARY KEY (`po_id`),
                   KEY `buyer_id` (`buyer_id`),
                   KEY `supplier_id` (`supplier_id`),
@@ -469,3 +472,24 @@ template_configs_create_table = """CREATE TABLE IF NOT EXISTS `template_configs`
                                   KEY `buyer_id` (`buyer_id`),
                                   CONSTRAINT `template_configs_ibfk_1` FOREIGN KEY (`buyer_id`) REFERENCES `buyers` (`buyer_id`)
                                 ) ENGINE=InnoDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1"""
+
+po_documents_create_table = """create table if not exists po_documents (
+                            document_id int not null primary key auto_increment,
+                            buyer_id int not null,
+                            document_name varchar(500) not null,
+                            document_format varchar(50) not null default '',
+                            document_url varchar(500) not null default '',
+                            uploaded_on int(11) not null default 0,
+                            uploaded_by varchar(100) not null default '',
+                            uploader varchar(20) not null default 'buyer',
+                            frequency int not null default 0,
+                            FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
+                        ) Engine=InnoDB auto_increment=1000"""
+
+po_additional_notes_create_table = """create table if not exists po_additional_notes (
+                                    note_id int not null primary key auto_increment,
+                                    buyer_id int not null,
+                                    template_name varchar(300) not null default '',
+                                    template_config varchar(50000) not null default '',
+                                    FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
+                                ) Engine=InnoDB auto_increment=1000"""

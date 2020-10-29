@@ -76,11 +76,11 @@ class SubOrder:
 
         except mysql.connector.Error as error:
             log = Logger(module_name='SubOrderOps', function_name='get_sub_order_by_po_id()')
-            log.log(str(error), priority='critical')
+            log.log(str(error), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to fetch PO line items, please try again')
         except Exception as e:
             log = Logger(module_name='SubOrderOps', function_name='get_sub_order_by_po_id()')
-            log.log(traceback.format_exc(), priority='critical')
+            log.log(traceback.format_exc(), priority='highest')
             raise exceptions.IncompleteRequestException('Failed to fetch PO line items, please try again')
 
     def update_order_delivery(self, qty_recd, order_status, delivery_status):

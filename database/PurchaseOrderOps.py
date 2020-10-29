@@ -28,7 +28,7 @@ class PO:
 
     def add_po(self, po_no, buyer_id, supplier_id, acquisition_id, acquisition_type, order_date, total_amount, total_gst,
                unit_currency, supplier_details, delivery_details, payment_terms, freight_included, prepared_by, approved_by,
-               notes='', tnc='', po_metadata='', total_in_words=''):
+               notes='', tnc='', po_metadata='', total_in_words='', form_no='', narration=''):
         self.__po['po_no'], self.__po['buyer_id'], self.__po['supplier_id'] = po_no, buyer_id, supplier_id
         self.__po['total_amount'], self.__po['total_gst'] = total_amount, total_gst
         self.__po['notes'], self.__po['tnc'] = notes, tnc
@@ -45,7 +45,8 @@ class PO:
         self.__po['prepared_by'], self.__po['approved_by'] = prepared_by, approved_by
         self.__po['created_at'] = GenericOps.get_current_timestamp()
         self.__po['po_metadata'] = po_metadata
-        self.__po['total_in_words'] = total_in_words
+        self.__po['total_in_words'], self.__po['form_no'] = total_in_words, form_no
+        self.__po['narration'] = narration
         self.__po['po_id'] = self.insert(self.__po)
         return self.__po['po_id']
 
@@ -57,9 +58,9 @@ class PO:
                                         order_date, unit_currency, total_amount, total_gst, notes, tnc, supplier_gst_no, 
                                         supplier_address, supplier_pincode, supplier_country, delivery_address, delivery_pincode, 
                                         delivery_country, payment_terms, freight_included, prepared_by, approved_by, created_at, 
-                                        po_metadata, total_in_words) 
+                                        po_metadata, total_in_words, form_no, narration) 
                                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                                        %s, %s, %s, %s, %s, %s, %s)""",
+                                        %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['po_no'], values['buyer_id'], values['supplier_id'],
                                    values['acquisition_id'], values['acquisition_type'], values['order_date'], values['unit_currency'],
                                    values['total_amount'], values['total_gst'], values['notes'], values['tnc'],
@@ -67,7 +68,7 @@ class PO:
                                    values['supplier_country'], values['delivery_address'], values['delivery_pincode'],
                                    values['delivery_country'], values['payment_terms'], values['freight_included'],
                                    values['prepared_by'], values['approved_by'], values['created_at'], values['po_metadata'],
-                                   values['total_in_words']))
+                                   values['total_in_words'], values['form_no'], values['narration']))
             self.__sql.commit()
             return self.__cursor.lastrowid
 
@@ -90,11 +91,11 @@ class PO:
         except mysql.connector.Error as error:
             log = Logger(module_name='PurchaseOrderOps', function_name='set_po_no()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to update PO number, please try again")
+            raise exceptions.IncompleteRequestException("Failed to update PO number, please try again")
         except Exception as e:
             log = Logger(module_name='PurchaseOrderOps', function_name='set_po_no()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to update PO number, please try again")
+            raise exceptions.IncompleteRequestException("Failed to update PO number, please try again")
 
     def set_po_status(self, po_status):
         try:
@@ -106,11 +107,11 @@ class PO:
         except mysql.connector.Error as error:
             log = Logger(module_name='PurchaseOrderOps', function_name='set_po_status()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to update PO status, please try again")
+            raise exceptions.IncompleteRequestException("Failed to update PO status, please try again")
         except Exception as e:
             log = Logger(module_name='PurchaseOrderOps', function_name='set_po_status()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to update PO status, please try again")
+            raise exceptions.IncompleteRequestException("Failed to update PO status, please try again")
 
     def get_total_amount_for_acquisition(self, acquisition_id, acquisition_type="rfq"):
         try:
@@ -124,11 +125,11 @@ class PO:
         except mysql.connector.Error as error:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_total_amount_for_acquisition()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch total amount, please try again")
+            raise exceptions.IncompleteRequestException("Failed to fetch total amount, please try again")
         except Exception as e:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_total_amount_for_acquisition()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch total amount, please try again")
+            raise exceptions.IncompleteRequestException("Failed to fetch total amount, please try again")
 
     def get_total_gst_for_acquisition(self, acquisition_id, acquisition_type="rfq"):
         try:
@@ -142,11 +143,11 @@ class PO:
         except mysql.connector.Error as error:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_total_gst_for_acquisition()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
+            raise exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
         except Exception as e:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_total_gst_for_acquisition()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
+            raise exceptions.IncompleteRequestException("Failed to fetch total GST, please try again")
 
     def get_purchase_orders(self, client_id, client_type, request_type="active", start_limit=0, end_limit=5):
         try:
@@ -182,11 +183,11 @@ class PO:
         except mysql.connector.Error as error:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_purchase_orders()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch purchase orders, please try again")
+            raise exceptions.IncompleteRequestException("Failed to fetch purchase orders, please try again")
         except Exception as e:
             log = Logger(module_name='PurchaseOrderOps', function_name='get_purchase_orders()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to fetch purchase orders, please try again")
+            raise exceptions.IncompleteRequestException("Failed to fetch purchase orders, please try again")
 
     def get_buyer_purchase_orders_count(self, buyer_id, request_type="active"):
         try:
@@ -241,9 +242,27 @@ class PO:
         except mysql.connector.Error as error:
             log = Logger(module_name='PurchaseOrderOps', function_name='set_delivery_status()')
             log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to update PO delivery status, please try again")
+            raise exceptions.IncompleteRequestException("Failed to update PO delivery status, please try again")
         except Exception as e:
             log = Logger(module_name='PurchaseOrderOps', function_name='set_delivery_status()')
             log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException("Failed to update PO delivery status, please try again")
+            raise exceptions.IncompleteRequestException("Failed to update PO delivery status, please try again")
+
+    def get_last_po(self, buyer_id):
+        try:
+            self.__cursor.execute("""select * from purchase_orders where buyer_id = %s order by created_at desc limit 1""",
+                                  (buyer_id, ))
+            res = self.__cursor.fetchone()
+            if res is None:
+                return {}
+            return res
+
+        except mysql.connector.Error as error:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_last_po()')
+            log.log(str(error), priority='highest')
+            return {}
+        except Exception as e:
+            log = Logger(module_name='PurchaseOrderOps', function_name='get_last_po()')
+            log.log(traceback.format_exc(), priority='highest')
+            return {}
 

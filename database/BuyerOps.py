@@ -136,6 +136,12 @@ class Buyer:
         self.__sql.commit()
         return True
 
+    def update_default_po_additional_note_id(self, template_id):
+        self.__buyer['default_po_additional_note_id'] = template_id
+        self.__cursor.execute("update buyers set default_po_additional_note_id = %s where buyer_id = %s", (template_id, self.__id))
+        self.__sql.commit()
+        return True
+
     def get_activation_status(self):
         return self.__buyer['activation_status']
 
@@ -189,6 +195,9 @@ class Buyer:
 
     def get_company_email_address(self):
         return self.__buyer['company_email_address']
+
+    def get_default_po_additional_note_id(self):
+        return self.__buyer['default_po_additional_note_id']
 
     def search_suppliers(self, search_str, category="all", supplier_category="all"):
         try:
