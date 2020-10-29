@@ -2525,10 +2525,12 @@ def get_po_addl_notes():
 def get_po_addl_note_details():
     try:
         data = request.json
+        buyer = Buyer(data['buyer_id'])
         addl_note = POAdditionalNotes(data['note_id'])
         return response.customResponse({"template_details": {"template_id": data['note_id'],
                                                              "template_name": addl_note.get_template_name(),
-                                                             "template_config": addl_note.get_template_config()}})
+                                                             "template_config": addl_note.get_template_config(),
+                                                             "is_default": True if buyer.get_default_po_additional_note_id() == data['note_id'] else False}})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
