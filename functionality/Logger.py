@@ -32,7 +32,7 @@ class Logger:
             self.__sql.commit()
             if priority.lower() == "critical":
                 message = "<h1>Error in logger: </h1><br><p>{}</p>".format(error)
-                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.io"])
+                EmailNotifications.send_mail(subject="Error in logger", message=message, recipients=["anuj.panchal@identex.in"])
             return True
         except mysql.connector.Error as error:
             # Email the error

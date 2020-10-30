@@ -2573,6 +2573,7 @@ def delete_po_document():
         document = data['document']
         aws_file_key = GenericOps.get_aws_folder_name(client_id=data['buyer_id'], client_type="buyer") + "/" + document['document_url'].split('/')[-1]
         if PODocument(document['document_id']).delete_document():
+            # Deleting the file from AWS S3 bucket
             p = Process(target=AWS('s3').delete_file, kwargs={"key": aws_file_key})
             p.start()
             return response.customResponse({"response": "Document deleted successfully"})
@@ -3240,10 +3241,14 @@ def buyer_member_add():
             member['email'] = member['email'].lower()
             if not BUser.is_buser(member['email']):
                 member['role'] = member['role'] if 'role' in member else 'employee'
+                member['status'] = member['status'] if 'status' in member else True
                 password = GenericOps.generate_user_password()
                 BUser().add_buser(email=member['email'], name=member['name'], buyer_id=data['buyer_id'], mobile_no=member['mobile_no'],
-                                  password=hashlib.sha1(password.encode()).hexdigest(), role=member['role'], status=True)
+                                  password=hashlib.sha1(password.encode()).hexdigest(), role=member['role'], dept=member['dept'],
+                                  status=True)
                 result.append(member)
+
+                # send email
             return response.customResponse({"response": "Member(s) added successfully", "member_details": result})
 
     except exceptions.IncompleteRequestException as e:
@@ -3259,7 +3264,7 @@ def buyer_member_add():
 def buyer_member_details_update():
     try:
         data = request.json
-        if not data['truncate']:
+        if not data['deactivate']:
             # Update member details
             data['member_details']['email'] = data['member_details']['email'].lower()
             BUser(data['member_details']['email']).set_member_details(data['member_details'])
@@ -3268,8 +3273,11 @@ def buyer_member_details_update():
         else:
             # Delete the member
             data['member_details']['email'] = data['member_details']['email'].lower()
-            BUser(data['member_details']['email']).remove_buser()
-            return response.customResponse({"response": "Member deleted successfully"})
+            buser = BUser(data['member_details']['email'])
+            buser.set_status(status=False)
+            data['member_details']['status'] = buser.get_status()
+            return response.customResponse({"response": "Member deactivated successfully",
+                                            "member_details": data['member_details']})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)

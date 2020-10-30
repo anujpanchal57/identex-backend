@@ -27,7 +27,8 @@ class BUser:
 
     def get_busers_for_buyer_id(self, buyer_id):
         try:
-            self.__cursor.execute("""select name, mobile_no, email, role from b_users where buyer_id = %s""", (buyer_id, ))
+            self.__cursor.execute("""select name, mobile_no, email, role, dept, status from b_users where buyer_id = %s""",
+                                  (buyer_id, ))
             res = self.__cursor.fetchall()
             return res
 
@@ -41,7 +42,7 @@ class BUser:
             return []
 
     # Adding a new user for a buyer company
-    def add_buser(self, email, name, buyer_id, mobile_no, password, role, status=False):
+    def add_buser(self, email, name, buyer_id, mobile_no, password, role, dept='', status=False):
         self.__buser['email'] = email
         self.__buser['name'] = name
         self.__buser['mobile_no'] = mobile_no
@@ -49,6 +50,7 @@ class BUser:
         self.__buser['password'] = password
         self.__buser['role'] = role
         self.__buser['status'] = status
+        self.__buser['dept'] = dept
         timestamp = GenericOps.get_current_timestamp()
         self.__buser['created_at'] = timestamp
         self.__buser['updated_at'] = timestamp
@@ -59,10 +61,10 @@ class BUser:
             self.__cursor.execute(Implementations.buser_create_table)
             # Inserting the record in the table
             self.__cursor.execute("""INSERT INTO b_users (email, buyer_id, name, mobile_no, password, 
-                        role, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                        role, status, created_at, updated_at, dept) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                                   (values['email'], values['buyer_id'], values['name'],
                                    values['mobile_no'], values['password'], values['role'], values['status'],
-                                   values['created_at'], values['updated_at']))
+                                   values['created_at'], values['updated_at'], values['dept']))
             self.__sql.commit()
             return True
 
@@ -162,9 +164,10 @@ class BUser:
     def set_member_details(self, details):
         try:
             self.__buser['name'], self.__buser['mobile_no'] = details['name'], details['mobile_no']
-            self.__cursor.execute("update b_users set name = %s, mobile_no = %s where email = %s", (self.__buser['name'],
-                                                                                                    self.__buser['mobile_no'],
-                                                                                                    self.__id))
+            self.__buser['role'], self.__buser['dept'] = details['role'], details['dept']
+            self.__cursor.execute("update b_users set name = %s, mobile_no = %s, role = %s, dept = %s where email = %s",
+                                  (self.__buser['name'], self.__buser['mobile_no'], self.__buser['role'], self.__buser['dept'],
+                                   self.__id))
             self.__sql.commit()
             return True
 
@@ -176,21 +179,6 @@ class BUser:
             log = Logger(module_name='BuyerUserOps', function_name='set_member_details()')
             log.log(traceback.format_exc(), priority='highest')
             return exceptions.IncompleteRequestException('Failed to update member details, please try again')
-
-    def remove_buser(self):
-        try:
-            self.__cursor.execute("delete from b_users where email = %s", (self.__id))
-            self.__sql.commit()
-            return True
-
-        except mysql.connector.Error as error:
-            log = Logger(module_name='BuyerUserOps', function_name='remove_buser()')
-            log.log(str(error), priority='highest')
-            return exceptions.IncompleteRequestException('Failed to remove member, please try again')
-        except Exception as e:
-            log = Logger(module_name='BuyerUserOps', function_name='remove_buser()')
-            log.log(traceback.format_exc(), priority='highest')
-            return exceptions.IncompleteRequestException('Failed to remove member, please try again')
 
 
 # buser = BUser("anujpanchal57@gmail.com")

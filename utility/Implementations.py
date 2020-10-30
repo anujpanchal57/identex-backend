@@ -74,18 +74,21 @@ supplier_gst_details_create_table = """create table if not exists supplier_gst_d
                 foreign key (supplier_id) references suppliers(supplier_id)
             ) Engine=InnoDB auto_increment=1000"""
 
-buser_create_table = """create table if not exists b_users (
-                email varchar(60) primary key not null,
-                buyer_id int not null, 
-                name char(60) not null, 
-                mobile_no varchar(20) not null,
-                password varchar(50) not null, 
-                role varchar(10) not null,
-                status bool not null, 
-                created_at int(11) not null,
-                updated_at int(11) not null,
-                FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id)
-            )"""
+buser_create_table = """CREATE TABLE IF NOT EXISTS `b_users` (
+                      `email` varchar(60) NOT NULL,
+                      `buyer_id` int(11) NOT NULL,
+                      `name` char(60) NOT NULL,
+                      `mobile_no` varchar(20) NOT NULL,
+                      `password` varchar(50) NOT NULL,
+                      `role` varchar(10) NOT NULL,
+                      `status` tinyint(1) NOT NULL,
+                      `created_at` int(11) NOT NULL,
+                      `updated_at` int(11) NOT NULL,
+                      `dept` varchar(100) NOT NULL DEFAULT '',
+                      PRIMARY KEY (`email`),
+                      KEY `buyer_id` (`buyer_id`),
+                      CONSTRAINT `b_users_ibfk_1` FOREIGN KEY (`buyer_id`) REFERENCES `buyers` (`buyer_id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=latin1"""
 
 suser_create_table = """create table if not exists s_users (
                 email varchar(60) primary key not null,
