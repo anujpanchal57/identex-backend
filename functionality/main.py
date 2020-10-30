@@ -3264,25 +3264,37 @@ def buyer_member_add():
 def buyer_member_details_update():
     try:
         data = request.json
-        if not data['deactivate']:
-            # Update member details
-            data['member_details']['email'] = data['member_details']['email'].lower()
-            BUser(data['member_details']['email']).set_member_details(data['member_details'])
-            return response.customResponse({"response": "Member details updated successfully",
-                                            "member_details": data['member_details']})
-        else:
-            # Delete the member
-            data['member_details']['email'] = data['member_details']['email'].lower()
-            buser = BUser(data['member_details']['email'])
-            buser.set_status(status=False)
-            data['member_details']['status'] = buser.get_status()
-            return response.customResponse({"response": "Member deactivated successfully",
-                                            "member_details": data['member_details']})
+        # Update member details
+        data['member_details']['email'] = data['member_details']['email'].lower()
+        BUser(data['member_details']['email']).set_member_details(data['member_details'])
+        return response.customResponse({"response": "Member details updated successfully",
+                                        "member_details": data['member_details']})
 
     except exceptions.IncompleteRequestException as e:
         return response.errorResponse(e.error)
     except Exception as e:
         log = Logger(module_name="/buyer/member-details/update", function_name="buyer_member_details_update()")
+        log.log(traceback.format_exc())
+        return response.errorResponse("Some error occurred please try again!")
+
+# POST request for updating the status of a member account
+@app.route("/buyer/member-status/update", methods=["POST"])
+@validate_buyer_access_token
+def update_buyer_member_status():
+    try:
+        data = request.json
+        # Update member details
+        data['member_email'] = data['member_email'].lower()
+        buser = BUser(data['member_email'])
+        if buser.set_status(status=data['status']):
+            status = 1 if data['status'] else 0
+            txt_response = "Member account activated successfully" if data['status'] else "Member account deactivated successfully"
+            return response.customResponse({"response": txt_response, "status": status})
+
+    except exceptions.IncompleteRequestException as e:
+        return response.errorResponse(e.error)
+    except Exception as e:
+        log = Logger(module_name="/buyer/member-status/update", function_name="update_buyer_member_status()")
         log.log(traceback.format_exc())
         return response.errorResponse("Some error occurred please try again!")
 
