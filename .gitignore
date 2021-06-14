@@ -210,5 +210,7 @@ settings.json
 .idea/
 conf.json
 
+.DS_Store
+
 ### VirtualEnv ###
 # Virtualenv
